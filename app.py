@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, render_template, Response
 import joblib
 import pandas as pd
@@ -97,6 +98,7 @@ def process_prediction_data(form_data):
     }
     
     return patient_info, clinical_info_display, prediction_results
+
 
 # --- PAGE ROUTES ---
 @app.route('/')
