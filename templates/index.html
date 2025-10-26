@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<!------------------------------>
+    <!--- Hero Banner Start--------->
+    <!------------------------------>
+    <section class="hero-banner position-relative overflow-hidden">
+        <div class="container">
+            <div class="row d-flex flex-wrap align-items-center">
+                <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                    <div class="position-relative left-hero-color">
+                        <h1 class="mb-0 fw-bold">
+                            Precision Dosing, Powered by AI 
+                        </h1>
+                        <p>Effective dosage recommendations for clinicians.</p>
+                        <a href="{{ url_for('select_drug') }}" class="btn btn-warning btn-hover-secondery"><span class="d-inline-block me-2"><i class="ti ti-playstation-triangle"></i></span> Discover the Prediction Tool</a>
+                    </div>
+                </div>
+                <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
+                    <div class="position-relative right-hero-color">
+                        <img src="../static/assets/images/hero/right.png" class="img-fluid"> 
+                    </div>          
+                </div>
+            </div>
+        </div>
+    </section>
+    <!------------------------------>
+    <!--- Hero Banner End--------->
+    <!------------------------------>
+
+    <!------------------------------>
+    <!--- Service sectin Start------>
+    <!------------------------------>
+    <section class="service position-relative overflow-hidden">
+        <div class="container position-relative">
+            <img src="../assets/images/service/dot-shape.png" class="shape position-absolute">
+            <div class="row">
+                <div class="col-12"><small class="fs-7 d-block">Working Process</small></div>
+                <div class="col-12 d-xxl-flex d-xl-flex d-lg-flex d-md-flex d-sm-block d-block align-items-center justify-content-xxl-between justify-content-xl-between justify-content-lg-between justify-content-md-between justify-content-sm-between justify-content-sm-center ">
+                    <h2 class="fs-2 text-black mb-0">Our Featured Service<br> that We Provide</h2>
+                    <a href="#" class="btn btn-warning btn-hover-secondery section-btn">All Services</a>
+                </div>
+            </div>
+            <div class="row d-flex flex-wrap justify-content-center step-row">
+                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 text-center">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="icon-round overflow-hidden rounded-circle position-relative d-flex align-items-center justify-content-center mx-auto text-center">
+                                
+                                <i class="ti ti-user text-primary position-relative"></i>
+                            </div>
+                            <h5 class="mb-0 fw-500">Step 1</h5>
+                            <h3 class="fs-4">Upload Patient's Details</h3>
+                            <p class="fs-7 mb-0 fw-500">These general informations are necessary for generating the prediction report</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 text-center">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="icon-round overflow-hidden rounded-circle position-relative d-flex align-items-center justify-content-center mx-auto text-center">
+                                
+                                <i class="ti ti-gift text-primary position-relative"></i>
+                            </div>
+                            <h5 class="mb-0 fw-500">Step 2</h5>
+                            <h3 class="fs-4">Upload Clinical Data</h3>
+                            <p class="fs-7 mb-0 fw-500">Enter Specific details required for predicting drug's dosage</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 text-center">
+                    <div class="card border-0 shadow">
+                        <div class="card-body">
+                            <div class="icon-round overflow-hidden rounded-circle position-relative d-flex align-items-center justify-content-center mx-auto text-center">
+                                
+                                <i class="ti ti-download text-primary position-relative"></i>
+                            </div>
+                            <h5 class="mb-0 fw-500">Step 3</h5>
+                            <h3 class="fs-4">Download Report</h3>
+                            <p class="fs-7 mb-0 fw-500">Download the report consisting of predicted dosage based on patient's details.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!------------------------------>
+    <!--- Service sectin Start------>
+    <!------------------------------>
+
+{% endblock %}

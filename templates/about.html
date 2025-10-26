@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="text-center mb-5" data-aos="fade-down">
+        <h2>How Our Technology Works</h2>
+        <p class="lead">Understanding the science behind DoseRight AI.</p>
+    </div>
+
+    <div class="accordion" id="aboutAccordion" data-aos="fade-up">
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">The Challenge with Warfarin</button></h2>
+            <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#aboutAccordion"><div class="accordion-body">Warfarin is a highly effective anticoagulant, but its optimal dose varies dramatically between individuals. A dose that is therapeutic for one patient can be dangerous for another. This variability is largely influenced by a person's clinical factors (like age and weight) and their unique genetic makeup.</div></div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTwo"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">Our AI-Powered Solution</button></h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#aboutAccordion"><div class="accordion-body">Our system uses a powerful machine learning model called a <strong>Random Forest Regressor</strong>. It has been trained on thousands of patient records to learn the complex, non-linear relationships between patient characteristics and the correct Warfarin dose. It operates in two modes: a <strong>Base Model</strong> for when only clinical data is available, and an <strong>Enhanced Model</strong> that incorporates genetic information from the CYP2C9 and VKORC1 genes for superior accuracy.</div></div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingThree"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">The Importance of Explainability (XAI)</button></h2>
+            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#aboutAccordion"><div class="accordion-body">For a clinician to trust an AI's recommendation, they need to understand its reasoning. Our tool integrates a state-of-the-art technique called <strong>SHAP (SHapley Additive exPlanations)</strong>. For every prediction, SHAP calculates the exact impact of each patient feature—quantifying how much factors like age, weight, or a specific genetic variant pushed the dosage recommendation up or down. This transparency transforms our model from a "black box" into a trustworthy decision-support tool.</div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

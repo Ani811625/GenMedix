@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+<section class="some-class" style="padding: 110px; background: #ffffff;">
+    <div class="container my-5" data-aos="fade-down" data-aos-duration="1200">
+        <div class="text-center mb-4">
+            <h2 style="color: #ff7a00; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+                Clinical & Genomic Details
+            </h2>
+            <p class="lead" style="color: #000000;">
+                Enter the patient's clinical data to receive the dosage recommendation.
+            </p>
+        </div>
+
+        <form action="{{ url_for('generate_report') }}" method="POST"
+            class="shadow p-4 rounded bg-white"
+            data-aos="fade-up"
+            data-aos-duration="1000"
+            style="border: 2px solid #ff7a00; transition: transform 0.4s ease, box-shadow 0.4s ease;">
+
+            <input type="hidden" name="drug_name" value="{{ patient_info.drug_name }}">
+            <input type="hidden" name="patient_name" value="{{ patient_info.patient_name }}">
+            <input type="hidden" name="patient_dob" value="{{ patient_info.patient_dob }}">
+            <input type="hidden" name="patient_address" value="{{ patient_info.patient_address }}">
+            <input type="hidden" name="patient_country" value="{{ patient_info.patient_country }}">
+            <input type="hidden" name="patient_gender" value="{{ patient_info.patient_gender }}">
+
+            <h5 class="mb-3" style="color:#000; font-weight: 700;">Clinical Information (Required)</h5>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="age" class="form-label" style="color: #000; font-weight: 600;">Age (years)</label>
+                    <input type="number" class="form-control" id="age" name="Age" required
+                        style="border: 2px solid #ff7a00;">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="height" class="form-label" style="color: #000; font-weight: 600;">Height (cm)</label>
+                    <input type="number" class="form-control" id="height" name="Height__cm_" step="0.01" required
+                        style="border: 2px solid #ff7a00;">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="weight" class="form-label" style="color: #000; font-weight: 600;">Weight (kg)</label>
+                    <input type="number" class="form-control" id="weight" name="Weight__kg_" step="0.01" required
+                        style="border: 2px solid #ff7a00;">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="race" class="form-label" style="color: #000; font-weight: 600;">Race</label>
+                <select name="Race" class="form-select"
+                    style="border: 2px solid #ff7a00; color: #000;">
+                    <option value="Race_White" selected>White</option>
+                    <option value="Race_Asian">Asian</option>
+                    <option value="Race_Black_or_African_American">Black or African American</option>
+                    <option value="Race_Unknown">Unknown</option>
+                </select>
+            </div>
+
+            <hr style="border-top: 2px solid #ff7a00;">
+
+            <h5 class="mb-3 mt-4" style="color:#000; font-weight: 700;">Genomic Information (Optional)</h5>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="cyp2c9" class="form-label" style="color: #000; font-weight: 600;">CYP2C9 Genotype</label>
+                    <select name="CYP2C9_genotypes" class="form-select"
+                        style="border: 2px solid #ff7a00; color: #000;">
+                        <option value="">-- Select --</option>
+                        <option value="CYP2C9_genotypes__1__1">*1/*1</option>
+                        <option value="CYP2C9_genotypes__1__2">*1/*2</option>
+                        <option value="CYP2C9_genotypes__1__3">*1/*3</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="vkorc1" class="form-label" style="color: #000; font-weight: 600;">
+                        VKORC1 Genotype (-1639 G>A)
+                    </label>
+                    <select name="VKORC1_genotype" class="form-select"
+                        style="border: 2px solid #ff7a00; color: #000;">
+                        <option value="">-- Select --</option>
+                        <option value="VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_A_A">A/A</option>
+                        <option value="VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_A_G">A/G</option>
+                        <option value="VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_G_G">G/G</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit"
+                class="btn btn-primary w-100 mt-3 btn-lg"
+                style="background-color: #ff7a00;
+                       border: none;
+                       font-weight: bold;
+                       transition: background-color 0.3s, transform 0.3s;">
+                Generate Report
+            </button>
+        </form>
+    </div>
+</section>
+
+<style>
+    /* Hover effect for card */
+    form.shadow:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 25px rgba(255, 122, 0, 0.5) !important;
+    }
+
+    /* Focus glow effect */
+    input:focus, select:focus {
+        box-shadow: 0 0 8px #ff7a00;
+        border-color: #ff7a00 !important;
+    }
+
+    /* Button hover */
+    button.btn-primary:hover {
+        background-color: #cc6200 !important;
+        transform: scale(1.05);
+    }
+</style>
+
+{% endblock %}

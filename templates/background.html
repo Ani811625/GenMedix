@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!------------------------------>
+    <!------ FAQ section Start------>
+    <!------------------------------>
+    <section class="faq position-relative overflow-hidden">
+        <div class="container position-relative">
+            <div class="row justify-content-center">
+                <div class="col-12 text-center">
+                    <small class="fs-7 d-block">Frequently Asked Questions</small>
+                    <h2 class="fs-3 text-black mb-0">Want to ask something from us?</h2>
+                </div>
+            </div>
+            <div class="accordion-block">
+                    <div class="accordion row" id="accordionPanelsStayOpenExample">
+                        <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-12 col-sm-12 col-12">
+                            <div class="accordion-item mb-3">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingOne">
+                                  <button class="accordion-button text-black fs-7" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseOne" aria-expanded="true" aria-controls="panelsStayOpen-collapseOne">
+                                      Why can't a doctor just use a standard dose? What's the real problem you're solving?
+                                  </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapseOne" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingOne">
+                                  <div class="accordion-body fs-7 fw-500 pt-0">
+                                      That is the core problem. A "one-size-fits-all" dose for a drug like Warfarin is a dangerous guessing game. Every patient's body is different, and a standard dose can lead to two critical errors:<br>
+                                      1.Under-dosing: The patient isn't protected and could suffer a stroke or blood clot. <br>
+                                      2.Over-dosing: The patient's blood becomes too thin, leading to a high risk of dangerous internal bleeding. <br>
+                                      Our project solves this by replacing the "guessing game" with personalized medicine. We analyze a patient's specific biology (age, weight, and genetics) to predict a dose that is tailored specifically for them, making the treatment safer and more effective from day one.
+                                </div>
+                            </div>
+                            <div class="accordion-item mb-3">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingTwo">
+                                  <button class="accordion-button collapsed text-black fs-7" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+                                      Your synopsis mentions a 'Hybrid' or 'Dual-Mode' system. Why not just build one AI model? What's the point of having two?
+                                  </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingTwo">
+                                  <div class="accordion-body fs-7 fw-500 pt-0">
+                                      That's a great question that highlights the practical, real-world design of our project. We have two models to ensure the tool is always useful, no matter what data the hospital has. <br>
+                                      1.The Enhanced Model (Clinical + Genome): This is our best and most accurate model. It's used when the hospital has access to advanced genomic testing (the patient's CYP2C9 and VKORC1 gene data). <br>
+                                      2.The Base Model (Clinical-Only): Genomic tests are expensive and can take time. In many clinics, this data isn't available. Our "Base Model" is designed for this scenario. It provides a robust prediction using only standard clinical data like age and weight. <br>
+                                      Our system's "Mode Selector" automatically detects if genomic data is provided. This way, it always uses the best possible model for the situation, making our tool adaptable to any hospital, not just advanced research labs.
+                                  </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item mb-3">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingThree">
+                                  <button class="accordion-button collapsed text-black fs-7" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseThree" aria-expanded="false" aria-controls="panelsStayOpen-collapseThree">
+                                      You talk about 'Explainability (XAI)'. Why is this important? Isn't the prediction enough?
+                                  </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingThree">
+                                  <div class="accordion-body fs-7 fw-500 pt-0">
+                                      This is the most important feature for building trust. A doctor will never trust a "black box" that just gives a number. For a doctor to be responsible for a patient, they need to know why the AI is making a recommendation. <br>
+                                      1.What it is: We integrated a library called SHAP. For every single prediction, SHAP shows us the exact impact of each of the patient's features. <br>
+                                      2.How it works: Our report generates a chart and simple sentences like: "The patient's high weight was a major factor, significantly decreasing the required dose," or "The VKORC1 gene was a factor, moderately increasing the required dose." <br>
+                                      3.The Result: This gives the doctor full transparency. They can see the AI's "reasoning," and it becomes a trustworthy co-pilot, not a mysterious black box.
+                                  </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item mb-3">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingThree">
+                                  <button class="accordion-button collapsed text-black fs-7" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapsefour" aria-expanded="false" aria-controls="panelsStayOpen-collapsefour">
+                                    How did you choose your AI model? Why a Random Forest?
+                                  </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapseThree" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingThree">
+                                  <div class="accordion-body fs-7 fw-500 pt-0">
+                                      We started with a simple baseline model (Linear Regression), but the problem is too complex for a simple formula. We chose a Random Forest for three specific reasons: <br>
+                                      1.High Accuracy: It's an "ensemble" model, which means it works like a "committee of 100 experts" (decision trees) who vote on the best answer. This "wisdom of the crowd" approach is extremely accurate at finding complex, non-linear patterns in biological data. <br>
+                                      2.Explainability: It works perfectly with the SHAP library, allowing us to build our "Explainability" feature. <br>
+                                      3.Confidence Score: Because it's a committee, we can measure how much the 100 "experts" agree. We built a "Prediction Confidence Score" from this. If all 100 trees give a similar prediction, the confidence is "High." If they disagree, the confidence is "Low," which tells the doctor to use extra caution. 
+                                  </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item mb-3">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingfive">
+                                  <button class="accordion-button collapsed text-black fs-7" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapsefive" aria-expanded="false" aria-controls="panelsStayOpen-collapsefive">
+                                    Your report shows a 'Prediction Confidence' of 'Low'. Does that mean your model is inaccurate?
+                                  </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapsefive" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingfour">
+                                  <div class="accordion-body fs-7 fw-500 pt-0">
+                                      This is a great question and it highlights the difference between accuracy and confidence. <br>
+                                      1.Accuracy (RMSE): This is our overall score, which is very high. It's like a student's final grade of 98%. It proves the model is excellent on average. <br>
+                                      2.Confidence: This is a score for a single prediction. A "Low" confidence score is one of the most valuable features of our project. It means the model is saying: "This specific patient is an unusual or 'edge' case. I have not seen many patients with this exact combination of factors. My best guess is 25.1 mg, but you should be cautious." <br>
+                                      3.A simple model gives a wrong answer and acts 100% certain. Our advanced model gives a good prediction and has the intelligence to tell the doctor when to be careful. It's a safety feature that makes our tool truly responsible for clinical use.
+                                  </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item mb-3">
+                                <h2 class="accordion-header" id="panelsStayOpen-headingsix">
+                                  <button class="accordion-button collapsed text-black fs-7" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapsesix" aria-expanded="false" aria-controls="panelsStayOpen-collapsesix">
+                                    This is a great project for Warfarin. What's next? How can this be scaled?
+                                  </button>
+                                </h2>
+                                <div id="panelsStayOpen-collapsesix" class="accordion-collapse collapse" aria-labelledby="panelsStayOpen-headingsix">
+                                  <div class="accordion-body fs-7 fw-500 pt-0">
+                                      That was a central part of our design. We built this as a multi-drug platform, not just a Warfarin tool. <br>
+                                      1.The Architecture: The backend (app.py) is designed to be scalable. When a user starts, they select a drug. The application then dynamically loads the correct AI models and column lists for that specific drug from a subfolder (e.g., models/warfarin/). <br>
+                                      2.Future Scope: To add a new drug like Tacrolimus, we would simply train a new set of models on Tacrolimus data (which uses a different gene, CYP3A5) and add them to a new folder (models/tacrolimus/). The application's core logic is already built to handle this. It can be scaled to become a comprehensive platform for any drug that has a known pharmacogenomic link.
+                                  </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+    </section>
+    <!------------------------------>
+    <!------ FAQ section End------>
+    <!------------------------------>    
+{% endblock %}

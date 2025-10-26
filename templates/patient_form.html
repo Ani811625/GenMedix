@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+<section class="some-class" style="padding: 120px; background: #ffffff;">
+    <div class="container py-5" data-aos="fade-down" data-aos-duration="1200">
+        <div class="text-center mb-5">
+            <h2 style="color: #ff7a00; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+                Patient Information
+            </h2>
+            <p class="lead" style="color: #000000;">
+                Please enter the general details for the patient.
+            </p>
+        </div>
+
+        <form action="{{ url_for('predict_page') }}" method="POST"
+            class="shadow p-4 rounded bg-white"
+            style="border: 2px solid #ff7a00; transition: transform 0.4s ease, box-shadow 0.4s ease;"
+            data-aos="fade-up" data-aos-duration="1000">
+            
+            <input type="hidden" name="drug_name" value="{{ drug_name }}">
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="patientName" class="form-label" style="color: #000; font-weight: 600;">
+                        Patient Full Name:
+                    </label>
+                    <input type="text" class="form-control" id="patientName" name="patient_name"
+                        required style="border: 2px solid #ff7a00; color: #000;">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="dob" class="form-label" style="color: #000; font-weight: 600;">
+                        Date of Birth:
+                    </label>
+                    <input type="date" class="form-control" id="dob" name="patient_dob"
+                        required style="border: 2px solid #ff7a00; color: #000;">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="address" class="form-label" style="color: #000; font-weight: 600;">
+                    Address:
+                </label>
+                <input type="text" class="form-control" id="address" name="patient_address"
+                    required style="border: 2px solid #ff7a00; color: #000;">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="country" class="form-label" style="color: #000; font-weight: 600;">
+                        Country:
+                    </label>
+                    <input type="text" class="form-control" id="country" name="patient_country"
+                        required style="border: 2px solid #ff7a00; color: #000;">
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label for="gender" class="form-label" style="color: #000; font-weight: 600;">
+                        Gender:
+                    </label>
+                    <select id="gender" name="patient_gender" class="form-select"
+                        style="border: 2px solid #ff7a00; color: #000;">
+                        <option value="Male" selected>Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit"
+                class="btn btn-primary w-100 mt-3"
+                style="background-color: #ff7a00;
+                       border: none;
+                       font-weight: bold;
+                       transition: background-color 0.3s, transform 0.3s;">
+                Proceed to Clinical Details <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </form>
+    </div>
+</section>
+
+<style>
+    /* Card Hover Animation */
+    form.shadow:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 25px rgba(255, 122, 0, 0.5) !important;
+    }
+
+    /* Button Hover */
+    button.btn-primary:hover {
+        background-color: #cc6200 !important;
+        transform: scale(1.05);
+    }
+
+    /* Glow focus inputs */
+    input:focus, select:focus {
+        box-shadow: 0 0 8px #ff7a00;
+        border-color: #ff7a00 !important;
+    }
+</style>
+
+{% endblock %}
