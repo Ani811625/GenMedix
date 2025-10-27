@@ -2,7 +2,14 @@
 # exit on error
 set -o errexit
 
-# Install WeasyPrint system dependencies
+# --- Set Cargo environment variables to use writable temp directories ---
+export CARGO_HOME=/tmp/.cargo
+export CARGO_TARGET_DIR=/tmp/.cargo-target
+
+echo ">>> Setting Cargo directories to /tmp"
+
+# --- Install WeasyPrint system dependencies ---
+echo ">>> Updating apt and installing system dependencies..."
 apt-get update && apt-get install -y \
   libpango-1.0-0 \
   libpangoft2-1.0-0 \
@@ -12,6 +19,16 @@ apt-get update && apt-get install -y \
   libffi-dev \
   shared-mime-info \
   --no-install-recommends
+echo ">>> System dependencies installed."
 
-# Install Python dependencies
+# --- Upgrade pip ---
+echo ">>> Upgrading pip..."
+pip install --upgrade pip
+echo ">>> pip upgraded."
+
+# --- Install Python dependencies ---
+echo ">>> Installing Python requirements..."
 pip install -r requirements.txt
+echo ">>> Python requirements installed."
+
+echo ">>> Build script completed successfully!"
