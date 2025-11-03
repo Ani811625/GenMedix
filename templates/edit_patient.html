@@ -52,7 +52,10 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label for="aadhar" class="form-label fs-7 fw-500">Aadhar Number (Unique ID)</label>
-                                    <input type="text" class="form-control" id="aadhar" name="aadhar" minlength="12" maxlength="12" value="{{ patient.aadhar }}" required>
+                                    <input type="text" class="form-control" id="aadhar" name="aadhar" 
+       pattern="[0-9]{12}" inputmode="numeric" 
+       title="Must be a 12-digit numeric Aadhar number" 
+       minlength="12" maxlength="12" required>
                                 </div>
                             </div>
                             <div class="row">

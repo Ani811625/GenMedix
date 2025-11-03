@@ -12070,3 +12070,35 @@ textarea.form-control {
     background: linear-gradient(90deg, #343a40 0%, #000 100%);
     padding: 80px 0;
 }
+
+/* =================================
+   BETA DISCLAIMER BANNER
+   ================================= */
+.beta-banner-bottom {
+    background-color: #ffc107; /* A strong, unmissable warning yellow */
+    color: #5d4203;      /* Dark, readable text */
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 12px 15px;
+    position: fixed;     /* This makes it stick to the bottom */
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9998;       /* Sits on top of content, but below popups */
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1); /* Adds a subtle shadow */
+}
+
+.beta-banner-bottom i {
+    margin-right: 8px;
+    vertical-align: text-bottom;
+}
+
+/* FIX FOR FOOTER: 
+  This adds padding to the bottom of your entire site, 
+  so the new banner doesn't cover your footer.
+*/
+body {
+    /* The banner is ~45px high. We'll add 50px of padding. */
+    padding-bottom: 50px; 
+}

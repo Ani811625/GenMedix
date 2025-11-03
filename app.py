@@ -499,11 +499,21 @@ def redirect_to_drug_form(patient_id):
 def warfarin_form(patient_id):
     patient = Patient.query.get_or_404(patient_id)
 
+    # Security check
     if patient.doctor_id != current_user.id:
         flash("You are not authorized to access this patient.", "danger")
         return redirect(url_for('dashboard'))
 
-    return render_template('warfarin_form.html', patient=patient)
+    # --- NEW: Calculate Age ---
+    calculated_age = 0 # Default
+    try:
+        dob = datetime.strptime(patient.dob, '%Y-%m-%d')
+        today = datetime.today()
+        calculated_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    except:
+        pass # Keep age 0 if DOB is invalid
+
+    return render_template('warfarin_form.html', patient=patient, calculated_age=calculated_age)
 
 @app.route('/patient/<int:patient_id>/generate_warfarin_report', methods=['POST'])
 @login_required
