@@ -1,67 +1,50 @@
 {% extends "base.html" %}
+{% block title %}Select Drug - GenMedix{% endblock %}
 
 {% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100" style="padding: 150px;">
 
-
-
-<section class="some-class" style="padding: 150px; background: #ffffff; color: #000000;">
-    <div class="container">
-        <div class="text-center mb-5" data-aos="zoom-in" data-aos-duration="1200">
-            <h2 style="color: #ff7a00; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
-                Select Drug for Analysis
-            </h2>
-            <p class="lead" style="color: #000000;">
-                Please choose the drug for which you need a dosage prediction.
-            </p>
-        </div>
-
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <form action="{{ url_for('patient_form') }}" method="POST"
-                    class="shadow-lg p-4 rounded bg-white"
-                    data-aos="fade-up"
-                    data-aos-duration="1000"
-                    style="border: 2px solid #ff7a00;
-                           transition: transform 0.4s ease, box-shadow 0.4s ease;">
-                    <div class="mb-3">
-                        <label for="drug_name" class="form-label fs-5" style="color: #000; font-weight: 600;">
-                            Drug Name:
-                        </label>
-                        <select id="drug_name" name="drug_name" class="form-select form-select-lg"
-                            style="border: 2px solid #ff7a00; color: #000;">
-                            <option value="warfarin" selected>Warfarin</option>
-                        </select>
+    <section class="patient-header-section position-relative">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <div class="patient-avatar">
+                            <i class="ti ti-pill"></i>
+                        </div>
+                        <div>
+                            <h1 class="mb-0 text-white">Generate New Report</h1>
+                            <p class="text-white-50 mb-0">
+                                For patient: <strong>{{ patient.full_name }}</strong>
+                            </p>
+                        </div>
                     </div>
-                    <button type="submit"
-                        class="btn btn-primary w-100 btn-lg mt-3"
-                        style="background-color: #ff7a00;
-                               border: none;
-                               font-weight: bold;
-                               transition: background-color 0.3s, transform 0.3s;">
-                        Proceed to Patient Details <i class="fas fa-arrow-right ms-2"></i>
-                    </button>
-                </form>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<!-- Hover Animations -->
-<style>
-    form.shadow-lg:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 10px 25px rgba(255, 122, 0, 0.5) !important;
-    }
-
-    button.btn-primary:hover {
-        background-color: #cc6200 !important;
-        transform: scale(1.05);
-    }
-
-    select:focus {
-        box-shadow: 0 0 8px #ff7a00;
-        border-color: #ff7a00;
-    }
-</style>
-
+    <section class="patient-list-section position-relative pb-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6"> <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                        
+                        <form action="{{ url_for('redirect_to_drug_form', patient_id=patient.id) }}" method="POST">
+                            <div class="mb-3">
+                                <label for="drug_name" class="form-label fs-5 fw-600">Select Drug</label>
+                                <select class="form-select form-select-lg" id="drug_name" name="drug_name" required>
+                                    <option value="warfarin" selected>Warfarin</option>
+                                    </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning btn-hover-secondery w-100 btn-lg text-capitalize mt-3">
+                                Continue
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
 {% endblock %}

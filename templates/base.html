@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenMedix</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='assets/libs/OwlCarousel-2/dist/assets/owl.carousel.min.css') }}">
+    <title>{% block title %}GenMedix{% endblock %}</title> <link rel="stylesheet" href="{{ url_for('static', filename='assets/libs/OwlCarousel-2/dist/assets/owl.carousel.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/iconfont/tabler-icons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/style.css') }}?v=1.1">
+    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!------------------------------>
-    <!-- Header Start -->
-    <!------------------------------>
     <header class="main-header position-fixed w-100">
             <div class="container">
                 <nav class="navbar navbar-expand-xl py-0">
@@ -22,64 +22,79 @@
                     <a class="d-inline-block d-lg-block d-xl-none d-xxl-none  nav-toggler text-decoration-none"  data-bs-toggle="offcanvas" href="#offcanvasExample" aria-controls="offcanvasExample">
                         <i class="ti ti-menu-2 text-warning"></i>
                     </a>
-                    <div class="collapse navbar-collapse" id="navbarSupportedContent">                                             
-                            <ul class="navbar-nav ms-auto"> <li class="nav-item"><a class="nav-link text-capitalize" href="{{ url_for('home') }}" style="color: rgb(235, 92, 15);">Home</a></li>
-                                <li class="nav-item"><a class="nav-link text-capitalize" href="{{ url_for('features') }}" style="color: rgb(235, 92, 15);">Features</a></li>
-                                <li class="nav-item"><a class="nav-link text-capitalize" href="{{ url_for('background') }}" style="color: rgb(235, 92, 15);">Background</a></li>
-                                <li class="nav-item"><a class="nav-link text-capitalize" href="{{ url_for('contact') }} " style="color: rgb(235, 92, 15);">Contact</a></li>
-                            </ul>
-                            <div class="d-flex align-items-center">
-                                
-                                <a class="btn btn-warning btn-hover-secondery text-capitalize " href="{{ url_for('select_drug') }}">Prediction Tool</a>
-                            </div>
-                    </div>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">                       
+                        <ul class="navbar-nav ms-auto">
+    <li class="nav-item">
+        <a class="nav-link text-capitalize" href="{{ url_for('home') }}">Home</a>
+    </li>
+    {% if current_user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('dashboard') }}">Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('account') }}">Account</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('logout') }}">Logout</a>
+        </li>
+    {% else %}
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('login') }}">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('register') }}">Register</a>
+        </li>
+    {% endif %}
+</ul>
+                        
+                        </div>
                 </nav>
             </div>
 
             <div class="offcanvas offcanvas-start"  tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
                 <div class="offcanvas-header">
                     <div class="logo">
-                        <a class="navbar-brand py-0 me-0" href="#"><img src="../assets/images/Creato-logo.svg" alt=""></a>
+                        <a class="navbar-brand py-0 me-0" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/Creato-logo.svg') }}" alt=""></a>
                     </div> 
                     <button type="button" class="btn-close text-reset  ms-auto" data-bs-dismiss="offcanvas" aria-label="Close"><i class="ti ti-x text-warning"></i></button>
                 </div>
                 <div class="offcanvas-body pt-0">
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link text-capitalize" aria-current="page" href="{{ url_for('home') }}">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-capitalize" aria-current="page" href="{{ url_for('features') }}">Features</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-capitalize" href="{{ url_for('background') }}">Background</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-capitalize" href="{{ url_for('contact') }}">Contact Us</a>
-                        </li>
-                        </ul>
-                        <div class="login d-block align-items-center mt-3">
-                            <a class="btn btn-warning text-capitalize w-100" href="{{ url_for('select_drug') }}">Prediction Tool</a>
-                        </div>
-                </div>
+                    <ul class="navbar-nav ms-auto">
+    <li class="nav-item">
+        <a class="nav-link text-capitalize" href="{{ url_for('home') }}">Home</a>
+    </li>
+    {% if current_user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('dashboard') }}">Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('account') }}">Account</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('logout') }}">Logout</a>
+        </li>
+    {% else %}
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('login') }}">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('register') }}">Register</a>
+        </li>
+    {% endif %}
+</ul>
+                    
+                    </div>
             </div>
     </header>
-    <!------------------------------>
-     <!-- Header End  -->
-    <!------------------------------>
     {% block content %}
-
-
     {% endblock %}
-    <!------------------------------>
-    <!-----Footer Start------------->
-    <!------------------------------>
+
     <footer class="footer">
         <div class="container">
             <div class="row">
                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12">
                     <div class="footer-logo-col">
-                        <a href="#"><img src="../static/assets/images/image.png"></a>
+                        <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Footer Logo"></a>
                         <p class="blue-light mb-0 fs-7 fw-500">Leveraging pharmacogenomics and machine learning to provide safer, more effective dosage recommendations for clinicians.</p>
                         <div class="callus text-white fw-500 fs-7">
                             Salt Lake,Sector V - Kolkata
@@ -100,9 +115,6 @@
                     <h5 class="text-white">Mentor</h5>
                     <ul class="list-unstyled mb-0 pl-0">
                         <li><a href="#" >Dr.Biswajit Ghosh</a></li>
-                        <!--<li><a href="#">Affiliates</a></li>
-                        <li><a href="#">Careers</a></li>
-                        <li><a href="#">Legal & Privacy</a></li>-->
                     </ul>
                 </div>
                 <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12">
@@ -117,18 +129,20 @@
                     </div>
                 </div>
             </div>
-            <div class="copyrights text-center blue-light  fw-500">@<span id="autodate">2023</span> - All Rights Reserved by <a href="https://adminmart.com/" class="blue-light text-decoration-none">Team GenMedix</a> Dsitributed By <a href="https://themewagon.com" class="blue-light text-decoration-none">Techno Main Salt Lake</a></div>
+            <div class="copyrights text-center blue-light  fw-500">@<span id="autodate">2023</span> - All Rights Reserved by <a href="httpsis://adminmart.com/" class="blue-light text-decoration-none">Team GenMedix</a> Dsitributed By <a href="https://themewagon.com" class="blue-light text-decoration-none">Techno Main Salt Lake</a></div>
         </div>
     </footer>
-    <!------------------------------>
-    <!-------Footer End------------->
-    <!------------------------------>
-
-    
     <script src="{{ url_for('static', filename='dist/js/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='assets/libs/OwlCarousel-2/dist/owl.carousel.min.js') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/custom.js') }}"></script>
 
 </body>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+    AOS.init({
+        duration: 800, // Animation duration in milliseconds
+        once: true    // Only animate once
+    });
+</script>
 </html>

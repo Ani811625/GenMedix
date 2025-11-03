@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}My Account - GenMedix{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100" style="padding: 150px;">
+
+    <section class="patient-header-section position-relative">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <div class="patient-avatar">
+                            <i class="ti ti-user-circle"></i>
+                        </div>
+                        <div>
+                            <h1 class="mb-0 text-white">My Account</h1>
+                            <p class="text-white-50 mb-0">
+                                Manage your clinician profile and account settings.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="patient-list-section position-relative pb-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                {% set alert_class = 'alert-danger' if category == 'danger' else 'alert-success' %}
+                                <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5 mb-4">
+                        <h3 class="mb-4">My Clinician Details</h3>
+                        
+                        <form action="{{ url_for('account') }}" method="POST">
+                            <input type="hidden" name="action" value="update_details">
+
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label fs-7 fw-500">Full Name</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" value="{{ current_user.full_name }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label fs-7 fw-500">Email Address (Login Username)</label>
+                                <input type="email" class="form-control" id="email" name="email" value="{{ current_user.email }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="medical_reg_id" class="form-label fs-7 fw-500">Medical Registration ID</label>
+                                <input type="text" class="form-control" id="medical_reg_id" name="medical_reg_id" value="{{ current_user.medical_reg_id }}" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize w-100">
+                                Save Changes
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                        <h4 class="text-danger">Danger Zone</h4>
+                        <hr>
+                        <p class="fs-7 text-muted">
+                            Deleting your account is permanent. It will delete your login and <strong>all associated patients and reports</strong>. This action cannot be undone.
+                        </p>
+                        
+                        <form action="{{ url_for('account') }}" method="POST" onsubmit="return confirm('Are you 100% sure you want to permanently delete your account?');">
+                            <input type="hidden" name="action" value="delete_account">
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label fs-7 fw-500">To confirm, please enter your password:</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-danger w-100 btn-lg">
+                                <i class="ti ti-alert-triangle me-2"></i> Delete My Account Permanently
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

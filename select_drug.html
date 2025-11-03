@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+<section class="some-class" style="padding: 150px; background: #ffffff; color: #000000;">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="zoom-in" data-aos-duration="1200">
+            <h2 style="color: #ff7a00; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;">
+                Select Drug for Analysis
+            </h2>
+            <p class="lead" style="color: #000000;">
+                Please choose the drug for which you need a dosage prediction.
+            </p>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="{{ url_for('patient_form') }}" method="POST"
+                    class="shadow-lg p-4 rounded bg-white"
+                    data-aos="fade-up"
+                    data-aos-duration="1000"
+                    style="border: 2px solid #ff7a00;
+                           transition: transform 0.4s ease, box-shadow 0.4s ease;">
+                    <div class="mb-3">
+                        <label for="drug_name" class="form-label fs-5" style="color: #000; font-weight: 600;">
+                            Drug Name:
+                        </label>
+                        <select id="drug_name" name="drug_name" class="form-select form-select-lg"
+                            style="border: 2px solid #ff7a00; color: #000;">
+                            <option value="warfarin" selected>Warfarin</option>
+                        </select>
+                    </div>
+                    <button type="submit"
+                        class="btn btn-primary w-100 btn-lg mt-3"
+                        style="background-color: #ff7a00;
+                               border: none;
+                               font-weight: bold;
+                               transition: background-color 0.3s, transform 0.3s;">
+                        Proceed to Patient Details <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Hover Animations -->
+<style>
+    form.shadow-lg:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 25px rgba(255, 122, 0, 0.5) !important;
+    }
+
+    button.btn-primary:hover {
+        background-color: #cc6200 !important;
+        transform: scale(1.05);
+    }
+
+    select:focus {
+        box-shadow: 0 0 8px #ff7a00;
+        border-color: #ff7a00;
+    }
+</style>
+
+{% endblock %}

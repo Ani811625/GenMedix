@@ -1,5 +1,8 @@
-
-from flask import Flask, request, jsonify, render_template, make_response, Response
+import json
+from flask import (
+    Flask, request, jsonify, render_template, make_response, 
+    Response, redirect, url_for, session, flash, abort
+)
 from datetime import datetime
 import joblib
 import pandas as pd
@@ -9,11 +12,93 @@ from weasyprint import HTML
 import io
 import os
 
+# --- NEW IMPORTS FOR DATABASE & LOGIN ---
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import (
+    LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+)
+from werkzeug.security import generate_password_hash, check_password_hash
+
+# --- APP, CACHE, & DB CONFIGURATION ---
 app = Flask(__name__)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'project.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# --- LOGIN MANAGER SETUP ---
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login' # Name of the login function
+login_manager.login_message = "You must be logged in to access this page."
+login_manager.login_message_category = "info" # Bootstrap class
+
+# --- DATABASE MODELS ---
+
+class User(db.Model, UserMixin):
+    """
+    Represents a Clinician (Doctor) user account.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False) # Doctors will log in with email
+    password_hash = db.Column(db.String(256))
+    medical_reg_id = db.Column(db.String(100), unique=True) # Their professional ID
+    
+    # This creates a "one-to-many" link: One Doctor -> Many Patients
+    patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+class Patient(db.Model):
+    """
+    Represents a Patient, who is "owned" by a doctor.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    full_name = db.Column(db.String(150), nullable=False)
+    dob = db.Column(db.String(10)) # Store as YYYY-MM-DD
+    gender = db.Column(db.String(10))
+    aadhar = db.Column(db.String(12), unique=True) # Patient's Aadhar
+    country = db.Column(db.String(50))
+    address = db.Column(db.String(200))
+    
+    # Foreign Key to link this Patient to a User (Doctor)
+    doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    
+    # This creates a "one-to-many" link: One Patient -> Many Reports
+    reports = db.relationship('Report', backref='patient', lazy=True, cascade="all, delete-orphan")
+
+class Report(db.Model):
+    """
+    Represents a single dosage report, linked to one Patient.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    generated_at = db.Column(db.DateTime, default=datetime.utcnow)
+    drug_name = db.Column(db.String(50), nullable=False)
+    predicted_dose = db.Column(db.String(50))
+    model_used = db.Column(db.String(50))
+    confidence = db.Column(db.String(20))
+    doctor_name = db.Column(db.String(150))
+    report_data_json = db.Column(db.Text) 
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+
+
+# --- User Loader Function for Flask-Login ---
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # --- DEFINE FILE PATHS ---
-# Gets the absolute path to the directory where app.py lives
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Joins that path with the 'models' folder
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
 # --- LOAD EVERYTHING ON STARTUP ---
@@ -41,56 +126,15 @@ except FileNotFoundError as e:
     print(f"--- FATAL ERROR: MODEL FILE NOT FOUND ---")
     print(f"Could not find file: {e.filename}")
     print(f"Please ensure your 'models' folder is in the same directory as app.py and contains all .pkl files.")
-    raise # This will stop the app and show you the error
+    raise 
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
-    raise # This will stop the app and show you the error
+    raise 
 
 # --- END OF MODEL LOADING ---
 
-# # --- HELPER FUNCTIONS ---
-# def get_confidence_score(model, data):
-#     all_tree_predictions = [tree.predict(data) for tree in model.estimators_]
-#     std_dev = np.std(all_tree_predictions)
-#     if std_dev < 1.0: return "High", "The individual decision trees in the model reached a strong consensus."
-#     elif std_dev < 2.5: return "Medium", "There was some variance in the individual tree predictions, but a general consensus was reached."
-#     else: return "Low", "There was significant variance in the individual tree predictions. Proceed with extra clinical caution."
-
-# def get_human_explanation(shap_dict):
-#     feature_map = {
-#         'Age': 'The patient\'s age', 'Height__cm_': 'The patient\'s height', 'Weight__kg_': 'The patient\'s weight',
-#         'Race_White': 'Race: White', 'Race_Asian': 'Race: Asian',
-#         'Race_Black_or_African_American': 'Race: Black/African American',
-#         'CYP2C9_genotypes__1__1': 'CYP2C9 Genotype: *1/*1', 'CYP2C9_genotypes__1__2': 'CYP2C9 Genotype: *1/*2', 'CYP2C9_genotypes__1__3': 'CYP2C9 Genotype: *1/*3',
-#         'VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_A_A': 'VKORC1 Genotype: A/A',
-#         'VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_A_G': 'VKORC1 Genotype: A/G',
-#         'VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_G_G': 'VKORC1 Genotype: G/G'
-#     }
-#     explanations = []
-#     for feature, impact in shap_dict.items():
-#         feature_name = feature_map.get(feature, feature.replace('_', ' '))
-#         direction = "increasing" if impact > 0 else "decreasing"
-#         magnitude = "significantly" if abs(impact) > 2.0 else "moderately"
-#         if abs(impact) > 0.01:
-#              explanations.append(f"<strong>{feature_name}</strong> was a factor, {magnitude} <strong>{direction}</strong> the required dose.")
-#     return explanations if explanations else ["The prediction was based on a complex interaction of all provided features."]
-
-# def get_clinical_suggestions(form_data, model_name, confidence_score):
-#     suggestions = []
-#     if "Base (Clinical-Only)" in model_name:
-#         suggestions.append("<strong>Genomic Data Recommended:</strong> This prediction is based on clinical data only. Accuracy can be significantly improved by providing the patient's CYP2C9 and VKORC1 genotypes.")
-#     if confidence_score == "Low":
-#         suggestions.append("<strong>Proceed with Caution:</strong> The model's confidence is low, possibly due to an unusual patient profile. Closer monitoring of the patient's INR is strongly advised.")
-#     if form_data.get('CYP2C9_genotypes') in ['CYP2C9_genotypes__1__3', 'CYP2C9_genotypes__1__2']:
-#         suggestions.append("<strong>Metabolism Alert:</strong> The patient has a reduced-function CYP2C9 genotype, which can decrease warfarin metabolism. A lower starting dose is often recommended.")
-#     if form_data.get('VKORC1_genotype') == 'VKORC1_genotype___1639_G_A__3673___chr16_31015190__rs9923231_A_A':
-#         suggestions.append("<strong>Sensitivity Alert:</strong> The patient has a VKORC1 A/A genotype, associated with increased sensitivity to warfarin. A lower dose is generally required.")
-#     if not suggestions:
-#         suggestions.append("Standard dosing protocols and INR monitoring are recommended.")
-#     return suggestions
 
 # --- HELPER FUNCTIONS ---
-# DELETE your old functions and PASTE this entire block
 
 def run_model_prediction(patient_data_dict):
     """
@@ -124,18 +168,14 @@ def run_model_prediction(patient_data_dict):
     predicted_dose = round(prediction_array[0], 2)
     
     # --- Get Model Confidence (Standard Deviation) ---
-    # Get predictions from all individual trees in the Random Forest
     tree_predictions = [tree.predict(patient_df) for tree in model_to_use.estimators_]
     std_dev = np.std(tree_predictions)
     
     # --- Get SHAP Explanation ---
     shap_values = explainer_to_use.shap_values(patient_df)
-    
-    # Get feature names and their corresponding shap values
     feature_names = patient_df.columns
     shap_values_for_instance = shap_values[0]
     
-    # Get the top 5 most impactful features
     abs_shap_values = np.abs(shap_values_for_instance)
     top_indices = np.argsort(abs_shap_values)[-5:] # Get indices of top 5
     
@@ -158,7 +198,6 @@ def get_confidence_score(std_dev):
     Converts the model's standard deviation into a human-readable
     confidence score.
     """
-    # These thresholds are examples; they can be tuned.
     if std_dev < 0.5:
         score = "High"
         explanation = "The model's internal estimators are in strong agreement."
@@ -177,22 +216,15 @@ def get_human_explanation(shap_dict):
     explanations = []
     for feature, value in shap_dict.items():
         # Clean up feature names for display
-        if feature == "Weight__kg_":
-            display_name = "Weight"
-        elif feature == "Height__cm_":
-            display_name = "Height"
-        elif feature.startswith("CYP2C9"):
-            display_name = "CYP2C9 Genotype"
-        elif feature.startswith("VKORC1"):
-            display_name = "VKORC1 Genotype"
-        else:
-            display_name = feature.replace("Race_", "")
+        if feature == "Weight__kg_": display_name = "Weight"
+        elif feature == "Height__cm_": display_name = "Height"
+        elif feature.startswith("CYP2C9"): display_name = "CYP2C9 Genotype"
+        elif feature.startswith("VKORC1"): display_name = "VKORC1 Genotype"
+        else: display_name = feature.replace("Race_", "")
 
         # Create the explanation string
-        if value > 0:
-            direction = "<strong>increased</strong>"
-        else:
-            direction = "<strong>decreased</strong>"
+        if value > 0: direction = "<strong>increased</strong>"
+        else: direction = "<strong>decreased</strong>"
             
         explanations.append(f"<strong>{display_name}</strong> {direction} the dose recommendation.")
     
@@ -204,18 +236,15 @@ def get_clinical_suggestions(shap_dict, confidence):
     """
     suggestions = []
     
-    # Check for specific genetic factors
     for feature in shap_dict.keys():
         if "VKORC1" in feature and shap_dict[feature] < -0.5:
             suggestions.append("<strong>High Sensitivity Detected:</strong> Patient's VKORC1 genotype strongly suggests a lower dose requirement. Titrate slowly and monitor INR closely.")
         if "CYP2C9" in feature and shap_dict[feature] < -0.5:
             suggestions.append("<strong>Slow Metabolizer Detected:</strong> Patient's CYP2C9 genotype suggests slower drug clearance. A lower dose is likely required to avoid over-anticoagulation.")
 
-    # Check for weight impact
     if "Weight__kg_" in shap_dict and shap_dict["Weight__kg_"] > 1.0:
          suggestions.append("Patient's high body weight is a major factor increasing the dose. Monitor for efficacy.")
     
-    # Check for confidence
     if confidence == "Low":
         suggestions.append("<strong>Low Model Confidence:</strong> The model found this case to be unusual. Please review all patient data and proceed with extra caution.")
 
@@ -226,64 +255,13 @@ def get_clinical_suggestions(shap_dict, confidence):
 
 # --- END OF HELPER FUNCTIONS ---
 
-# --- CENTRAL PROCESSING FUNCTION ---
-# def process_prediction_data(form_data):
-#     drug_name = form_data.get('drug_name', 'warfarin')
-#     model_path = os.path.join('models', drug_name)
-    
-#     enhanced_model = joblib.load(os.path.join(model_path, 'random_forest_enhanced_v1.pkl'))
-#     enhanced_model_columns = joblib.load(os.path.join(model_path, 'model_columns.pkl'))
-#     base_model = joblib.load(os.path.join(model_path, 'random_forest_base_v1.pkl'))
-#     base_model_columns = joblib.load(os.path.join(model_path, 'base_model_columns.pkl'))
-    
-#     model_input = {}
-#     if form_data.get('Age'): model_input['Age'] = float(form_data.get('Age'))
-#     if form_data.get('Height__cm_'): model_input['Height__cm_'] = float(form_data.get('Height__cm_'))
-#     if form_data.get('Weight__kg_'): model_input['Weight__kg_'] = float(form_data.get('Weight__kg_'))
-#     if form_data.get('Race'): model_input[form_data.get('Race')] = 1.0
-#     if form_data.get('CYP2C9_genotypes'): model_input[form_data.get('CYP2C9_genotypes')] = 1.0
-#     if form_data.get('VKORC1_genotype'): model_input[form_data.get('VKORC1_genotype')] = 1.0
 
-#     is_enhanced = any(key.startswith('CYP2C9_') or key.startswith('VKORC1_') for key in model_input.keys())
-    
-#     if is_enhanced: model, columns, model_name = enhanced_model, enhanced_model_columns, "Enhanced (Clinical + Genome)"
-#     else: model, columns, model_name = base_model, base_model_columns, "Base (Clinical-Only)"
-
-#     explainer = shap.TreeExplainer(model)
-#     patient_df = pd.DataFrame([model_input]).reindex(columns=columns, fill_value=0)
-    
-#     prediction = model.predict(patient_df)[0]
-#     confidence_score, confidence_explanation = get_confidence_score(model, patient_df)
-    
-#     shap_values = explainer.shap_values(patient_df)[0]
-#     top_indices = np.argsort(np.abs(shap_values))[-5:]
-#     explanation_dict = {columns[i]: round(shap_values[i], 2) for i in reversed(top_indices) if abs(shap_values[i]) > 0.01}
-    
-#     patient_info = {k: v for k, v in form_data.items() if k.startswith('patient_')}
-#     clinical_info_display = {
-#         'Age': form_data.get('Age'), 'Height__cm_': form_data.get('Height__cm_'), 'Weight__kg_': form_data.get('Weight__kg_'),
-#         'Race_Display': form_data.get('Race', 'N/A').replace('Race_', ''),
-#         'CYP2C9_Display': form_data.get('CYP2C9_genotypes', 'N/A').split('__')[-1].replace('_', '/') if form_data.get('CYP2C9_genotypes') else 'N/A',
-#         'VKORC1_Display': form_data.get('VKORC1_genotype', 'N/A').split('_')[-1] if form_data.get('VKORC1_genotype') else 'N/A'
-#     }
-#     prediction_results = {
-#         'predicted_dose_mg_per_week': round(prediction, 2), 'model_used': model_name,
-#         'confidence_score': confidence_score, 'confidence_explanation': confidence_explanation,
-#         'human_explanation': get_human_explanation(explanation_dict)
-#     }
-    
-#     return patient_info, clinical_info_display, prediction_results
-
-
-#
-# DELETE your old 'def process_prediction_data(form_data):' function
-#
-# REPLACE it with this entire new function:
-#
+# --- PDF DOWNLOAD HELPER FUNCTION ---
 def process_prediction_data(form_data):
     """
-    Processes form data, runs prediction, and returns all dictionaries
-    needed for the report template.
+    Processes form data from the download button, runs prediction,
+    and returns all dictionaries needed for the report template.
+    This is ONLY for the download button.
     """
     
     # === STEP 1: GET PATIENT INFO ===
@@ -296,14 +274,12 @@ def process_prediction_data(form_data):
     }
 
     # === STEP 2: GET CLINICAL INFO ===
-    # This dictionary holds the raw data for the model
     clinical_data_dict = {
         "Age": float(form_data.get('Age')),
         "Height__cm_": float(form_data.get('Height__cm_')),
         "Weight__kg_": float(form_data.get('Weight__kg_')),
     }
     
-    # Add one-hot encoded features from dropdowns
     race = form_data.get('Race')
     cyp2c9 = form_data.get('CYP2C9_genotypes')
     vkorc1 = form_data.get('VKORC1_genotype')
@@ -313,7 +289,6 @@ def process_prediction_data(form_data):
     if vkorc1: clinical_data_dict[vkorc1] = 1.0
 
     # === STEP 3: CREATE DISPLAY-FRIENDLY DICTIONARY ===
-    # This dictionary is just for showing the values on the report
     clinical_info_display = {
         "Age": form_data.get('Age'),
         "Height__cm_": form_data.get('Height__cm_'),
@@ -324,144 +299,12 @@ def process_prediction_data(form_data):
     }
 
     # === STEP 4: RUN PREDICTION & ANALYSIS (THE NEW, CORRECT WAY) ===
-    # This calls the helper function we added earlier
     pred_data = run_model_prediction(clinical_data_dict) 
-    
-    # THIS IS THE LINE THAT FIXES THE BUG:
-    # It correctly calls get_confidence_score with only one argument
     confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
-    
-    # Get the other helper results
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
 
     # === STEP 5: ASSEMBLE FINAL RESULTS DICTIONARY ===
-    # This dictionary is passed to the report template
-    results_dict = {
-        "predicted_dose_mg_per_week": pred_data['prediction'],
-        "model_name": pred_data['model_name'],
-        "confidence_score": confidence,
-        "confidence_explanation": conf_expl,
-        "human_explanation": human_expl,
-        "clinical_suggestions": suggestions,
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
-    }
-
-    # === STEP 6: RETURN ALL DICTIONARIES ===
-    return patient_info_dict, clinical_info_display, results_dict
-
-# --- PAGE ROUTES ---
-@app.route('/')
-def home(): return render_template('index.html')
-@app.route('/select_drug')
-def select_drug(): return render_template('select_drug.html')
-@app.route('/patient_form', methods=['POST'])
-def patient_form():
-    drug_name = request.form.get('drug_name')
-    return render_template('patient_form.html', drug_name=drug_name)
-@app.route('/predict_page', methods=['POST'])
-def predict_page():
-    patient_info = request.form.to_dict()
-    return render_template('predict.html', patient_info=patient_info)
-@app.route('/about')
-def about(): return render_template('about.html')
-@app.route('/features')
-def features():
-    return render_template('features.html')
-
-@app.route('/background')
-def background():
-    return render_template('background.html')
-
-@app.route('/contact')
-def contact():
-    return render_template('contact.html')
-
-# --- REPORT GENERATION & DOWNLOAD ROUTES ---
-# @app.route('/generate_report', methods=['POST'])
-# def generate_report():
-#     form_data = request.form.to_dict()
-#     patient_info, clinical_info, results = process_prediction_data(form_data)
-#     # return render_template('report.html', patient_info=patient_info, clinical_info=clinical_info, results=results)
-#     # --- REPLACE your old return render_template(...) with this: ---
-    
-# # 1. Create the response object
-#     response = make_response(render_template(
-#        'report.html',
-#         patient_info=patient_info_dict,
-#         clinical_info=clinical_info_display,
-#         results=results_dict,
-#         request=request 
-#     ))
-
-# # 2. Add headers to prevent caching
-#     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-#     response.headers['Pragma'] = 'no-cache'
-#     response.headers['Expires'] = '0'
-
-# # 3. Return the modified response
-#     return response
-
-@app.route('/generate_report', methods=['POST'])
-def generate_report():
-    
-    # === STEP 1: GET PATIENT INFO (FROM HIDDEN FORM FIELDS) ===
-    patient_info_dict = {
-        "patient_name": request.form.get('patient_name'),
-        "patient_dob": request.form.get('patient_dob'),
-        "patient_gender": request.form.get('patient_gender'),
-        "patient_country": request.form.get('patient_country'),
-        "patient_address": request.form.get('patient_address') # Added this from your form
-    }
-
-    # === STEP 2: GET CLINICAL INFO (FROM FORM FIELDS) ===
-    # This dictionary holds the raw data for the model
-    clinical_data_dict = {
-        "Age": float(request.form.get('Age')),
-        "Height__cm_": float(request.form.get('Height__cm_')),
-        "Weight__kg_": float(request.form.get('Weight__kg_')),
-    }
-    
-    # Add one-hot encoded features from dropdowns
-    race = request.form.get('Race')
-    cyp2c9 = request.form.get('CYP2C9_genotypes')
-    vkorc1 = request.form.get('VKORC1_genotype')
-
-    if race:
-        clinical_data_dict[race] = 1.0
-    if cyp2c9:
-        clinical_data_dict[cyp2c9] = 1.0
-    if vkorc1:
-        clinical_data_dict[vkorc1] = 1.0
-
-    # === STEP 3: CREATE DISPLAY-FRIENDLY DICTIONARY ===
-    # This dictionary is just for showing the values on the report
-    clinical_info_display = {
-        "Age": request.form.get('Age'),
-        "Height__cm_": request.form.get('Height__cm_'),
-        "Weight__kg_": request.form.get('Weight__kg_'),
-        "Race_Display": race.split('_')[-1] if race else "N/A",
-        "CYP2C9_Display": cyp2c9.split('__')[-1].replace('_', '/*') if cyp2c9 else "N/A",
-        "VKORC1_Display": vkorc1.split('_')[-1] if vkorc1 else "N/A"
-    }
-
-    # === STEP 4: RUN PREDICTION & ANALYSIS ===
-    # (This assumes your helper functions from our previous work are in app.py)
-    # 1. Run the core model prediction
-    pred_data = run_model_prediction(clinical_data_dict) 
-    
-    # 2. Get confidence score
-    confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
-    
-    # 3. Get SHAP explanation
-    human_expl = get_human_explanation(pred_data['shap_explanation'])
-    
-    # 4. Get clinical suggestions
-    suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
-
-    # === STEP 5: ASSEMBLE FINAL RESULTS DICTIONARY ===
-    # This dictionary is passed to the report template
     results_dict = {
         "predicted_dose_mg_per_week": pred_data['prediction'],
         "model_used": pred_data['model_name'],
@@ -473,31 +316,468 @@ def generate_report():
         "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
 
-    # === STEP 6: CREATE RESPONSE WITH NO-CACHE HEADERS ===
-    # (This is the new block you added, now in the correct place)
+    # === STEP 6: RETURN ALL DICTIONARIES ===
+    return patient_info_dict, clinical_info_display, results_dict
+
+
+# --- PAGE ROUTES ---
+@app.route('/')
+def home(): 
+    return render_template('index.html')
+
+# --- USER AUTHENTICATION ROUTES ---
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        name = request.form.get('full_name')
+        reg_id = request.form.get('medical_reg_id')
+        password = request.form.get('password')
+        password_confirm = request.form.get('password_confirm')
+
+        if password != password_confirm:
+            flash('Passwords do not match. Please try again.', 'danger')
+            return redirect(url_for('register'))
+
+        user_by_email = User.query.filter_by(email=email).first()
+        user_by_reg_id = User.query.filter_by(medical_reg_id=reg_id).first()
+
+        if user_by_email:
+            flash('An account with this email address already exists.', 'danger')
+            return redirect(url_for('register'))
+        
+        if user_by_reg_id:
+            flash('An account with this Medical ID already exists.', 'danger')
+            return redirect(url_for('register'))
+
+        new_doctor = User(
+            full_name=name,
+            email=email,
+            medical_reg_id=reg_id
+        )
+        new_doctor.set_password(password)
+        
+        db.session.add(new_doctor)
+        db.session.commit()
+
+        flash('Account created successfully. Please log in.', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+
+        if user is None or not user.check_password(password):
+            flash('Invalid email or password. Please try again.', 'danger')
+            return redirect(url_for('login'))
+
+        login_user(user)
+        return redirect(url_for('dashboard'))
+
+    return render_template('login.html') 
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out.', 'success')
+    return redirect(url_for('home'))
+
+# --- DOCTOR & PATIENT MANAGEMENT ROUTES ---
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    # Fetch all patients associated with the currently logged-in doctor
+    patients = Patient.query.filter_by(doctor_id=current_user.id).order_by(Patient.full_name).all()
+
+    # --- NEW CODE ---
+    # Count all reports by joining through the patients table
+    total_reports = db.session.query(Report).join(Patient).filter(Patient.doctor_id == current_user.id).count()
+    # --- END NEW CODE ---
+
+    # Render the new dashboard template, passing the new stats
+    return render_template('dashboard.html', patients=patients, total_reports=total_reports, total_patients=len(patients))
+
+@app.route('/add_patient', methods=['GET', 'POST'])
+@login_required
+def add_patient():
+    if request.method == 'POST':
+        aadhar = request.form.get('aadhar')
+        
+        existing_patient = Patient.query.filter_by(aadhar=aadhar).first()
+        if existing_patient:
+            flash('A patient with this Aadhar number is already registered in the system.', 'danger')
+            return render_template('add_patient.html')
+        
+        new_patient = Patient(
+            full_name=request.form.get('full_name'),
+            aadhar=aadhar,
+            dob=request.form.get('dob'),
+            gender=request.form.get('gender'),
+            country=request.form.get('country'),
+            address=request.form.get('address'),
+            doctor_id=current_user.id
+        )
+        
+        db.session.add(new_patient)
+        db.session.commit()
+        
+        flash(f'Patient {new_patient.full_name} added successfully!', 'success')
+        return redirect(url_for('dashboard'))
+
+    return render_template('add_patient.html')
+    
+@app.route('/view_patient/<int:patient_id>')
+@login_required
+def view_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to view this patient.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    reports = Report.query.filter_by(patient_id=patient.id).order_by(Report.generated_at.desc()).all()
+    
+    return render_template('view_patient.html', patient=patient, reports=reports)
+
+# --- PREDICTION WORKFLOW ROUTES ---
+
+@app.route('/patient/<int:patient_id>/select_drug', methods=['GET'])
+@login_required
+def select_drug(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to access this patient.", "danger")
+        return redirect(url_for('dashboard'))
+
+    return render_template('select_drug.html', patient=patient)
+
+@app.route('/patient/<int:patient_id>/redirect_form', methods=['POST'])
+@login_required
+def redirect_to_drug_form(patient_id):
+    drug_name = request.form.get('drug_name')
+    
+    if drug_name == 'warfarin':
+        return redirect(url_for('warfarin_form', patient_id=patient_id))
+    
+    flash("Invalid drug selected.", "danger")
+    return redirect(url_for('dashboard'))
+
+@app.route('/patient/<int:patient_id>/warfarin_form', methods=['GET'])
+@login_required
+def warfarin_form(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to access this patient.", "danger")
+        return redirect(url_for('dashboard'))
+
+    return render_template('warfarin_form.html', patient=patient)
+
+@app.route('/patient/<int:patient_id>/generate_warfarin_report', methods=['POST'])
+@login_required
+def generate_warfarin_report(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to access this patient.", "danger")
+        return redirect(url_for('dashboard'))
+
+    # === STEP 1: GET PATIENT INFO (from database) ===
+    patient_info_dict = {
+        "patient_name": patient.full_name,
+        "patient_dob": patient.dob,
+        "patient_gender": patient.gender,
+        "patient_country": patient.country,
+        "patient_address": patient.address 
+    }
+
+    # === STEP 2: GET CLINICAL INFO (from form) ===
+    clinical_data_dict = {
+        "Age": float(request.form.get('Age')),
+        "Height__cm_": float(request.form.get('Height__cm_')),
+        "Weight__kg_": float(request.form.get('Weight__kg_')),
+    }
+    doctor_name = request.form.get('doctor_name')
+    
+    race = request.form.get('Race')
+    cyp2c9 = request.form.get('CYP2C9_genotypes')
+    vkorc1 = request.form.get('VKORC1_genotype')
+
+    if race: clinical_data_dict[race] = 1.0
+    if cyp2c9: clinical_data_dict[cyp2c9] = 1.0
+    if vkorc1: clinical_data_dict[vkorc1] = 1.0
+
+    # === STEP 3: CREATE DISPLAY-FRIENDLY DICTIONARY ===
+    clinical_info_display = {
+        "Age": request.form.get('Age'),
+        "Height__cm_": request.form.get('Height__cm_'),
+        "Weight__kg_": request.form.get('Weight__kg_'),
+        "Race_Display": race.split('_')[-1] if race else "N/A",
+        "CYP2C9_Display": cyp2c9.split('__')[-1].replace('_', '/*') if cyp2c9 else "N/A",
+        "VKORC1_Display": vkorc1.split('_')[-1] if vkorc1 else "N/A"
+    }
+
+    # === STEP 4: RUN PREDICTION & ANALYSIS ===
+    pred_data = run_model_prediction(clinical_data_dict) 
+    confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
+    human_expl = get_human_explanation(pred_data['shap_explanation'])
+    suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
+
+    # === STEP 5: ASSEMBLE FULL REPORT DATA ===
+    results_dict = {
+        "predicted_dose_mg_per_week": pred_data['prediction'],
+        "model_used": pred_data['model_name'],
+        "confidence_score": confidence,
+        "confidence_explanation": conf_expl,
+        "human_explanation": human_expl,
+        "clinical_suggestions": suggestions,
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{patient.id}"
+    }
+    
+    full_report_data = {
+        "patient_info": patient_info_dict,
+        "clinical_info": clinical_info_display,
+        "results": results_dict,
+        "doctor_name": doctor_name
+    }
+
+    # === STEP 6: SAVE REPORT TO DATABASE ===
+    new_report = Report(
+        drug_name="Warfarin",
+        predicted_dose=f"{pred_data['prediction']} mg/week",
+        model_used=pred_data['model_name'],
+        confidence=confidence,
+        doctor_name=doctor_name, 
+        report_data_json=json.dumps(full_report_data),
+        patient_id=patient.id
+    )
+    db.session.add(new_report)
+    db.session.commit()
+
+    # === STEP 7: CREATE RESPONSE WITH NO-CACHE HEADERS ===
     response = make_response(render_template(
-        'report.html',
+        'display_report.html',
         patient_info=patient_info_dict,
         clinical_info=clinical_info_display,
         results=results_dict,
-        request=request 
+        doctor_name=doctor_name,
+        request=request # Pass the request object so the download button can be shown
     ))
 
-    # Add headers to prevent caching
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
-
-    # Return the modified response
     return response
 
+@app.route('/report/<int:report_id>')
+@login_required
+def view_report(report_id):
+    report = Report.query.get_or_404(report_id)
+
+    if report.patient.doctor_id != current_user.id:
+        flash("You are not authorized to view this report.", "danger")
+        return redirect(url_for('dashboard'))
+
+    try:
+        report_data = json.loads(report.report_data_json)
+    except:
+        flash("Error: Report data is corrupted.", "danger")
+        return redirect(url_for('view_patient', patient_id=report.patient_id))
+
+    response = make_response(render_template(
+        'display_report.html',
+        patient_info=report_data.get('patient_info'),
+        clinical_info=report_data.get('clinical_info'),
+        results=report_data.get('results'),
+        doctor_name=report_data.get('doctor_name'),
+        request=None  # Set request to None to hide the download button
+    ))
+    
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+# --- PDF DOWNLOAD ROUTE ---
+
 @app.route('/download_report', methods=['POST'])
+@login_required
 def download_report():
     form_data = request.form.to_dict()
+    
+    # Use our new, correct processing function
     patient_info, clinical_info, results = process_prediction_data(form_data)
-    html_string = render_template('report.html', patient_info=patient_info, clinical_info=clinical_info, results=results)
-    pdf_file = HTML(string=html_string).write_pdf()
-    return Response(pdf_file, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=DosageReport.pdf'})
+    
+    # Get the doctor name from the form
+    doctor_name = form_data.get('doctor_name', current_user.full_name)
 
+    # --- RENDER THE CORRECT TEMPLATE ---
+    html_string = render_template(
+        'display_report.html', 
+        patient_info=patient_info, 
+        clinical_info=clinical_info, 
+        results=results,
+        doctor_name=doctor_name,
+        request=None  # Set to None to hide download buttons in the PDF
+    )
+    
+    pdf_file = HTML(string=html_string).write_pdf()
+    
+    return Response(
+        pdf_file, 
+        mimetype='application/pdf', 
+        headers={'Content-Disposition': 'attachment;filename=DosageReport.pdf'}
+    )
+
+@app.route('/report/<int:report_id>/delete', methods=['POST'])
+@login_required
+def delete_report(report_id):
+    report = Report.query.get_or_404(report_id)
+    patient_id = report.patient.id # Save the patient ID for redirecting back
+    
+    # --- SECURITY CHECK ---
+    if report.patient.doctor_id != current_user.id:
+        flash("You are not authorized to delete this report.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    db.session.delete(report)
+    db.session.commit()
+    
+    flash("Report deleted successfully.", "success")
+    # Redirect back to the patient's profile page
+    return redirect(url_for('view_patient', patient_id=patient_id))
+
+@app.route('/patient/<int:patient_id>/delete', methods=['POST'])
+@login_required
+def delete_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    
+    # --- SECURITY CHECK ---
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to delete this patient.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    # Thanks to our 'cascade' update, deleting the patient
+    # will automatically delete all of their reports.
+    db.session.delete(patient)
+    db.session.commit()
+    
+    flash(f"Patient '{patient.full_name}' and all associated reports have been deleted.", "success")
+    # Redirect back to the main dashboard
+    return redirect(url_for('dashboard'))
+
+@app.route('/patient/<int:patient_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    
+    # --- SECURITY CHECK ---
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to edit this patient.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        # --- Handle the form submission ---
+        new_aadhar = request.form.get('aadhar')
+        
+        # Check if new Aadhar is already taken by ANOTHER patient
+        if new_aadhar != patient.aadhar:
+            existing_patient = Patient.query.filter_by(aadhar=new_aadhar).first()
+            if existing_patient:
+                flash('That Aadhar number is already assigned to another patient.', 'danger')
+                return render_template('edit_patient.html', patient=patient)
+        
+        # Update patient object with new data from the form
+        patient.full_name = request.form.get('full_name')
+        patient.aadhar = new_aadhar
+        patient.dob = request.form.get('dob')
+        patient.gender = request.form.get('gender')
+        patient.country = request.form.get('country')
+        patient.address = request.form.get('address')
+        
+        db.session.commit()
+        
+        flash('Patient details updated successfully.', 'success')
+        return redirect(url_for('view_patient', patient_id=patient.id))
+    
+    # --- For a GET request, just show the form pre-filled with patient data ---
+    return render_template('edit_patient.html', patient=patient)
+
+@app.route('/account', methods=['GET', 'POST'])
+@login_required
+def account():
+    # 'action' will be either 'update_details' or 'delete_account'
+    # This lets us have two separate forms on one page.
+    action = request.form.get('action')
+
+    if request.method == 'POST':
+        
+        if action == 'update_details':
+            # --- LOGIC FOR UPDATING DETAILS ---
+            new_email = request.form.get('email')
+            new_name = request.form.get('full_name')
+            new_reg_id = request.form.get('medical_reg_id')
+
+            # Check if new email is already taken by ANOTHER user
+            if new_email != current_user.email:
+                existing_user = User.query.filter_by(email=new_email).first()
+                if existing_user:
+                    flash('That email address is already in use.', 'danger')
+                    return redirect(url_for('account'))
+            
+            # Check if new medical ID is already taken by ANOTHER user
+            if new_reg_id != current_user.medical_reg_id:
+                existing_user = User.query.filter_by(medical_reg_id=new_reg_id).first()
+                if existing_user:
+                    flash('That medical registration ID is already in use.', 'danger')
+                    return redirect(url_for('account'))
+
+            # Update the current user's details
+            current_user.full_name = new_name
+            current_user.email = new_email
+            current_user.medical_reg_id = new_reg_id
+            
+            db.session.commit()
+            flash('Your account details have been updated successfully.', 'success')
+            return redirect(url_for('account'))
+
+        elif action == 'delete_account':
+            # --- LOGIC FOR DELETING ACCOUNT ---
+            # Check if the entered password is correct
+            if not current_user.check_password(request.form.get('password')):
+                flash("Incorrect password. Account was not deleted.", "danger")
+                return redirect(url_for('account'))
+                
+            # If password is correct, delete the user.
+            # The 'cascade' will automatically delete all their patients and reports.
+            db.session.delete(current_user)
+            db.session.commit()
+            
+            logout_user() # Log them out
+            flash("Your account and all associated data have been permanently deleted.", "success")
+            return redirect(url_for('home')) # Redirect to the public homepage
+
+    # For a GET request, just show the account page
+    return render_template('account.html')
+
+# --- MAIN RUN ---
 if __name__ == '__main__':
     app.run(debug=True)

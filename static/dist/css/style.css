@@ -113,6 +113,167 @@ hr {
   opacity: 0.25;
 }
 
+/* =================================
+   Custom Navbar Button Styles
+   ================================= */
+
+.main-header .navbar-nav .nav-item {
+    /* Add spacing between the buttons */
+    margin-left: 10px;
+}
+
+.main-header .navbar-nav .nav-link {
+    /* --- Button Shape & Size --- */
+    padding: 10px 20px !important; /* Make it button-sized. !important overrides theme. */
+    border-radius: 50px;      /* Pill-shaped buttons */
+    font-size: 16px;          /* Clean font size */
+    font-weight: 600;         /* Bold text */
+    line-height: 1.5;         /* Ensure text is centered vertically */
+    
+    /* --- Button Colors --- */
+    background-color: rgb(235, 92, 15); /* Your solid orange color */
+    color: #FFFFFF !important;          /* White text for contrast */
+    
+    /* --- Effects --- */
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: none; /* Remove old border-bottom */
+}
+
+/* Style for when you hover over a button */
+.main-header .navbar-nav .nav-link:hover {
+    background-color: #d4530e; /* A darker, richer orange */
+    color: #FFFFFF !important;
+    transform: translateY(-2px); /* Subtle lift effect */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+/* Style for the active page link (e.g., "Dashboard" when on the dashboard) */
+.main-header .navbar-nav .nav-link.active {
+    background-color: #b8470c; /* An even darker orange for "active" */
+    color: #FFFFFF !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+
+/* --- Mobile (Offcanvas) Menu --- */
+.offcanvas-body .navbar-nav .nav-link {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    background-color: rgb(235, 92, 15);
+    color: #FFFFFF !important;
+    padding: 12px 20px;
+    border-radius: 50px;
+    margin-bottom: 10px; /* Stack the buttons vertically */
+    transition: all 0.3s ease;
+}
+
+.offcanvas-body .navbar-nav .nav-link:hover {
+    background-color: #d4530e;
+    transform: scale(1.02); /* Slight zoom effect on mobile */
+}
+
+
+
+
+/* =================================
+   Patient Profile Page Styles
+   ================================= */
+
+/* New App-Style Header */
+.patient-header-section {
+    background: linear-gradient(90deg, #343a40 0%, #000 100%);
+    padding: 30px 0;
+    margin-top: -30px; /* Pulls it up into the theme's default padding */
+    border-bottom: 4px solid rgb(235, 92, 15);
+}
+
+.patient-avatar {
+    font-size: 60px;
+    color: rgb(235, 92, 15);
+    margin-right: 20px;
+    line-height: 1;
+}
+
+.patient-header-section h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+/* Tabbed Interface Styles */
+.patient-content-section {
+    margin-top: -20px; /* Pulls the tabs up slightly over the header */
+}
+
+.professional-tabs {
+    border-bottom: none; /* Remove default border */
+    margin-bottom: -1px; /* Overlap the card */
+    padding-left: 20px;
+}
+
+.professional-tabs .nav-link {
+    background: #f1f3f5;
+    border: 1px solid #dee2e6;
+    color: #000000;
+    font-weight: 600;
+    border-radius: 8px 8px 0 0;
+    margin-right: 5px;
+    padding: 12px 20px;
+}
+
+.professional-tabs .nav-link i {
+    color: rgb(235, 92, 15);
+}
+
+.professional-tabs .nav-link.active {
+    background: #FFFFFF; /* White active tab */
+    border-bottom-color: #FFFFFF; /* Hide bottom border */
+    color: #000;
+    font-weight: 700;
+}
+
+/* Make the tab content card connect to the active tab */
+.tab-content .contact-us-box {
+    border-top-left-radius: 0 !important;
+}
+
+/* Badge colors for confidence */
+.badge.bg-success-subtle {
+    background-color: #d1e7dd !important;
+    color: #0a3622 !important;
+}
+.badge.bg-warning-subtle {
+    background-color: #fff3cd !important;
+    color: #664d03 !important;
+}
+.badge.bg-danger-subtle {
+    background-color: #f8d7da !important;
+    color: #58151c !important;
+}
+
+/* Definition List for Patient Details */
+.fs-6 {
+    font-size: 1.1rem;
+}
+.fw-600 {
+    font-weight: 600;
+}
+dl.row dt {
+    color: #000000;
+}
+dl.row dd {
+    color: #000;
+    font-weight: 500;
+}
+
+
+
+
+
+
+
 h6, .h6, h5, .h5, h4, .h4, h3, .h3, h2, .h2, h1, .h1 {
   margin-top: 0;
   margin-bottom: 0.5rem;
@@ -11759,3 +11920,153 @@ textarea.form-control {
     width: 100% !important;
   }
 }/*# sourceMappingURL=style.css.map */
+
+
+
+/* =================================
+   Dashboard Stats Cards
+   ================================= */
+
+/* This section creates the light gray background for the stats */
+.dashboard-stats-section {
+    padding: 40px 0;
+    background: #f8f9fa; /* Light gray background */
+    margin-top: -30px; /* Pull it up under the header */
+    padding-top: 60px; /* Add padding to account for the overlap */
+}
+
+.stat-card {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card .stat-icon {
+    font-size: 40px;
+    color: rgb(235, 92, 15);
+    margin-right: 20px;
+    line-height: 1;
+}
+
+.stat-card .stat-content .stat-title {
+    font-size: 0.9rem;
+    color: #6c757d; /* Muted text color */
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.stat-card .stat-content .stat-number {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #212529; /* Dark text */
+    line-height: 1;
+}
+
+/* This section just adds padding below the stats */
+.patient-list-section {
+    padding-top: 40px;
+    padding-bottom: 50px;
+}
+
+
+/* =================================
+   NEW HOMEPAGE STYLES (INTEGRATED)
+   ================================= */
+
+/* --- Typography & Global --- */
+/* (We assume Poppins and Lato are already loaded from base.html or a previous step) */
+.section-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: #212529;
+}
+.section-subtitle {
+    font-family: 'Lato', sans-serif;
+    font-size: 1.1rem;
+    color: #555;
+}
+
+/* --- Hero Section --- */
+.hero-section-light {
+    background: #FFFFFF;
+    padding: 80px 0; /* Adjusted padding to fit inside the base template */
+}
+.hero-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: #000000;
+}
+.hero-subtitle {
+    font-family: 'Lato', sans-serif;
+    color: #555;
+    font-weight: 400;
+}
+.hero-section-light img {
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* --- "How It Works" Section --- */
+.how-it-works-section {
+    padding: 80px 0;
+    background: #f8f9fa; /* Light gray background */
+}
+
+.step-card-light {
+    background: #FFFFFF;
+    border: 1px solid #e9ecef;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    height: 100%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.step-card-light:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.step-card-light .step-icon {
+    font-size: 48px;
+    color: rgb(235, 92, 15); /* SaasCandy Orange */
+}
+
+/* --- Features Section --- */
+.feature-section-light {
+    padding: 100px 0;
+    background: #FFFFFF;
+}
+.feature-section-light img {
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+.feature-section-light .fw-600 {
+    font-weight: 600;
+}
+.feature-section-light .text-warning {
+    color: rgb(235, 92, 15) !important; /* SaasCandy Orange */
+}
+.feature-section-light .ti-check {
+    font-weight: bold;
+}
+
+/* --- Final CTA Section --- */
+.cta-section {
+    /* Using the app's dark header for contrast */
+    background: linear-gradient(90deg, #343a40 0%, #000 100%);
+    padding: 80px 0;
+}

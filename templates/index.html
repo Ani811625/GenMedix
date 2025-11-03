@@ -1,92 +1,124 @@
 {% extends "base.html" %}
+{% block title %}GenMedix - AI-Powered Dosage Prediction{% endblock %}
 
 {% block content %}
+<section class="hero-section-light" style="padding: 120px;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6" data-aos="fade-right">
+                <h1 class="hero-title display-3 fw-bolder">Precision Dosing, Powered by AI</h1>
+                <p class="hero-subtitle fs-5 my-4">
+                    Welcome to GenMedix. The clinical decision-support platform using AI and pharmacogenomics 
+                    to provide safe, accurate, and personalized drug dosage recommendations.
+                </p>
+                <a href="{{ url_for('register') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-lg">
+                    Get Started
+                </a>
+            </div>
+            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="100">
+                <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80" alt="Doctor at computer" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+            </div>
+        </div>
+    </div>
+</section>
 
-<!------------------------------>
-    <!--- Hero Banner Start--------->
-    <!------------------------------>
-    <section class="hero-banner position-relative overflow-hidden">
-        <div class="container">
-            <div class="row d-flex flex-wrap align-items-center">
-                <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
-                    <div class="position-relative left-hero-color">
-                        <h1 class="mb-0 fw-bold">
-                            Precision Dosing, Powered by AI 
-                        </h1>
-                        <p>Effective dosage recommendations for clinicians.</p>
-                        <a href="{{ url_for('select_drug') }}" class="btn btn-warning btn-hover-secondery"><span class="d-inline-block me-2"><i class="ti ti-playstation-triangle"></i></span> Discover the Prediction Tool</a>
-                    </div>
-                </div>
-                <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6 col-sm-6 col-12">
-                    <div class="position-relative right-hero-color">
-                        <img src="../static/assets/images/hero/right.png" class="img-fluid"> 
-                    </div>          
+<section class="how-it-works-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8" data-aos="fade-up">
+                <div class="text-center mb-5">
+                    <h2 class="section-title mb-3">Your Workflow in 3 Simple Steps</h2>
+                    <p class="section-subtitle">A seamless process designed for clinicians.</p>
                 </div>
             </div>
         </div>
-    </section>
-    <!------------------------------>
-    <!--- Hero Banner End--------->
-    <!------------------------------>
-
-    <!------------------------------>
-    <!--- Service sectin Start------>
-    <!------------------------------>
-    <section class="service position-relative overflow-hidden">
-        <div class="container position-relative">
-            <img src="../assets/images/service/dot-shape.png" class="shape position-absolute">
-            <div class="row">
-                <div class="col-12"><small class="fs-7 d-block">Working Process</small></div>
-                <div class="col-12 d-xxl-flex d-xl-flex d-lg-flex d-md-flex d-sm-block d-block align-items-center justify-content-xxl-between justify-content-xl-between justify-content-lg-between justify-content-md-between justify-content-sm-between justify-content-sm-center ">
-                    <h2 class="fs-2 text-black mb-0">Our Featured Service<br> that We Provide</h2>
-                    <a href="#" class="btn btn-warning btn-hover-secondery section-btn">All Services</a>
+        <div class="row">
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                <div class="step-card-light">
+                    <div class="step-icon">
+                        <i class="ti ti-user-plus"></i>
+                    </div>
+                    <h5 class="mt-4 mb-3">Register Patient</h5>
+                    <p class="fs-7">Create a secure profile for your patient with their general information. This is a one-time setup.</p>
                 </div>
             </div>
-            <div class="row d-flex flex-wrap justify-content-center step-row">
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 text-center">
-                    <div class="card border-0 shadow">
-                        <div class="card-body">
-                            <div class="icon-round overflow-hidden rounded-circle position-relative d-flex align-items-center justify-content-center mx-auto text-center">
-                                
-                                <i class="ti ti-user text-primary position-relative"></i>
-                            </div>
-                            <h5 class="mb-0 fw-500">Step 1</h5>
-                            <h3 class="fs-4">Upload Patient's Details</h3>
-                            <p class="fs-7 mb-0 fw-500">These general informations are necessary for generating the prediction report</p>
-                        </div>
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                <div class="step-card-light">
+                    <div class="step-icon">
+                        <i class="ti ti-file-text"></i>
                     </div>
+                    <h5 class="mt-4 mb-3">Enter Clinical Data</h5>
+                    <p class="fs-7">Select the drug (e.g., Warfarin) and input the patient's current clinical & genomic data into our simple form.</p>
                 </div>
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 text-center">
-                    <div class="card border-0 shadow">
-                        <div class="card-body">
-                            <div class="icon-round overflow-hidden rounded-circle position-relative d-flex align-items-center justify-content-center mx-auto text-center">
-                                
-                                <i class="ti ti-gift text-primary position-relative"></i>
-                            </div>
-                            <h5 class="mb-0 fw-500">Step 2</h5>
-                            <h3 class="fs-4">Upload Clinical Data</h3>
-                            <p class="fs-7 mb-0 fw-500">Enter Specific details required for predicting drug's dosage</p>
-                        </div>
+            </div>
+            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+                <div class="step-card-light">
+                    <div class="step-icon">
+                        <i class="ti ti-report-medical"></i>
                     </div>
-                </div>
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 text-center">
-                    <div class="card border-0 shadow">
-                        <div class="card-body">
-                            <div class="icon-round overflow-hidden rounded-circle position-relative d-flex align-items-center justify-content-center mx-auto text-center">
-                                
-                                <i class="ti ti-download text-primary position-relative"></i>
-                            </div>
-                            <h5 class="mb-0 fw-500">Step 3</h5>
-                            <h3 class="fs-4">Download Report</h3>
-                            <p class="fs-7 mb-0 fw-500">Download the report consisting of predicted dosage based on patient's details.</p>
-                        </div>
-                    </div>
+                    <h5 class="mt-4 mb-3">Generate & Save Report</h5>
+                    <p class="fs-7">Instantly receive a detailed, explainable report. The results are automatically saved to the patient's history.</p>
                 </div>
             </div>
         </div>
-    </section>
-    <!------------------------------>
-    <!--- Service sectin Start------>
-    <!------------------------------>
+    </div>
+</section>
+
+<section class="feature-section-light">
+    <div class="container">
+        <div class="row align-items-center mb-5 pb-5">
+            <div class="col-lg-6" data-aos="fade-right">
+                <img src="https://images.unsplash.com/photo-1614935151651-0bea6508db6b?auto=format&fit=crop&w=800&q=80" alt="Explainable AI Chart" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+            </div>
+            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="100">
+                <h2 class="section-title mb-3">From "Black Box" to "Glass Box"</h2>
+                <h5 class="text-warning fw-600">Full Explainable AI (XAI) Integration</h5>
+                <p class="section-subtitle mt-4">
+                    Trust is not optional in medicine. Our platform doesn't just give you a number; it gives you a reason. 
+                    Using state-of-the-art SHAP analysis, we provide a clear, human-readable explanation for every single prediction.
+                </p>
+                <ul class="list-unstyled mt-4 fs-7">
+                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> See the top 5 factors that influenced the dose.</li>
+                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> Understand *why* a genotype increased or decreased the recommendation.</li>
+                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> Gain full confidence in the AI's decision-making process.</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="row align-items-center">
+            <div class="col-lg-6 order-lg-2" data-aos="fade-left">
+                <img src="https://images.unsplash.com/photo-1532187643623-db661b34e4f2?auto=format&fit=crop&w=800&q=80" alt="Hybrid AI Diagram" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
+            </div>
+            <div class="col-lg-6 order-lg-1" data-aos="fade-right" data-aos-delay="100">
+                <h2 class="section-title mb-3">Hybrid AI Engine</h2>
+                <h5 class="text-warning fw-600">The Best Model for Every Situation</h5>
+                <p class="section-subtitle mt-4">
+                    GenMedix is built on a powerful "Hybrid AI" engine. It automatically detects the available data and selects the best model for the job.
+                </p>
+                <ul class="list-unstyled mt-4 fs-7">
+                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> **Enhanced Model:** Uses full clinical + genomic data for the highest accuracy.</li>
+                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> **Base Model:** Uses clinical-only data when genomic info is unavailable.</li>
+                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> Ensures you always get a reliable prediction.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center" data-aos="fade-up">
+                <h2 class="text-white">Enhance Your Clinical Workflow Today</h2>
+                <p class="text-white-50 fs-5 mb-4">
+                    Join the future of personalized medicine. Create your secure clinician account in minutes.
+                </p>
+                <a href="{{ url_for('register') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-lg">
+                    Register for Free
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
 
 {% endblock %}

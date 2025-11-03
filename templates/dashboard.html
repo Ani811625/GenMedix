@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Clinician Dashboard - GenMedix{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100" style="padding: 150px;">
+
+    <section class="patient-header-section position-relative">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8 col-md-12 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <div class="patient-avatar">
+                            <i class="ti ti-layout-dashboard"></i>
+                        </div>
+                        <div>
+                            <h1 class="mb-0 text-white">Clinician Dashboard</h1>
+                            <p class="text-white-50 mb-0">
+                                Welcome, Dr. {{ current_user.full_name }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-12 col-sm-12 text-lg-end mt-3 mt-lg-0">
+                    <a href="{{ url_for('add_patient') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-sm">
+                        <i class="ti ti-user-plus me-2"></i> Add New Patient
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-stats-section">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ti ti-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Total Patients</h3>
+                            <div class="stat-number">{{ total_patients }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ti ti-file-text"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Total Reports</h3>
+                            <div class="stat-number">{{ total_reports }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="ti ti-checkup-list"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-title">Avg. Confidence</h3>
+                            <div class="stat-number text-muted" style="font-size: 2rem;">N/A</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <section class="patient-list-section position-relative pb-5">
+        <div class="container">
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% set alert_class = 'alert-danger' if category == 'danger' else 'alert-success' %}
+                        <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                <div class="col-12">
+                    <h2 class="mb-4">Your Patient List</h2>
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle fs-7">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" class="fs-6">Patient Name</th>
+                                        <th scope="col" class="fs-6">Date of Birth</th>
+                                        <th scope="col" class="fs-6">Aadhar Number</th>
+                                        <th scope="col" class="fs-6 text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if patients %}
+                                        {% for patient in patients %}
+                                            <tr>
+                                                <td><strong>{{ patient.full_name }}</strong></td>
+                                                <td>{{ patient.dob }}</td>
+                                                <td>{{ patient.aadhar }}</td>
+                                                <td class="text-end">
+                                                    <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-sm btn-outline-warning">
+                                                        <i class="ti ti-user-circle me-1"></i> View Profile
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted p-4">
+                                                You have not added any patients yet. <br>
+                                                <a href="{{ url_for('add_patient') }}" class="btn btn-warning mt-3">Add Your First Patient</a>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}

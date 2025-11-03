@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ patient.full_name }} - GenMedix{% endblock %}
+
+{% block content %}
+<main class="main-content position-relative max-height-vh-100 h-100">
+
+    <section class="patient-header-section position-relative">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <div class="d-flex align-items-center">
+                        <div class="patient-avatar">
+                            <i class="ti ti-user-edit"></i>
+                        </div>
+                        <div>
+                            <h1 class="mb-0 text-white">Edit Patient Profile</h1>
+                            <p class="text-white-50 mb-0">
+                                Editing details for: <strong>{{ patient.full_name }}</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="patient-list-section position-relative pb-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                {% set alert_class = 'alert-danger' if category == 'danger' else 'alert-success' %}
+                                <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                        
+                        <form action="{{ url_for('edit_patient', patient_id=patient.id) }}" method="POST">
+                            <h5 class="mb-3">Patient's General Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="full_name" class="form-label fs-7 fw-500">Full Name</label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name" value="{{ patient.full_name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="aadhar" class="form-label fs-7 fw-500">Aadhar Number (Unique ID)</label>
+                                    <input type="text" class="form-control" id="aadhar" name="aadhar" minlength="12" maxlength="12" value="{{ patient.aadhar }}" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="dob" class="form-label fs-7 fw-500">Date of Birth</label>
+                                    <input type="date" class="form-control" id="dob" name="dob" value="{{ patient.dob }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="gender" class="form-label fs-7 fw-500">Gender</label>
+                                    <select class="form-select" id="gender" name="gender" required>
+                                        <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
+                                        <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                                        <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                             <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="country" class="form-label fs-7 fw-500">Country</label>
+                                    <input type="text" class="form-control" id="country" name="country" value="{{ patient.country }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="address" class="form-label fs-7 fw-500">Address (City/State)</label>
+                                    <input type="text" class="form-control" id="address" name="address" value="{{ patient.address }}" required>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning btn-hover-secondery w-100 btn-lg text-capitalize mt-3">
+                                Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+{% endblock %}
