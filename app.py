@@ -24,9 +24,24 @@ app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-basedir = os.path.abspath(os.path.dirname(__file__))
+# basedir = os.path.abspath(os.path.dirname(__file__))
+# app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'project.db')
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'project.db')
+
+# --- NEW DATABASE CONFIGURATION ---
+# Use the Render DB URL if available (on deployment), 
+# otherwise, fall back to the local SQLite DB for testing.
+DATABASE_URL = os.environ.get('postgresql://genmedix_db_user:gxBDPM2SpxXONZ9rXhVfx8v60VlRzIEb@dpg-d44ah63uibrs73eltqh0-a/genmedix_db')
+if DATABASE_URL:
+    # On Render, DATABASE_URL will be set automatically.
+    # We may need to replace 'postgres://' with 'postgresql://' for SQLAlchemy
+    app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://")
+else:
+    # For local development
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'project.db')
+# --- END NEW CONFIG ---
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
