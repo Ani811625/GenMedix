@@ -13,12 +13,7 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# --- NEW LINES ---
-# This tells Docker to expect a build-time argument named DATABASE_URL
-ARG DATABASE_URL
-# This sets the environment variable inside the container
-ENV DATABASE_URL=${DATABASE_URL}
-# --- END NEW LINES ---
+
 
 # Copy your requirements file and install Python packages
 COPY requirements.txt .
