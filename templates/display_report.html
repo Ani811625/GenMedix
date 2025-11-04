@@ -166,6 +166,18 @@
 <body>
     <div class="report-wrap">
         <div class="report-card" data-aos="fade-up" data-aos-duration="900">
+            {% if interaction_warnings %}
+<div class="alert alert-danger" role="alert" data-aos="fade-up" data-aos-duration="600">
+    <h4 class="alert-heading"><i class="ti ti-alert-triangle me-2"></i>Critical Interaction Warning!</h4>
+    <p>The patient is on one or more medications known to interact with Warfarin. Clinical judgment is advised.</p>
+    <hr>
+    <ul class="mb-0">
+        {% for warning in interaction_warnings %}
+            <li>{{ warning | safe }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
             <div class="report-header">
                 <div class="brand">
                     <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix Logo" />

@@ -31,7 +31,8 @@
     <section class="patient-content-section position-relative pb-5" style="padding: 20px;">
         <div class="container">
             
-            <ul class="nav nav-tabs professional-tabs" id="patientTab" role="tablist">
+            
+        <ul class="nav nav-tabs professional-tabs" id="patientTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-pane" type="button" role="tab" aria-controls="history-pane" aria-selected="true">
                         <i class="ti ti-history me-2"></i>Report History
@@ -40,6 +41,11 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="details-tab" data-bs-toggle="tab" data-bs-target="#details-pane" type="button" role="tab" aria-controls="details-pane" aria-selected="false">
                         <i class="ti ti-user me-2"></i>Patient Details
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes-pane" type="button" role="tab" aria-controls="notes-pane" aria-selected="false">
+                        <i class="ti ti-pencil me-2"></i>Clinical Notes
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -131,6 +137,48 @@
                         </dl>
                     </div>
                 </div>
+                <div class="tab-pane fade" id="notes-pane" role="tabpanel" aria-labelledby="notes-tab" tabindex="0">
+            <div class="row">
+                <div class="col-lg-5">
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                        <h3 class="mb-4">Add New Note</h3>
+                        <form action="{{ url_for('add_note', patient_id=patient.id) }}" method="POST">
+                            <div class="mb-3">
+                                <label for="note_text" class="form-label fs-7 fw-500">Note Content</label>
+                                <textarea class="form-control" id="note_text" name="note_text" rows="8" placeholder="Enter clinical observations, patient communications, or reminders..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-warning btn-hover-secondery w-100 text-capitalize">
+                                Save Note
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                        <h3 class="mb-4">Note History</h3>
+                        <div class="note-history-list" style="max-height: 500px; overflow-y: auto;">
+                            {% if notes %}
+                                {% for note in notes %}
+                                    <div class="note-item mb-3">
+                                        <div class="note-header d-flex justify-content-between align-items-center">
+                                            <span class="fs-7 fw-bold">{{ note.patient.doctor.full_name }}</span>
+                                            <span class="fs-7 text-muted">{{ note.created_at.strftime('%Y-%m-%d %I:%M %p') }}</span>
+                                        </div>
+                                        <div class="note-body p-3 bg-light rounded-3 mt-1" style="white-space: pre-wrap;">
+    {{ note.note_text }}
+</div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No notes have been added for this patient.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
 
                 <div class="tab-pane fade" id="danger-pane" role="tabpanel" aria-labelledby="danger-tab" tabindex="0">
                     <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">

@@ -42,6 +42,8 @@ else:
     basedir = os.path.abspath(os.path.dirname(__file__))
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'project.db')
 # --- END NEW CONFIG ---
+# --- ADD THIS DEBUG LINE ---
+print(f"--- CONNECTING TO DATABASE: {app.config['SQLALCHEMY_DATABASE_URI']} ---")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -91,6 +93,7 @@ class Patient(db.Model):
     
     # This creates a "one-to-many" link: One Patient -> Many Reports
     reports = db.relationship('Report', backref='patient', lazy=True, cascade="all, delete-orphan")
+    notes = db.relationship('Note', backref='patient', lazy=True, cascade="all, delete-orphan")
 
 class Report(db.Model):
     """
@@ -106,6 +109,21 @@ class Report(db.Model):
     report_data_json = db.Column(db.Text) 
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
 
+# --- ADD THIS NEW MODEL ---
+class Note(db.Model):
+    """
+    Represents a clinical note for a patient.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    note_text = db.Column(db.Text, nullable=False)
+
+    # Foreign Key to link this Note to a Patient
+    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
+
+    # Foreign Key to link this Note to the Doctor who wrote it
+    doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+# --- END OF NEW MODEL ---
 
 # --- User Loader Function for Flask-Login ---
 @login_manager.user_loader
@@ -150,6 +168,44 @@ except Exception as e:
 
 
 # --- HELPER FUNCTIONS ---
+
+# --- ADD THIS NEW HELPER FUNCTION ---
+def get_interaction_warnings(checked_drugs_list):
+    """
+    Checks a list of drug names and returns specific warning strings
+    for any known severe interactions with Warfarin.
+    """
+    warnings = []
+    if not checked_drugs_list:
+        return warnings # Return an empty list if no drugs were checked
+
+    if "Amiodarone" in checked_drugs_list:
+        warnings.append(
+            "<strong>Severe Interaction: Amiodarone.</strong> Potentiates Warfarin effect by inhibiting CYP2C9. "
+            "May require a 30-50% reduction in Warfarin dose. Monitor INR extremely closely."
+        )
+    if "Fluconazole" in checked_drugs_list:
+        warnings.append(
+            "<strong>Severe Interaction: Fluconazole.</strong> Potentiates Warfarin effect by strongly inhibiting CYP2C9. "
+            "Significant dose reduction is likely required. Monitor INR frequently."
+        )
+    if "Bactrim" in checked_drugs_list:
+        warnings.append(
+            "<strong>Severe Interaction: TMP/SMX (Bactrim).</strong> Potentiates Warfarin effect. "
+            "A dose reduction is often necessary. Monitor INR closely, especially upon starting or stopping."
+        )
+    if "Rifampin" in checked_drugs_list:
+        warnings.append(
+            "<strong>Severe Interaction: Rifampin.</strong> *Reduces* Warfarin effect by strongly inducing CYP2C9. "
+            "A significant *increase* in Warfarin dose may be required. Monitor INR closely."
+        )
+    if "Carbamazepine" in checked_drugs_list:
+        warnings.append(
+            "<strong>Interaction: Carbamazepine.</strong> *Reduces* Warfarin effect by inducing metabolism. "
+            "A higher Warfarin dose may be required."
+        )
+    
+    return warnings
 
 def run_model_prediction(patient_data_dict):
     """
@@ -467,8 +523,9 @@ def view_patient(patient_id):
         return redirect(url_for('dashboard'))
         
     reports = Report.query.filter_by(patient_id=patient.id).order_by(Report.generated_at.desc()).all()
+    notes = Note.query.filter_by(patient_id=patient.id).order_by(Note.created_at.desc()).all()
     
-    return render_template('view_patient.html', patient=patient, reports=reports)
+    return render_template('view_patient.html', patient=patient, reports=reports, notes=notes)
 
 # --- PREDICTION WORKFLOW ROUTES ---
 
@@ -540,7 +597,7 @@ def generate_warfarin_report(patient_id):
         "Weight__kg_": float(request.form.get('Weight__kg_')),
     }
     doctor_name = request.form.get('doctor_name')
-    
+    interacting_drugs = request.form.getlist('interacting_drugs')
     race = request.form.get('Race')
     cyp2c9 = request.form.get('CYP2C9_genotypes')
     vkorc1 = request.form.get('VKORC1_genotype')
@@ -564,7 +621,7 @@ def generate_warfarin_report(patient_id):
     confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
-
+    interaction_warnings = get_interaction_warnings(interacting_drugs)
     # === STEP 5: ASSEMBLE FULL REPORT DATA ===
     results_dict = {
         "predicted_dose_mg_per_week": pred_data['prediction'],
@@ -581,7 +638,8 @@ def generate_warfarin_report(patient_id):
         "patient_info": patient_info_dict,
         "clinical_info": clinical_info_display,
         "results": results_dict,
-        "doctor_name": doctor_name
+        "doctor_name": doctor_name,
+        "interacting_drugs": interacting_drugs
     }
 
     # === STEP 6: SAVE REPORT TO DATABASE ===
@@ -604,7 +662,8 @@ def generate_warfarin_report(patient_id):
         clinical_info=clinical_info_display,
         results=results_dict,
         doctor_name=doctor_name,
-        request=request # Pass the request object so the download button can be shown
+        request=request, # Pass the request object so the download button can be shown
+        interaction_warnings=interaction_warnings
     ))
 
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -626,14 +685,18 @@ def view_report(report_id):
     except:
         flash("Error: Report data is corrupted.", "danger")
         return redirect(url_for('view_patient', patient_id=report.patient_id))
-
+    # --- NEW: Re-generate warnings from saved data ---
+    saved_interacting_drugs = report_data.get('interacting_drugs', [])
+    interaction_warnings = get_interaction_warnings(saved_interacting_drugs)
+    # --- END NEW ---
     response = make_response(render_template(
         'display_report.html',
         patient_info=report_data.get('patient_info'),
         clinical_info=report_data.get('clinical_info'),
         results=report_data.get('results'),
         doctor_name=report_data.get('doctor_name'),
-        request=None  # Set request to None to hide the download button
+        request=None,  # Set request to None to hide the download button
+        interaction_warnings=interaction_warnings
     ))
     
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -745,6 +808,35 @@ def edit_patient(patient_id):
     
     # --- For a GET request, just show the form pre-filled with patient data ---
     return render_template('edit_patient.html', patient=patient)
+
+@app.route('/patient/<int:patient_id>/add_note', methods=['POST'])
+@login_required
+def add_note(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    
+    # --- SECURITY CHECK ---
+    if patient.doctor_id != current_user.id:
+        flash("You are not authorized to access this patient.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    note_text = request.form.get('note_text')
+    if not note_text:
+        flash("Note cannot be empty.", "danger")
+        return redirect(url_for('view_patient', patient_id=patient_id))
+        
+    # Create the new note and link it to the patient AND the doctor
+    new_note = Note(
+        note_text=note_text,
+        patient_id=patient.id,
+        doctor_id=current_user.id
+    )
+    
+    db.session.add(new_note)
+    db.session.commit()
+    
+    flash("Note added successfully.", "success")
+    # Redirect back to the patient's profile
+    return redirect(url_for('view_patient', patient_id=patient_id, _anchor='notes-tab'))
 
 @app.route('/account', methods=['GET', 'POST'])
 @login_required

@@ -205,8 +205,8 @@
         const acceptBtn = document.getElementById('acceptTermsBtn');
         const termsCheckbox = document.getElementById('termsCheckbox');
 
-        // 1. Check if terms have already been accepted
-        if (localStorage.getItem('genmedixTermsAccepted') !== 'true') {
+        // 1. Check if terms have already been accepted IN THIS SESSION
+        if (sessionStorage.getItem('genmedixTermsAccepted') !== 'true') {
             // If not accepted, show the modal
             termsModal.show();
         }
@@ -214,18 +214,16 @@
         // 2. Listen for changes to the checkbox
         termsCheckbox.addEventListener('change', function() {
             if (this.checked) {
-                // If checked, enable the button
-                acceptBtn.disabled = false;
+                acceptBtn.disabled = false; // Enable button
             } else {
-                // If unchecked, disable the button
-                acceptBtn.disabled = true;
+                acceptBtn.disabled = true; // Disable button
             }
         });
 
         // 3. Listen for clicks on the accept button
         acceptBtn.addEventListener('click', function() {
-            // Save the acceptance to the browser's local storage
-            localStorage.setItem('genmedixTermsAccepted', 'true');
+            // Save the acceptance to the BROWSER SESSION
+            sessionStorage.setItem('genmedixTermsAccepted', 'true');
             // Hide the modal
             termsModal.hide();
         });
