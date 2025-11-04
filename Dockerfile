@@ -13,7 +13,10 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-
+# --- ADD THESE TWO LINES ---
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL}
+# --- END OF FIX ---
 
 # Copy your requirements file and install Python packages
 COPY requirements.txt .
