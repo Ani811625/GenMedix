@@ -20,5 +20,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your project code into the container
 COPY . .
 
-# Tell the container what command to run when it starts
-CMD ["gunicorn", "app:app"]
+# -----------------
+# --- CHANGES ---
+# -----------------
+
+# 1. DELETE this old command:
+# CMD ["gunicorn", "app:app"]
+
+# 2. ADD these new commands instead:
+# This makes your new start.sh script executable
+RUN chmod +x ./start.sh
+
+# This tells the container to run your new script on startup
+CMD ["./start.sh"]

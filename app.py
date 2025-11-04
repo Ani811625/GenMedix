@@ -898,3 +898,11 @@ def account():
 # --- MAIN RUN ---
 if __name__ == '__main__':
     app.run(debug=True)
+
+# --- NEW: DATABASE CREATION COMMAND ---
+@app.cli.command("create-db")
+@with_appcontext
+def create_db():
+    """Creates the database tables."""
+    db.create_all()
+    print("Database tables created successfully.")
