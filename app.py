@@ -11,6 +11,8 @@ import numpy as np
 from weasyprint import HTML
 import io
 import os
+import click
+from flask.cli import with_appcontext # <-- YOU ARE MISSING THIS LINE
 
 # --- NEW IMPORTS FOR DATABASE & LOGIN ---
 from flask_sqlalchemy import SQLAlchemy
