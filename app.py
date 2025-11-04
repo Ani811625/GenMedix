@@ -49,23 +49,29 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- ADD THIS NEW BLOCK ---
 @app.before_request
-def create_tables_if_not_exist():
-    # This function runs before the first request
-    # It checks if the tables exist and creates them if they don't
-    # This avoids the need for the "Shell" or "flask create-db"
+def check_maintenance_and_db():
+
+    # --- 1. CHECK FOR MAINTENANCE_MODE ---
+    # Check if the environment variable is set to 'true'
+    if os.environ.get('MAINTENANCE_MODE') == 'true':
+        # Stop all other routes and show the maintenance page.
+        # We must also check that the user isn't *already* on the maintenance page,
+        # or we'll get an infinite redirect loop.
+        if request.endpoint and request.endpoint != 'static':
+            return render_template('maintenance.html'), 503 # 503 = Service Unavailable
+
+    # --- 2. CHECK FOR DATABASE TABLES (your existing logic) ---
+    # This part only runs if maintenance mode is OFF
     try:
         inspector = inspect(db.engine)
         if not inspector.has_table("user"):
             print("--- No 'user' table found. Creating all tables... ---")
-            # db.create_all() will run within the app context here
             with app.app_context():
                 db.create_all()
             print("--- Database tables created. ---")
     except Exception as e:
         print(f"--- ERROR checking/creating tables: {e} ---")
-# --- END OF NEW BLOCK ---
 # --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
 login_manager.init_app(app)
