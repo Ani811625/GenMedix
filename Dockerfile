@@ -13,11 +13,6 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# --- ADD THESE TWO LINES ---
-ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
-# --- END OF FIX ---
-
 # Copy your requirements file and install Python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -25,8 +20,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your project code into the container
 COPY . .
 
-# Make the new start script executable
-RUN chmod +x ./start.sh
-
-# This tells the container to run your new script on startup
-CMD ["./start.sh"]
+# Tell the container what command to run when it starts
+# We run Gunicorn directly and tell it to listen on port 10000
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:10000"]

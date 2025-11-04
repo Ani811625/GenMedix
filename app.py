@@ -11,8 +11,7 @@ import numpy as np
 from weasyprint import HTML
 import io
 import os
-import click
-from flask.cli import with_appcontext # <-- YOU ARE MISSING THIS LINE
+from sqlalchemy import inspect
 
 # --- NEW IMPORTS FOR DATABASE & LOGIN ---
 from flask_sqlalchemy import SQLAlchemy
@@ -50,6 +49,23 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# --- ADD THIS NEW BLOCK ---
+@app.before_request
+def create_tables_if_not_exist():
+    # This function runs before the first request
+    # It checks if the tables exist and creates them if they don't
+    # This avoids the need for the "Shell" or "flask create-db"
+    try:
+        inspector = inspect(db.engine)
+        if not inspector.has_table("user"):
+            print("--- No 'user' table found. Creating all tables... ---")
+            # db.create_all() will run within the app context here
+            with app.app_context():
+                db.create_all()
+            print("--- Database tables created. ---")
+    except Exception as e:
+        print(f"--- ERROR checking/creating tables: {e} ---")
+# --- END OF NEW BLOCK ---
 # --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -901,10 +917,3 @@ def account():
 if __name__ == '__main__':
     app.run(debug=True)
 
-# --- NEW: DATABASE CREATION COMMAND ---
-@app.cli.command("create-db")
-@with_appcontext
-def create_db():
-    """Creates the database tables."""
-    db.create_all()
-    print("Database tables created successfully.")
