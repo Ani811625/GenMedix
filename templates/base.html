@@ -32,6 +32,9 @@
             <a class="nav-link text-capitalize" href="{{ url_for('dashboard') }}">Dashboard</a>
         </li>
         <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link text-capitalize" href="{{ url_for('account') }}">Account</a>
         </li>
         <li class="nav-item">
@@ -40,6 +43,9 @@
     {% else %}
         <li class="nav-item">
             <a class="nav-link text-capitalize" href="{{ url_for('login') }}">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
         </li>
         <li class="nav-item">
             <a class="nav-link text-capitalize" href="{{ url_for('register') }}">Register</a>
@@ -71,11 +77,17 @@
             <a class="nav-link text-capitalize" href="{{ url_for('account') }}">Account</a>
         </li>
         <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link text-capitalize" href="{{ url_for('logout') }}">Logout</a>
         </li>
     {% else %}
         <li class="nav-item">
             <a class="nav-link text-capitalize" href="{{ url_for('login') }}">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
         </li>
         <li class="nav-item">
             <a class="nav-link text-capitalize" href="{{ url_for('register') }}">Register</a>

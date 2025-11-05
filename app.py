@@ -416,6 +416,43 @@ def process_prediction_data(form_data):
 
 
 # --- PAGE ROUTES ---
+# --- ADD THIS NEW ROUTE ---
+@app.route('/dataset')
+def dataset():
+    # --- Make sure this file path is correct ---
+    DATA_FILE_PATH = 'data/warfarin.csv'
+    
+    try:
+        # Read the CSV file
+        df = pd.read_csv(DATA_FILE_PATH)
+        
+        # Get the table headers (column names)
+        headers = df.columns.tolist()
+        
+        # Get all rows as a list of dictionaries
+        # We'll limit to 200 rows to keep the page fast
+        rows = df.head(200).to_dict('records')
+        
+        row_count = len(df)
+        
+    except FileNotFoundError:
+        flash(f"Error: The dataset file could not be found at '{DATA_FILE_PATH}'.", "danger")
+        headers = []
+        rows = []
+        row_count = 0
+    except Exception as e:
+        flash(f"An error occurred while reading the data: {e}", "danger")
+        headers = []
+        rows = []
+        row_count = 0
+
+    return render_template(
+        'dataset.html', 
+        headers=headers, 
+        rows=rows, 
+        row_count=row_count, 
+        showing_count=len(rows)
+    )
 @app.route('/')
 def home(): 
     return render_template('index.html')
