@@ -2,7 +2,7 @@
 {% block title %}Add New Patient - GenMedix{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100" style="padding: 150px;">
+<main class="main-content position-relative max-height-vh-100 h-100" style="padding-top: 120px;">
 
     <section class="patient-header-section position-relative">
         <div class="container">
@@ -14,7 +14,7 @@
                         </div>
                         <div>
                             <h1 class="mb-0 text-white">Add New Patient</h1>
-                            <p class="text-white-50 mb-0">
+                            <p class="text-white-50 mb-0" style="padding-top: 30px;">
                                 Enter the patient's general information. This is a one-time setup.
                             </p>
                         </div>
@@ -53,9 +53,9 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="aadhar" class="form-label fs-7 fw-500">Aadhar Number (Unique ID)</label>
                                     <input type="text" class="form-control" id="aadhar" name="aadhar" 
-       pattern="[0-9]{12}" inputmode="numeric" 
-       title="Must be a 12-digit numeric Aadhar number" 
-       minlength="12" maxlength="12" required>
+   pattern="[0-9]{12}" inputmode="numeric" 
+   title="Must be a 12-digit numeric Aadhar number" 
+   minlength="12" maxlength="12" required>
                                 </div>
                             </div>
                             <div class="row">
@@ -79,6 +79,12 @@
                                     <input type="text" class="form-control" id="country" name="country" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
+                                    <label for="phone" class="form-label fs-7 fw-500">Phone Number (Optional)</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 mb-3">
                                     <label for="address" class="form-label fs-7 fw-500">Address (City/State)</label>
                                     <input type="text" class="form-control" id="address" name="address" required>
                                 </div>

@@ -2,7 +2,7 @@
 {% block title %}Warfarin Prediction - GenMedix{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100" style="padding: 150px;">
+<main class="main-content position-relative max-height-vh-100 h-100" style="padding-top: 120px;">
 
     <section class="patient-header-section position-relative">
         <div class="container">
@@ -32,12 +32,12 @@
                         
                         <form action="{{ url_for('generate_warfarin_report', patient_id=patient.id) }}" method="POST">
                             
-                            <h5 class="mb-3">Clinical Information (Required)</h5>
+                            <h5 class="mb-3">Step 2: Clinical Information (Required)</h5>
                             <div class="row">
                                 <div class="col-md-4 mb-3">
                                     <label for="Age" class="form-label fs-7 fw-500">Age (years)</label>
                                     <input type="number" class="form-control" id="Age" name="Age" step="any" required 
-       value="{{ calculated_age if calculated_age > 0 else '' }}">
+           value="{{ calculated_age if calculated_age > 0 else '' }}">
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label for="Height__cm_" class="form-label fs-7 fw-500">Height (cm)</label>
@@ -60,7 +60,7 @@
                             </div>
                             <hr>
 
-                            <h5 class="mb-3 mt-4">Genomic Information (Optional)</h5>
+                            <h5 class="mb-3 mt-4">Step 3: Genomic Information (Optional)</h5>
                             <p class="text-muted small">Leave these blank to use the Base (Clinical-Only) Model.</p>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
@@ -83,7 +83,8 @@
                                 </div>
                             </div>
                             <hr>
-                            <h5 class="mb-3 mt-4">Concomitant Medications (Drug Interactions)</h5>
+                            
+                            <h5 class="mb-3 mt-4">Step 4: Concomitant Medications (Drug Interactions)</h5>
                             <p class="text-muted small">Select any known interacting medications the patient is currently taking. This will add a warning to the report.</p>
                             
                             <div class="row">
@@ -124,9 +125,7 @@
                             </div>
                             <hr>
                             
-                            
-                            
-                            <h5 class="mb-3 mt-4">Confirm Attending Physician</h5>
+                            <h5 class="mb-3 mt-4">Step 5: Confirm Attending Physician</h5>
                              <div class="mb-3">
                                 <label for="doctor_name" class="form-label fs-7 fw-500">Confirm Your Name (for Report)</label>
                                 <input type="text" class="form-control" id="doctor_name" name="doctor_name" value="{{ current_user.full_name }}" required>

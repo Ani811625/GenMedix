@@ -2,7 +2,7 @@
 {% block title %}Select Drug - GenMedix{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100" style="padding: 150px;">
+<main class="main-content position-relative max-height-vh-100 h-100" style="padding-top: 120px;">
 
     <section class="patient-header-section position-relative">
         <div class="container">
@@ -27,7 +27,8 @@
     <section class="patient-list-section position-relative pb-5">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-lg-6"> <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
+                <div class="col-lg-6"> 
+                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
                         
                         <form action="{{ url_for('redirect_to_drug_form', patient_id=patient.id) }}" method="POST">
                             <div class="mb-3">

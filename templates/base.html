@@ -102,48 +102,59 @@
     {% endblock %}
 
     <footer class="footer">
-        <div class="container">
-            <div class="row">
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12">
-                    <div class="footer-logo-col">
-                        <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Footer Logo"></a>
-                        <p class="blue-light mb-0 fs-7 fw-500">Leveraging pharmacogenomics and machine learning to provide safer, more effective dosage recommendations for clinicians.</p>
-                        <div class="callus text-white fw-500 fs-7">
-                            Salt Lake,Sector V - Kolkata
-                            <div class="blue-light">Call us: <a href="#" class="text-warning fw-500 fs-7 text-decoration-none">+91 8116253439</a></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-6 col-sm-12">
-                    <h5 class="text-white">Team Mmember</h5>
-                    <ul class="list-unstyled mb-0 pl-0">
-                        <li><a href="#">Aniruddha Sarkar</a></li>
-                        <li><a href="#">Kandarpa Saha</a></li>
-                        <li><a href="#">Adrita Paul</a></li>
-                        <li><a href="#">Aniket Kumar</a></li>
-                    </ul>
-                </div>
-                <div class="col-xxl-2 col-xl-2 col-lg-2 col-md-6 col-sm-12">
-                    <h5 class="text-white">Mentor</h5>
-                    <ul class="list-unstyled mb-0 pl-0">
-                        <li><a href="#" >Dr.Biswajit Ghosh</a></li>
-                    </ul>
-                </div>
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 col-sm-12">
-                    <div class="subscribe">
-                        <h5 class="text-white">Subscribe</h5>
-                        <p class="blue-light fw-500">Subscribe to get the latest news form us
-                        </p>
-                        <div class="input-group">
-                            <input type="email" class="form-control br-15" placeholder="Enter email address" aria-label="Enter email address" aria-describedby="button-addon2">
-                            <button class="btn btn-warning btn-hover-secondery ms-xxl-2 ms-xl-2 ls-lg-0 ms-md-0 ms-sm-0 ms-0"  type="button" id="button-addon2">Register</button>
-                        </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3 col-md-6 col-12 mb-4">
+                <div class="footer-logo-col">
+                    <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Footer Logo"></a>
+                    <p class="blue-light mb-0 fs-7 fw-500">Leveraging pharmacogenomics and machine learning for safer dosage recommendations.</p>
+                    <div class="callus text-white fw-500 fs-7">
+                        Salt Lake, Sector V - Kolkata
+                        <div class="blue-light">Call us: <a href="#" class="text-warning fw-500 fs-7 text-decoration-none">+91 8116253439</a></div>
                     </div>
                 </div>
             </div>
-            <div class="copyrights text-center blue-light  fw-500">@<span id="autodate">2023</span> - All Rights Reserved by <a href="httpsis://adminmart.com/" class="blue-light text-decoration-none">Team GenMedix</a> Dsitributed By <a href="https://themewagon.com" class="blue-light text-decoration-none">Techno Main Salt Lake</a></div>
+            
+            <div class="col-lg-3 col-md-6 col-12 mb-4">
+                <h5 class="text-white">Team Members</h5>
+                <ul class="list-unstyled mb-0 pl-0">
+                    <li><a href="#">Aniruddha Sarkar</a></li>
+                    <li><a href="#">Kandarpa Saha</a></li>
+                    <li><a href="#">Adrita Paul</a></li>
+                    <li><a href="#">Aniket Kumar</a></li>
+                </ul>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 col-12 mb-4">
+                <h5 class="text-white">Mentor</h5>
+                <ul class="list-unstyled mb-0 pl-0">
+                    <li><a href="#">Dr. Biswajit Ghosh</a></li>
+                </ul>
+                
+                <h5 class="text-white mt-4">Project</h5>
+                <ul class="list-unstyled mb-0 pl-0">
+                    <li><a href="{{ url_for('dataset') }}">View Dataset</a></li>
+                </ul>
+            </div>
+            
+            <div class="col-lg-3 col-md-6 col-12 mb-4">
+                <div class="subscribe">
+                    <h5 class="text-white">Subscribe</h5>
+                    <p class="blue-light fw-500">Subscribe to get the latest news from us.</p>
+                    <div class="input-group">
+                        <input type="email" class="form-control br-15" placeholder="Enter email address" aria-label="Enter email address">
+                        <button class="btn btn-warning btn-hover-secondery" type="button">Register</button>
+                    </div>
+                </div>
+            </div>
+            
         </div>
-    </footer>
+        
+        <div class="copyrights text-center blue-light fw-500">
+            @<span id="autodate">2025</span> - All Rights Reserved by <a href="#" class="blue-light text-decoration-none">Team GenMedix</a>
+        </div>
+    </div>
+</footer>
     <script src="{{ url_for('static', filename='dist/js/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='dist/js/bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='assets/libs/OwlCarousel-2/dist/owl.carousel.min.js') }}"></script>

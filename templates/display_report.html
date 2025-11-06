@@ -160,6 +160,16 @@
             .info-grid { grid-template-columns: 1fr; }
             .report-header { flex-direction: column; gap:10px; align-items:flex-start; }
             .id-block { flex-direction: column; }
+            
+            /* --- THIS IS THE FIX --- */
+            .signature {
+                flex-direction: column; /* Stack the signature and details */
+                gap: 30px;
+            }
+            .signature .sig-info {
+                flex-basis: auto; /* Allow the details block to be full width */
+            }
+            /* --- END OF FIX --- */
         }
     </style>
 </head>
@@ -167,17 +177,17 @@
     <div class="report-wrap">
         <div class="report-card" data-aos="fade-up" data-aos-duration="900">
             {% if interaction_warnings %}
-<div class="alert alert-danger" role="alert" data-aos="fade-up" data-aos-duration="600">
-    <h4 class="alert-heading"><i class="ti ti-alert-triangle me-2"></i>Critical Interaction Warning!</h4>
-    <p>The patient is on one or more medications known to interact with Warfarin. Clinical judgment is advised.</p>
-    <hr>
-    <ul class="mb-0">
-        {% for warning in interaction_warnings %}
-            <li>{{ warning | safe }}</li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
+    <div class="alert alert-danger" role="alert" data-aos="fade-up" data-aos-duration="600">
+        <h4 class="alert-heading"><i class="ti ti-alert-triangle me-2"></i>Critical Interaction Warning!</h4>
+        <p>The patient is on one or more medications known to interact with Warfarin. Clinical judgment is advised.</p>
+        <hr>
+        <ul class="mb-0">
+            {% for warning in interaction_warnings %}
+                <li>{{ warning | safe }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
             <div class="report-header">
                 <div class="brand">
                     <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix Logo" />
@@ -278,7 +288,7 @@
                 <div class="sig-info">
                     <div style="font-weight:700; margin-bottom:8px;">Doctor Details</div>
                     <div style="color:#555; font-size:0.95rem;">
-                        Name: <strong>{{ doctor_name }}</strong><br>
+                        Name: **{{ doctor_name }}**<br>
                         Reg. No: _________________________<br>
                         Date: ___________________________
                     </div>
@@ -287,7 +297,7 @@
 
             
             <div style="margin-top:20px; color:#6c757d; font-size:0.9rem; text-align:center;">
-            This AI-generated report is for clinical decision-support only and does not replace professional medical advice. <br>  <strong> *Do not accept this report without the attending physician's signature and details.</strong>
+            This AI-generated report is for clinical decision-support only and does not replace professional medical advice. <br>  ** *Do not accept this report without the attending physician's signature and details.**
             </div>
 
             

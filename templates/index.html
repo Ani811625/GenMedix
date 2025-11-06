@@ -1,11 +1,13 @@
+
+
 {% extends "base.html" %}
 {% block title %}GenMedix - AI-Powered Dosage Prediction{% endblock %}
 
 {% block content %}
-<section class="hero-section-light" style="padding: 120px;">
+<section class="hero-section-light">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-lg-6" data-aos="fade-right">
+            <div class="col-lg-6 col-12 mb-4" data-aos="fade-right">
                 <h1 class="hero-title display-3 fw-bolder">Precision Dosing, Powered by AI</h1>
                 <p class="hero-subtitle fs-5 my-4">
                     Welcome to GenMedix. The clinical decision-support platform using AI and pharmacogenomics 
@@ -15,7 +17,7 @@
                     Get Started
                 </a>
             </div>
-            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="100">
+            <div class="col-lg-6 col-12" data-aos="fade-left" data-aos-delay="100">
                 <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80" alt="Doctor at computer" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
             </div>
         </div>
@@ -32,8 +34,9 @@
                 </div>
             </div>
         </div>
+        
         <div class="row">
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+            <div class="col-lg-4 col-md-6 col-12 mb-4" data-aos="fade-up" data-aos-delay="100">
                 <div class="step-card-light">
                     <div class="step-icon">
                         <i class="ti ti-user-plus"></i>
@@ -42,7 +45,7 @@
                     <p class="fs-7">Create a secure profile for your patient with their general information. This is a one-time setup.</p>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+            <div class="col-lg-4 col-md-6 col-12 mb-4" data-aos="fade-up" data-aos-delay="200">
                 <div class="step-card-light">
                     <div class="step-icon">
                         <i class="ti ti-file-text"></i>
@@ -51,7 +54,7 @@
                     <p class="fs-7">Select the drug (e.g., Warfarin) and input the patient's current clinical & genomic data into our simple form.</p>
                 </div>
             </div>
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+            <div class="col-lg-4 col-md-6 col-12 mb-4" data-aos="fade-up" data-aos-delay="300">
                 <div class="step-card-light">
                     <div class="step-icon">
                         <i class="ti ti-report-medical"></i>
@@ -67,10 +70,10 @@
 <section class="feature-section-light">
     <div class="container">
         <div class="row align-items-center mb-5 pb-5">
-            <div class="col-lg-6" data-aos="fade-right">
+            <div class="col-lg-6 col-12 mb-4" data-aos="fade-right">
                 <img src="https://images.unsplash.com/photo-1614935151651-0bea6508db6b?auto=format&fit=crop&w=800&q=80" alt="Explainable AI Chart" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
             </div>
-            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="100">
+            <div class="col-lg-6 col-12" data-aos="fade-left" data-aos-delay="100">
                 <h2 class="section-title mb-3">From "Black Box" to "Glass Box"</h2>
                 <h5 class="text-warning fw-600">Full Explainable AI (XAI) Integration</h5>
                 <p class="section-subtitle mt-4">
@@ -86,10 +89,10 @@
         </div>
         
         <div class="row align-items-center">
-            <div class="col-lg-6 order-lg-2" data-aos="fade-left">
+            <div class="col-lg-6 col-12 order-lg-2 mb-4" data-aos="fade-left">
                 <img src="https://images.unsplash.com/photo-1532187643623-db661b34e4f2?auto=format&fit=crop&w=800&q=80" alt="Hybrid AI Diagram" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
             </div>
-            <div class="col-lg-6 order-lg-1" data-aos="fade-right" data-aos-delay="100">
+            <div class="col-lg-6 col-12 order-lg-1" data-aos="fade-right" data-aos-delay="100">
                 <h2 class="section-title mb-3">Hybrid AI Engine</h2>
                 <h5 class="text-warning fw-600">The Best Model for Every Situation</h5>
                 <p class="section-subtitle mt-4">
@@ -112,7 +115,7 @@
                 <h2 class="text-white">Enhance Your Clinical Workflow Today</h2>
                 <p class="text-white-50 fs-5 mb-4">
                     Join the future of personalized medicine. Create your secure clinician account in minutes.
-                </p>
+                </pre>
                 <a href="{{ url_for('register') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-lg">
                     Register for Free
                 </a>
