@@ -12,6 +12,7 @@ import numpy as np
 from weasyprint import HTML
 from sqlalchemy import inspect
 from threading import Thread
+
 # --- IMPORTS FOR DATABASE, LOGIN & EMAIL ---
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -20,33 +21,28 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
 
+# --- IMPORT FOR SUPABASE STORAGE ---
+from supabase import create_client, Client
+
 # --- APP CONFIGURATION ---
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
 
-# # --- EMAIL CONFIGURATION ---
-# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-# app.config['MAIL_PORT'] = 587
-# app.config['MAIL_USE_TLS'] = True
-# app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') 
-# app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-# app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
-
-# --- EMAIL CONFIGURATION (SSL VERSION) ---
+# --- EMAIL CONFIGURATION ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465  # Changed from 587
-app.config['MAIL_USE_TLS'] = False # Changed to False
-app.config['MAIL_USE_SSL'] = True  # Added SSL
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') 
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_DEBUG'] = True
 
 mail = Mail(app)
 
-# --- DATABASE CONFIGURATION (FIXED) ---
-# We correctly fetch the variable by its NAME 'DATABASE_URL'
+# --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
@@ -62,7 +58,19 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- CONTEXT PROCESSOR (THE FIX FOR "current_user is undefined") ---
+# --- SUPABASE STORAGE SETUP ---
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+supabase: Client = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+        print("--- ✅ SUCCESS: CONNECTED TO SUPABASE STORAGE ---")
+    except Exception as e:
+        print(f"--- ❌ ERROR CONNECTING TO SUPABASE: {e} ---")
+
+# --- CONTEXT PROCESSOR ---
 @app.context_processor
 def inject_user():
     return dict(current_user=current_user)
@@ -70,12 +78,10 @@ def inject_user():
 # --- AUTO-CREATE TABLES ON STARTUP ---
 @app.before_request
 def check_maintenance_and_db():
-    # 1. Check Maintenance Mode
     if os.environ.get('MAINTENANCE_MODE') == 'true':
         if request.endpoint and request.endpoint != 'static':
             return render_template('maintenance.html'), 503
 
-    # 2. Create Tables if they don't exist
     try:
         inspector = inspect(db.engine)
         if not inspector.has_table("user"):
@@ -97,6 +103,15 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# --- ASYNC EMAIL HELPER ---
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+            print("--- ✅ Email sent successfully! ---")
+        except Exception as e:
+            print(f"--- ❌ Error sending email: {e} ---")
+
 # --- DATABASE MODELS ---
 
 class User(db.Model, UserMixin):
@@ -106,6 +121,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
     
+    # Relationships
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
 
@@ -136,7 +152,11 @@ class Report(db.Model):
     model_used = db.Column(db.String(50))
     confidence = db.Column(db.String(20))
     doctor_name = db.Column(db.String(150))
-    report_data_json = db.Column(db.Text) 
+    report_data_json = db.Column(db.Text)
+    
+    # New column for permanent PDF storage link
+    pdf_storage_path = db.Column(db.String(200))
+    
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
 
 class Note(db.Model):
@@ -163,19 +183,9 @@ try:
     print("--- All models, column lists, and SHAP explainers loaded successfully. ---")
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
-    # We continue so the app doesn't crash immediately, but predictions will fail
     pass 
 
 # --- HELPER FUNCTIONS ---
-
-# --- ASYNC EMAIL HELPER ---
-def send_async_email(app, msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-            print("--- ✅ Email sent successfully! ---")
-        except Exception as e:
-            print(f"--- ❌ Error sending email: {e} ---")
 
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
@@ -375,38 +385,34 @@ def register():
         if User.query.filter_by(email=email).first():
             flash('Email already registered.', 'danger')
             return redirect(url_for('register'))
-
+        
         if User.query.filter_by(medical_reg_id=reg_id).first():
             flash('Medical ID already registered.', 'danger')
             return redirect(url_for('register'))
 
         new_doctor = User(full_name=name, email=email, medical_reg_id=reg_id)
         new_doctor.set_password(password)
-
+        
         try:
             db.session.add(new_doctor)
             db.session.commit()
 
-            # --- PREPARE EMAIL ---
+            # Async email sending
             msg = Message("Welcome to GenMedix!", recipients=[email])
             msg.body = f"""
             Dear Dr. {name},
 
             Welcome to GenMedix! Your clinician account has been successfully created.
-            You can now log in to your dashboard.
+            You can now log in to your dashboard to manage patients and generate AI-powered dosage reports.
 
             Login here: https://genmedix-app.onrender.com/login
 
             Best regards,
             The GenMedix Team
             """
-
-            # --- SEND IN BACKGROUND (PREVENTS CRASHES) ---
-            # This creates a separate thread so the user doesn't have to wait
             Thread(target=send_async_email, args=(app, msg)).start()
 
             flash('Account created successfully! Please log in.', 'success')
-
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating account: {e}', 'danger')
@@ -517,6 +523,7 @@ def warfarin_form(patient_id):
     except: pass
     return render_template('warfarin_form.html', patient=patient, calculated_age=calculated_age)
 
+# --- GENERATE REPORT + UPLOAD TO SUPABASE ---
 @app.route('/patient/<int:patient_id>/generate_warfarin_report', methods=['POST'])
 @login_required
 def generate_warfarin_report(patient_id):
@@ -525,6 +532,7 @@ def generate_warfarin_report(patient_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for('dashboard'))
 
+    # Collect Data
     patient_info_dict = {
         "patient_name": patient.full_name,
         "patient_dob": patient.dob,
@@ -556,11 +564,16 @@ def generate_warfarin_report(patient_id):
         "VKORC1_Display": vkorc1.split('_')[-1] if vkorc1 else "N/A"
     }
 
+    # AI Prediction
     pred_data = run_model_prediction(clinical_data_dict) 
     confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     interaction_warnings = get_interaction_warnings(interacting_drugs)
+
+    # IDs
+    timestamp_str = datetime.now().strftime('%Y%m%d%H%M%S')
+    report_id_display = f"GM-{datetime.now().strftime('%Y%m%d')}-{patient.id}"
 
     results_dict = {
         "predicted_dose_mg_per_week": pred_data['prediction'],
@@ -570,7 +583,7 @@ def generate_warfarin_report(patient_id):
         "human_explanation": human_expl,
         "clinical_suggestions": suggestions,
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{patient.id}"
+        "report_id": report_id_display
     }
     
     full_report_data = {
@@ -581,6 +594,35 @@ def generate_warfarin_report(patient_id):
         "interacting_drugs": interacting_drugs
     }
 
+    # 1. Generate PDF in-memory
+    html_string = render_template(
+        'display_report.html',
+        patient_info=patient_info_dict,
+        clinical_info=clinical_info_display,
+        results=results_dict,
+        doctor_name=doctor_name,
+        request=None,
+        interaction_warnings=interaction_warnings
+    )
+    pdf_bytes = HTML(string=html_string).write_pdf()
+
+    # 2. Upload to Supabase
+    pdf_path = None
+    if supabase:
+        try:
+            filename = f"report_{patient.id}_{timestamp_str}.pdf"
+            bucket_name = "medical_reports"
+            supabase.storage.from_(bucket_name).upload(
+                path=filename,
+                file=pdf_bytes,
+                file_options={"content-type": "application/pdf"}
+            )
+            print(f"--- ✅ PDF Uploaded to Supabase: {filename} ---")
+            pdf_path = filename 
+        except Exception as e:
+            print(f"--- ❌ Supabase Upload Failed: {e} ---")
+
+    # 3. Save to Database
     new_report = Report(
         drug_name="Warfarin",
         predicted_dose=f"{pred_data['prediction']} mg/week",
@@ -588,11 +630,13 @@ def generate_warfarin_report(patient_id):
         confidence=confidence,
         doctor_name=doctor_name, 
         report_data_json=json.dumps(full_report_data),
-        patient_id=patient.id
+        patient_id=patient.id,
+        pdf_storage_path=pdf_path 
     )
     db.session.add(new_report)
     db.session.commit()
 
+    # 4. Render Response
     response = make_response(render_template(
         'display_report.html',
         patient_info=patient_info_dict,
@@ -605,6 +649,35 @@ def generate_warfarin_report(patient_id):
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
 
+# --- DOWNLOAD ARCHIVED PDF ROUTE ---
+@app.route('/download_archived_report/<int:report_id>')
+@login_required
+def download_archived_report(report_id):
+    report = Report.query.get_or_404(report_id)
+    if report.patient.doctor_id != current_user.id:
+        flash("Unauthorized.", "danger")
+        return redirect(url_for('dashboard'))
+    
+    if not report.pdf_storage_path or not supabase:
+        flash("No archived PDF found for this report.", "warning")
+        return redirect(url_for('view_report', report_id=report_id))
+
+    try:
+        bucket_name = "medical_reports"
+        res = supabase.storage.from_(bucket_name).create_signed_url(
+            report.pdf_storage_path, 60
+        )
+        if res and 'signedURL' in res:
+            return redirect(res['signedURL'])
+        else:
+            flash("Could not generate download link.", "danger")
+            return redirect(url_for('view_report', report_id=report_id))
+    except Exception as e:
+        print(f"Error fetching signed URL: {e}")
+        flash("Error retrieving file from cloud storage.", "danger")
+        return redirect(url_for('view_report', report_id=report_id))
+
+# --- VIEW AND DELETE ROUTES ---
 @app.route('/report/<int:report_id>')
 @login_required
 def view_report(report_id):
@@ -629,9 +702,9 @@ def view_report(report_id):
         results=report_data.get('results'),
         doctor_name=report_data.get('doctor_name'),
         request=None,
-        interaction_warnings=interaction_warnings
+        interaction_warnings=interaction_warnings,
+        report_obj=report 
     ))
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
 
 @app.route('/download_report', methods=['POST'])
@@ -660,6 +733,15 @@ def delete_report(report_id):
     if report.patient.doctor_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('dashboard'))
+        
+    # Delete PDF from Storage
+    if report.pdf_storage_path and supabase:
+        try:
+            supabase.storage.from_("medical_reports").remove([report.pdf_storage_path])
+            print(f"--- Deleted PDF: {report.pdf_storage_path} ---")
+        except Exception as e:
+            print(f"--- Error deleting PDF: {e} ---")
+            
     db.session.delete(report)
     db.session.commit()
     flash("Report deleted successfully.", "success")
@@ -672,6 +754,9 @@ def delete_patient(patient_id):
     if patient.doctor_id != current_user.id:
         flash("Unauthorized access.", "danger")
         return redirect(url_for('dashboard'))
+    
+    # Optional: Logic to delete all PDFs for this patient could go here, 
+    # but database cascading handles the row deletion.
     db.session.delete(patient)
     db.session.commit()
     flash(f"Patient '{patient.full_name}' deleted.", "success")
