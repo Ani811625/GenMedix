@@ -7,10 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    {% if request %}
     <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
-
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    {% endif %}
 
     <style>
         :root{
@@ -21,11 +20,19 @@
         }
 
         body {
-            background: linear-gradient(180deg, #0b0b0b 0%, #151515 40%), #f4f6f9;
+            /* Force white background for PDF readability */
+            background: #ffffff !important; 
             min-height: 100vh;
             color: #222;
             font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
             padding: 30px 18px;
+        }
+
+        /* Only use dark background for screen (browser), not print */
+        @media screen {
+            body {
+                background: linear-gradient(180deg, #0b0b0b 0%, #151515 40%), #f4f6f9 !important;
+            }
         }
 
         .report-wrap {
@@ -35,13 +42,21 @@
         }
 
         .report-card {
-            background: var(--panel-bg);
+            background: #ffffff;
             border-radius: 14px;
             padding: 28px;
-            box-shadow: 0 8px 30px rgba(10,10,10,0.45);
-            backdrop-filter: blur(6px) saturate(120%);
-            border: 1px solid var(--glass-border);
+            box-shadow: none; /* Remove shadow for cleaner PDF */
+            border: 1px solid #ddd; /* Simple border for PDF */
             overflow: hidden;
+        }
+
+        @media screen {
+            .report-card {
+                background: var(--panel-bg);
+                box-shadow: 0 8px 30px rgba(10,10,10,0.45);
+                backdrop-filter: blur(6px) saturate(120%);
+                border: 1px solid var(--glass-border);
+            }
         }
 
         /* Header */
@@ -50,14 +65,18 @@
             align-items: center;
             gap: 18px;
             justify-content: space-between;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
         }
         .brand {
             display:flex;
             align-items:center;
             gap:12px;
         }
+        /* Ensure logo is small enough for PDF */
         .brand img { height:48px; width:auto; object-fit:contain; display:block; }
-        .brand h1 { margin:0; font-size:1.25rem; color:var(--brand-orange); font-weight:700; letter-spacing:0.6px; font-family: "Segoe UI", Roboto, sans-serif; }
+        .brand h1 { margin:0; font-size:1.25rem; color:var(--brand-orange); font-weight:700; }
         .report-meta { text-align:right; color:#6b6b6b; font-size:0.95rem; }
 
         /* Sections */
@@ -76,11 +95,12 @@
             gap: 10px 18px;
             align-items: start;
         }
+        /* Fallback for PDF engines that don't support Grid well */
         .info-grid p { margin: 4px 0; color: #222; }
 
         /* Recommendation Box */
         .recommendation {
-            background: linear-gradient(90deg, rgba(255,122,0,0.06), rgba(255,122,0,0.02));
+            background: #fff8f0; /* Light orange tint */
             border-left: 5px solid var(--brand-orange);
             padding: 18px;
             margin-top: 16px;
@@ -91,7 +111,7 @@
 
         /* Suggestions */
         .suggestions {
-            background: linear-gradient(90deg, rgba(255,238,204,0.6), rgba(255,255,255,0.5));
+            background: #fffcf0;
             border-left: 5px solid #ffc107;
             padding: 14px;
             margin-top: 18px;
@@ -100,17 +120,16 @@
 
         /* Signature */
         .signature {
-            margin-top: 26px;
+            margin-top: 40px;
             display:flex;
             gap: 20px;
             align-items:flex-start;
+            page-break-inside: avoid; /* Keep signature together in PDF */
         }
         .signature .sig-box {
-            flex: 1 1 60%;
-            min-height: 88px;
-            border-bottom: 2px dashed rgba(0,0,0,0.12);
-            background: linear-gradient(180deg, rgba(255,255,255,0.0), rgba(255,255,255,0.02));
-            border-radius: 6px;
+            flex: 1;
+            min-height: 100px;
+            border-bottom: 2px dashed #ccc;
             padding: 10px;
         }
         .signature .sig-info {
@@ -118,63 +137,25 @@
             font-size:0.9rem;
             color:#444;
         }
-        .sig-label { font-weight:700; color:#222; margin-bottom:8px; }
 
-        /* =========================================
-           CRITICAL FIX FOR PDF GENERATION (WEASYPRINT)
-           ========================================= */
-        
-        /* 1. Force AOS animations to be visible immediately */
-        [data-aos] {
-            opacity: 1 !important;
-            transform: none !important;
-            visibility: visible !important;
-            transition: none !important;
-        }
-
-        /* 2. Styles specific for the PDF output */
+        /* PDF SPECIFIC OVERRIDES */
         @media print {
-            body { 
-                background: white !important; 
-                padding: 0 !important;
-                -webkit-print-color-adjust: exact; 
-                print-color-adjust: exact;
-            }
-            .report-card { 
-                box-shadow: none !important; 
-                border: none !important; 
-                border-radius: 0 !important;
-                padding: 0 !important;
-                width: 100% !important;
-                background: white !important;
-            }
+            body { background-color: white !important; }
             .no-print, .floating-download { display: none !important; }
-            
-            /* Ensure text colors are dark for printing */
-            p, h1, h2, h3, h4, h5, li { color: #000 !important; }
-            .text-muted { color: #555 !important; }
-            
-            /* Force Grid layout fallback for WeasyPrint */
-            .info-grid { display: block !important; }
-            .info-grid p { display: inline-block; width: 48%; vertical-align: top; margin-bottom: 10px; }
-        }
-
-        /* Responsive for Mobile View */
-        @media (max-width:720px){
-            .info-grid { grid-template-columns: 1fr; }
-            .report-header { flex-direction: column; gap:10px; align-items:flex-start; }
-            .signature { flex-direction: column; gap: 30px; }
+            [data-aos] { opacity: 1 !important; visibility: visible !important; }
         }
     </style>
 </head>
 <body>
     <div class="report-wrap">
-        <div class="report-card" data-aos="fade-up" data-aos-duration="900">
+        <div class="report-card" {% if request %}data-aos="fade-up"{% endif %}>
             
             {% if interaction_warnings %}
-            <div class="alert alert-danger" role="alert" data-aos="fade-up">
-                <h4 class="alert-heading"><i class="ti ti-alert-triangle me-2"></i>Critical Interaction Warning!</h4>
-                <p>The patient is on one or more medications known to interact with Warfarin. Clinical judgment is advised.</p>
+            <div class="alert alert-danger" role="alert">
+                <h4 class="alert-heading" style="color:#dc3545; font-size:1.1rem; font-weight:bold;">
+                    Critical Interaction Warning!
+                </h4>
+                <p>The patient is on medications known to interact with Warfarin.</p>
                 <hr>
                 <ul class="mb-0">
                     {% for warning in interaction_warnings %}
@@ -186,31 +167,36 @@
 
             <div class="report-header">
                 <div class="brand">
-                    <img src="{{ url_for('static', filename='assets/images/image.png', _external=True) }}" alt="GenMedix Logo" />
+                    {% if request %}
+                        <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" />
+                    {% else %}
+                        <h2 style="color:#ff7a00; margin:0;">GenMedix</h2>
+                    {% endif %}
+                    
                     <div>
-                        <h1>GenMedix</h1>
+                        {% if request %}<h1>GenMedix</h1>{% endif %}
                         <div style="font-size:0.92rem; color:#666;">Dosage Recommendation Report</div>
                     </div>
                 </div>
 
                 <div class="report-meta">
                     <div><strong>Date:</strong> {{ results.generated_at }}</div>
-                    <div style="margin-top:6px; color:#a0a0a0; font-size:0.9rem;">Report ID:
-                        <span class="patient-id">{{ results.report_id }}</span>
+                    <div style="margin-top:6px; color:#a0a0a0; font-size:0.9rem;">
+                        ID: <span class="patient-id">{{ results.report_id }}</span>
                     </div>
                 </div>
             </div>
 
-            <h5 class="section-title" data-aos="fade-right">Patient Information</h5>
-            <div class="info-grid" data-aos="fade-up">
+            <h5 class="section-title">Patient Information</h5>
+            <div class="info-grid">
                 <p><strong>Name:</strong> {{ patient_info.patient_name }}</p>
                 <p><strong>DOB:</strong> {{ patient_info.patient_dob }}</p>
                 <p><strong>Gender:</strong> {{ patient_info.patient_gender }}</p>
                 <p><strong>Country:</strong> {{ patient_info.patient_country }}</p>
             </div>
 
-            <h5 class="section-title" data-aos="fade-right">Clinical & Genomic Data Provided</h5>
-            <div class="info-grid" data-aos="fade-up">
+            <h5 class="section-title">Clinical & Genomic Data</h5>
+            <div class="info-grid">
                 <p><strong>Age:</strong> {{ clinical_info.Age }} years</p>
                 <p><strong>Height:</strong> {{ clinical_info.Height__cm_ }} cm</p>
                 <p><strong>Weight:</strong> {{ clinical_info.Weight__kg_ }} kg</p>
@@ -219,27 +205,27 @@
                 <p><strong>VKORC1:</strong> {{ clinical_info.VKORC1_Display }}</p>
             </div>
 
-            <div class="recommendation" data-aos="zoom-in">
+            <div class="recommendation" {% if request %}data-aos="zoom-in"{% endif %}>
                 <h3 style="margin:0 0 6px 0;">Recommended Weekly Dosage</h3>
                 <div class="dose">{{ results.predicted_dose_mg_per_week }} mg/week</div>
             </div>
 
-            <h5 class="section-title" data-aos="fade-right">Analysis Details</h5>
-            <div class="info-grid" data-aos="fade-up">
+            <h5 class="section-title">Analysis Details</h5>
+            <div class="info-grid">
                 <p><strong>Model Used:</strong> {{ results.model_used }}</p>
-                <p><strong>Prediction Confidence:</strong> <span class="fw-bold">{{ results.confidence_score }}</span></p>
+                <p><strong>Confidence:</strong> <span class="fw-bold">{{ results.confidence_score }}</span></p>
             </div>
-            <p class="mt-2 text-muted" data-aos="fade-up">{{ results.confidence_explanation }}</p>
+            <p class="mt-2 text-muted">{{ results.confidence_explanation }}</p>
 
-            <h5 class="section-title" data-aos="fade-right">Explanation of Key Factors</h5>
-            <ul data-aos="fade-up">
+            <h5 class="section-title">Key Factors Influencing Dose</h5>
+            <ul>
                 {% for explanation in results.human_explanation %}
                     <li>{{ explanation | safe }}</li>
                 {% endfor %}
             </ul>
 
-            <div class="suggestions" data-aos="fade-up">
-                <h5 style="margin-top:0; margin-bottom:6px;"><i class="fas fa-lightbulb me-2"></i>Actionable Suggestions</h5>
+            <div class="suggestions">
+                <h5 style="margin-top:0; margin-bottom:6px;">Actionable Suggestions</h5>
                 <ul>
                     {% for suggestion in results.clinical_suggestions %}
                         <li>{{ suggestion | safe }}</li>
@@ -247,28 +233,28 @@
                 </ul>
             </div>
 
-            <div class="signature" data-aos="fade-up">
-                <div class="sig-box" aria-label="Doctor signature placeholder">
-                    <div class="sig-label">Doctor's Signature</div>
+            <div class="signature">
+                <div class="sig-box">
+                    <div style="font-weight:700; margin-bottom:8px;">Doctor's Signature</div>
                     <div style="color:#777; font-size:0.9rem;">(Please sign here)</div>
                 </div>
                 <div class="sig-info">
                     <div style="font-weight:700; margin-bottom:8px;">Doctor Details</div>
                     <div style="color:#555; font-size:0.95rem;">
                         Name: <strong>{{ doctor_name }}</strong><br>
-                        Reg. No: _________________________<br>
-                        Date: ___________________________
+                        Reg. No: __________________<br>
+                        Date: ____________________
                     </div>
                 </div>
             </div>
 
-            <div style="margin-top:20px; color:#6c757d; font-size:0.9rem; text-align:center;">
-                This AI-generated report is for clinical decision-support only and does not replace professional medical advice. <br>
-                <strong>*Do not accept this report without the attending physician's signature and details.</strong>
+            <div style="margin-top:20px; color:#6c757d; font-size:0.8rem; text-align:center;">
+                <strong>Disclaimer:</strong> This AI-generated report is for clinical decision-support only. 
+                It does not replace professional medical judgment.
             </div>
 
             {% if request %} 
-            <div class="text-center no-print" style="margin-top:18px;">
+            <div class="text-center no-print" style="margin-top:25px;">
                 <form action="{{ url_for('download_report') }}" method="POST">
                     {% for key, value in request.form.items() %}
                         <input type="hidden" name="{{ key }}" value="{{ value }}">
@@ -283,21 +269,12 @@
         </div>
     </div>
 
-    {% if request %} 
-    <div class="floating-download no-print" role="button" title="Download report as PDF">
-        <form id="floatDownloadForm" action="{{ url_for('download_report') }}" method="POST">
-            {% for key, value in request.form.items() %}
-                <input type="hidden" name="{{ key }}" value="{{ value }}">
-            {% endfor %}
-            <button type="submit" class="btn"><i class="fas fa-file-pdf me-2"></i>Download PDF</button>
-        </form>
-    </div>
-    {% endif %}
-
+    {% if request %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
     <script>
         AOS.init({ once: true, duration: 700 });
     </script>
+    {% endif %}
 
-    </body>
+</body>
 </html>
