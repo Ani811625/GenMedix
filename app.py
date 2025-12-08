@@ -75,22 +75,44 @@ if SUPABASE_URL and SUPABASE_KEY:
 def inject_user():
     return dict(current_user=current_user)
 
-# --- AUTO-CREATE TABLES ON STARTUP ---
+# # --- AUTO-CREATE TABLES ON STARTUP ---
+# @app.before_request
+# def check_maintenance_and_db():
+#     if os.environ.get('MAINTENANCE_MODE') == 'true':
+#         if request.endpoint and request.endpoint != 'static':
+#             return render_template('maintenance.html'), 503
+
+#     try:
+#         inspector = inspect(db.engine)
+#         if not inspector.has_table("user"):
+#             print("--- No 'user' table found. Creating all tables... ---")
+#             with app.app_context():
+#                 db.create_all()
+#             print("--- Database tables created. ---")
+#     except Exception as e:
+#         print(f"--- ERROR checking/creating tables: {e} ---")
+
+# --- AUTO-CREATE TABLES ON STARTUP (SMARTER VERSION) ---
 @app.before_request
 def check_maintenance_and_db():
+    # 1. Check Maintenance Mode
     if os.environ.get('MAINTENANCE_MODE') == 'true':
         if request.endpoint and request.endpoint != 'static':
             return render_template('maintenance.html'), 503
 
+    # 2. Create Tables if ANY are missing
     try:
         inspector = inspect(db.engine)
-        if not inspector.has_table("user"):
-            print("--- No 'user' table found. Creating all tables... ---")
+        existing_tables = inspector.get_table_names()
+        
+        # Check if 'user', 'patient', OR 'report' are missing
+        if "user" not in existing_tables or "report" not in existing_tables or "patient" not in existing_tables:
+            print("--- ⚠️ Missing tables detected. Creating all tables... ---")
             with app.app_context():
                 db.create_all()
-            print("--- Database tables created. ---")
+            print("--- ✅ Database tables created successfully. ---")
     except Exception as e:
-        print(f"--- ERROR checking/creating tables: {e} ---")
+        print(f"--- ❌ ERROR checking/creating tables: {e} ---")
 
 # --- LOGIN MANAGER SETUP ---
 login_manager = LoginManager()
