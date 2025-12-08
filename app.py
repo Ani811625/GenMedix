@@ -11,7 +11,7 @@ import shap
 import numpy as np
 from weasyprint import HTML
 from sqlalchemy import inspect
-
+from threading import Thread
 # --- IMPORTS FOR DATABASE, LOGIN & EMAIL ---
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -26,11 +26,20 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
 
-# --- EMAIL CONFIGURATION ---
+# # --- EMAIL CONFIGURATION ---
+# app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+# app.config['MAIL_PORT'] = 587
+# app.config['MAIL_USE_TLS'] = True
+# app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') 
+# app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+# app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+
+# --- EMAIL CONFIGURATION (SSL VERSION) ---
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') 
+app.config['MAIL_PORT'] = 465  # Changed from 587
+app.config['MAIL_USE_TLS'] = False # Changed to False
+app.config['MAIL_USE_SSL'] = True  # Added SSL
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
 
@@ -158,6 +167,15 @@ except Exception as e:
     pass 
 
 # --- HELPER FUNCTIONS ---
+
+# --- ASYNC EMAIL HELPER ---
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail.send(msg)
+            print("--- ✅ Email sent successfully! ---")
+        except Exception as e:
+            print(f"--- ❌ Error sending email: {e} ---")
 
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
@@ -357,37 +375,37 @@ def register():
         if User.query.filter_by(email=email).first():
             flash('Email already registered.', 'danger')
             return redirect(url_for('register'))
-        
+
         if User.query.filter_by(medical_reg_id=reg_id).first():
             flash('Medical ID already registered.', 'danger')
             return redirect(url_for('register'))
 
         new_doctor = User(full_name=name, email=email, medical_reg_id=reg_id)
         new_doctor.set_password(password)
-        
+
         try:
             db.session.add(new_doctor)
             db.session.commit()
 
-            # Send Welcome Email
-            try:
-                msg = Message("Welcome to GenMedix!", recipients=[email])
-                msg.body = f"""
-                Dear Dr. {name},
+            # --- PREPARE EMAIL ---
+            msg = Message("Welcome to GenMedix!", recipients=[email])
+            msg.body = f"""
+            Dear Dr. {name},
 
-                Welcome to GenMedix! Your clinician account has been successfully created.
-                You can now log in to your dashboard to manage patients and generate AI-powered dosage reports.
+            Welcome to GenMedix! Your clinician account has been successfully created.
+            You can now log in to your dashboard.
 
-                Login here: https://genmedix-app.onrender.com/login
+            Login here: https://genmedix-app.onrender.com/login
 
-                Best regards,
-                The GenMedix Team
-                """
-                mail.send(msg)
-                flash('Account created! A welcome email has been sent to your inbox.', 'success')
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                flash('Account created, but we could not send the welcome email. You can still login.', 'warning')
+            Best regards,
+            The GenMedix Team
+            """
+
+            # --- SEND IN BACKGROUND (PREVENTS CRASHES) ---
+            # This creates a separate thread so the user doesn't have to wait
+            Thread(target=send_async_email, args=(app, msg)).start()
+
+            flash('Account created successfully! Please log in.', 'success')
 
         except Exception as e:
             db.session.rollback()
