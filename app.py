@@ -47,7 +47,6 @@ DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     print(f"--- ✅ SUCCESS: FOUND EXTERNAL DATABASE URL ---")
-    # Fix for SQLAlchemy: Postgres connection string must start with postgresql://
     app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://")
 else:
     print("--- ⚠️ WARNING: NO DATABASE_URL FOUND. USING LOCAL SQLITE ---")
@@ -75,37 +74,18 @@ if SUPABASE_URL and SUPABASE_KEY:
 def inject_user():
     return dict(current_user=current_user)
 
-# # --- AUTO-CREATE TABLES ON STARTUP ---
-# @app.before_request
-# def check_maintenance_and_db():
-#     if os.environ.get('MAINTENANCE_MODE') == 'true':
-#         if request.endpoint and request.endpoint != 'static':
-#             return render_template('maintenance.html'), 503
-
-#     try:
-#         inspector = inspect(db.engine)
-#         if not inspector.has_table("user"):
-#             print("--- No 'user' table found. Creating all tables... ---")
-#             with app.app_context():
-#                 db.create_all()
-#             print("--- Database tables created. ---")
-#     except Exception as e:
-#         print(f"--- ERROR checking/creating tables: {e} ---")
-
 # --- AUTO-CREATE TABLES ON STARTUP (SMARTER VERSION) ---
 @app.before_request
 def check_maintenance_and_db():
-    # 1. Check Maintenance Mode
     if os.environ.get('MAINTENANCE_MODE') == 'true':
         if request.endpoint and request.endpoint != 'static':
             return render_template('maintenance.html'), 503
 
-    # 2. Create Tables if ANY are missing
     try:
         inspector = inspect(db.engine)
         existing_tables = inspector.get_table_names()
         
-        # Check if 'user', 'patient', OR 'report' are missing
+        # Check if any key table is missing
         if "user" not in existing_tables or "report" not in existing_tables or "patient" not in existing_tables:
             print("--- ⚠️ Missing tables detected. Creating all tables... ---")
             with app.app_context():
@@ -143,7 +123,6 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
     
-    # Relationships
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
 
@@ -175,10 +154,7 @@ class Report(db.Model):
     confidence = db.Column(db.String(20))
     doctor_name = db.Column(db.String(150))
     report_data_json = db.Column(db.Text)
-    
-    # New column for permanent PDF storage link
     pdf_storage_path = db.Column(db.String(200))
-    
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
 
 class Note(db.Model):
@@ -201,7 +177,6 @@ try:
     
     enhanced_explainer = shap.TreeExplainer(enhanced_model)
     base_explainer = shap.TreeExplainer(base_model)
-    
     print("--- All models, column lists, and SHAP explainers loaded successfully. ---")
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
@@ -318,6 +293,7 @@ def get_clinical_suggestions(shap_dict, confidence):
     return suggestions
 
 def process_prediction_data(form_data):
+    # Capture Patient Info
     patient_info_dict = {
         "patient_name": form_data.get('patient_name'),
         "patient_dob": form_data.get('patient_dob'),
@@ -325,6 +301,16 @@ def process_prediction_data(form_data):
         "patient_country": form_data.get('patient_country'),
         "patient_address": form_data.get('patient_address')
     }
+    
+    # Capture New Safety Data for Display
+    safety_data_dict = {
+        "is_pregnant": "Yes" if form_data.get('is_pregnant') else "No",
+        "active_bleeding": "Yes" if form_data.get('active_bleeding') else "No",
+        "platelet_count": form_data.get('platelet_count') or "Not Provided",
+        "baseline_inr": form_data.get('baseline_inr') or "Not Provided"
+    }
+
+    # Capture Clinical Info
     clinical_data_dict = {
         "Age": float(form_data.get('Age')),
         "Height__cm_": float(form_data.get('Height__cm_')),
@@ -352,6 +338,17 @@ def process_prediction_data(form_data):
     confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
+    
+    # Append Safety Warnings to Suggestions
+    if form_data.get('is_pregnant'):
+        suggestions.append("<strong>CONTRAINDICATION:</strong> Patient is marked Pregnant. Warfarin is contraindicated in 1st trimester.")
+    if form_data.get('active_bleeding'):
+        suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected. Anticoagulation is dangerous.")
+    if form_data.get('platelet_count'):
+        try:
+            if int(form_data.get('platelet_count')) < 50000:
+                suggestions.append("<strong>SAFETY ALERT:</strong> Severe Thrombocytopenia (<50k). High bleed risk.")
+        except: pass
 
     results_dict = {
         "predicted_dose_mg_per_week": pred_data['prediction'],
@@ -363,7 +360,9 @@ def process_prediction_data(form_data):
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
-    return patient_info_dict, clinical_info_display, results_dict
+    
+    # Return 4 values now (added safety_data_dict)
+    return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
 # --- ROUTES ---
 
@@ -379,13 +378,8 @@ def dataset():
         headers = df.columns.tolist()
         rows = df.head(200).to_dict('records')
         row_count = len(df)
-    except FileNotFoundError:
-        flash(f"Error: The dataset file could not be found at '{DATA_FILE_PATH}'.", "danger")
+    except Exception:
         headers, rows, row_count = [], [], 0
-    except Exception as e:
-        flash(f"An error occurred while reading the data: {e}", "danger")
-        headers, rows, row_count = [], [], 0
-
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -421,17 +415,7 @@ def register():
 
             # Async email sending
             msg = Message("Welcome to GenMedix!", recipients=[email])
-            msg.body = f"""
-            Dear Dr. {name},
-
-            Welcome to GenMedix! Your clinician account has been successfully created.
-            You can now log in to your dashboard to manage patients and generate AI-powered dosage reports.
-
-            Login here: https://genmedix-app.onrender.com/login
-
-            Best regards,
-            The GenMedix Team
-            """
+            msg.body = f"Welcome Dr. {name} to GenMedix. Your account is created."
             Thread(target=send_async_email, args=(app, msg)).start()
 
             flash('Account created successfully! Please log in.', 'success')
@@ -545,7 +529,7 @@ def warfarin_form(patient_id):
     except: pass
     return render_template('warfarin_form.html', patient=patient, calculated_age=calculated_age)
 
-# --- GENERATE REPORT + UPLOAD TO SUPABASE ---
+# --- UPDATED: GENERATE REPORT (With Safety Checks) ---
 @app.route('/patient/<int:patient_id>/generate_warfarin_report', methods=['POST'])
 @login_required
 def generate_warfarin_report(patient_id):
@@ -554,64 +538,23 @@ def generate_warfarin_report(patient_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for('dashboard'))
 
-    # Collect Data
-    patient_info_dict = {
-        "patient_name": patient.full_name,
-        "patient_dob": patient.dob,
-        "patient_gender": patient.gender,
-        "patient_country": patient.country,
-        "patient_address": patient.address 
-    }
-    clinical_data_dict = {
-        "Age": float(request.form.get('Age')),
-        "Height__cm_": float(request.form.get('Height__cm_')),
-        "Weight__kg_": float(request.form.get('Weight__kg_')),
-    }
+    # Re-use the process function to get all data including safety info
+    patient_info, clinical_info, safety_info, results = process_prediction_data(request.form)
+    
     doctor_name = request.form.get('doctor_name')
     interacting_drugs = request.form.getlist('interacting_drugs')
-    race = request.form.get('Race')
-    cyp2c9 = request.form.get('CYP2C9_genotypes')
-    vkorc1 = request.form.get('VKORC1_genotype')
-
-    if race: clinical_data_dict[race] = 1.0
-    if cyp2c9: clinical_data_dict[cyp2c9] = 1.0
-    if vkorc1: clinical_data_dict[vkorc1] = 1.0
-
-    clinical_info_display = {
-        "Age": request.form.get('Age'),
-        "Height__cm_": request.form.get('Height__cm_'),
-        "Weight__kg_": request.form.get('Weight__kg_'),
-        "Race_Display": race.split('_')[-1] if race else "N/A",
-        "CYP2C9_Display": cyp2c9.split('__')[-1].replace('_', '/*') if cyp2c9 else "N/A",
-        "VKORC1_Display": vkorc1.split('_')[-1] if vkorc1 else "N/A"
-    }
-
-    # AI Prediction
-    pred_data = run_model_prediction(clinical_data_dict) 
-    confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
-    human_expl = get_human_explanation(pred_data['shap_explanation'])
-    suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     interaction_warnings = get_interaction_warnings(interacting_drugs)
 
-    # IDs
+    # Re-package results with ID for this specific run
     timestamp_str = datetime.now().strftime('%Y%m%d%H%M%S')
     report_id_display = f"GM-{datetime.now().strftime('%Y%m%d')}-{patient.id}"
-
-    results_dict = {
-        "predicted_dose_mg_per_week": pred_data['prediction'],
-        "model_used": pred_data['model_name'],
-        "confidence_score": confidence,
-        "confidence_explanation": conf_expl,
-        "human_explanation": human_expl,
-        "clinical_suggestions": suggestions,
-        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "report_id": report_id_display
-    }
+    results['report_id'] = report_id_display
     
     full_report_data = {
-        "patient_info": patient_info_dict,
-        "clinical_info": clinical_info_display,
-        "results": results_dict,
+        "patient_info": patient_info,
+        "clinical_info": clinical_info,
+        "safety_info": safety_info, # Added Safety Data
+        "results": results,
         "doctor_name": doctor_name,
         "interacting_drugs": interacting_drugs
     }
@@ -619,9 +562,10 @@ def generate_warfarin_report(patient_id):
     # 1. Generate PDF in-memory
     html_string = render_template(
         'display_report.html',
-        patient_info=patient_info_dict,
-        clinical_info=clinical_info_display,
-        results=results_dict,
+        patient_info=patient_info,
+        clinical_info=clinical_info,
+        safety_info=safety_info, # Pass safety info
+        results=results,
         doctor_name=doctor_name,
         request=None,
         interaction_warnings=interaction_warnings
@@ -639,7 +583,7 @@ def generate_warfarin_report(patient_id):
                 file=pdf_bytes,
                 file_options={"content-type": "application/pdf"}
             )
-            print(f"--- ✅ PDF Uploaded to Supabase: {filename} ---")
+            print(f"--- ✅ PDF Uploaded: {filename} ---")
             pdf_path = filename 
         except Exception as e:
             print(f"--- ❌ Supabase Upload Failed: {e} ---")
@@ -647,9 +591,9 @@ def generate_warfarin_report(patient_id):
     # 3. Save to Database
     new_report = Report(
         drug_name="Warfarin",
-        predicted_dose=f"{pred_data['prediction']} mg/week",
-        model_used=pred_data['model_name'],
-        confidence=confidence,
+        predicted_dose=f"{results['predicted_dose_mg_per_week']} mg/week",
+        model_used=results['model_used'],
+        confidence=results['confidence_score'],
         doctor_name=doctor_name, 
         report_data_json=json.dumps(full_report_data),
         patient_id=patient.id,
@@ -661,9 +605,10 @@ def generate_warfarin_report(patient_id):
     # 4. Render Response
     response = make_response(render_template(
         'display_report.html',
-        patient_info=patient_info_dict,
-        clinical_info=clinical_info_display,
-        results=results_dict,
+        patient_info=patient_info,
+        clinical_info=clinical_info,
+        safety_info=safety_info,
+        results=results,
         doctor_name=doctor_name,
         request=request, 
         interaction_warnings=interaction_warnings
@@ -671,7 +616,6 @@ def generate_warfarin_report(patient_id):
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
 
-# --- DOWNLOAD ARCHIVED PDF ROUTE ---
 @app.route('/download_archived_report/<int:report_id>')
 @login_required
 def download_archived_report(report_id):
@@ -696,10 +640,9 @@ def download_archived_report(report_id):
             return redirect(url_for('view_report', report_id=report_id))
     except Exception as e:
         print(f"Error fetching signed URL: {e}")
-        flash("Error retrieving file from cloud storage.", "danger")
+        flash("Error retrieving file.", "danger")
         return redirect(url_for('view_report', report_id=report_id))
 
-# --- VIEW AND DELETE ROUTES ---
 @app.route('/report/<int:report_id>')
 @login_required
 def view_report(report_id):
@@ -721,6 +664,7 @@ def view_report(report_id):
         'display_report.html',
         patient_info=report_data.get('patient_info'),
         clinical_info=report_data.get('clinical_info'),
+        safety_info=report_data.get('safety_info', {}), # Retrieve safety info
         results=report_data.get('results'),
         doctor_name=report_data.get('doctor_name'),
         request=None,
@@ -732,14 +676,16 @@ def view_report(report_id):
 @app.route('/download_report', methods=['POST'])
 @login_required
 def download_report():
-    form_data = request.form.to_dict()
-    patient_info, clinical_info, results = process_prediction_data(form_data)
+    form_data = request.form
+    # Unpack 4 values now
+    patient_info, clinical_info, safety_info, results = process_prediction_data(form_data)
     doctor_name = form_data.get('doctor_name', current_user.full_name)
 
     html_string = render_template(
         'display_report.html', 
         patient_info=patient_info, 
         clinical_info=clinical_info, 
+        safety_info=safety_info,
         results=results,
         doctor_name=doctor_name,
         request=None
@@ -756,11 +702,9 @@ def delete_report(report_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for('dashboard'))
         
-    # Delete PDF from Storage
     if report.pdf_storage_path and supabase:
         try:
             supabase.storage.from_("medical_reports").remove([report.pdf_storage_path])
-            print(f"--- Deleted PDF: {report.pdf_storage_path} ---")
         except Exception as e:
             print(f"--- Error deleting PDF: {e} ---")
             
@@ -777,8 +721,6 @@ def delete_patient(patient_id):
         flash("Unauthorized access.", "danger")
         return redirect(url_for('dashboard'))
     
-    # Optional: Logic to delete all PDFs for this patient could go here, 
-    # but database cascading handles the row deletion.
     db.session.delete(patient)
     db.session.commit()
     flash(f"Patient '{patient.full_name}' deleted.", "success")
@@ -796,7 +738,7 @@ def edit_patient(patient_id):
         new_aadhar = request.form.get('aadhar')
         if new_aadhar != patient.aadhar:
             if Patient.query.filter_by(aadhar=new_aadhar).first():
-                flash('That Aadhar number is already assigned to another patient.', 'danger')
+                flash('That Aadhar number is already assigned.', 'danger')
                 return render_template('edit_patient.html', patient=patient)
         
         patient.full_name = request.form.get('full_name')
@@ -866,6 +808,13 @@ def account():
             return redirect(url_for('home'))
 
     return render_template('account.html')
+
+# --- REPAIR ROUTE ---
+@app.route('/force_repair')
+def force_repair():
+    with app.app_context():
+        db.create_all()
+    return "<h1>Fixed! Database tables have been rebuilt.</h1>"
 
 if __name__ == '__main__':
     app.run(debug=True)
