@@ -1,253 +1,258 @@
 {% extends "base.html" %}
-{% block title %}New Prediction - {{ patient.full_name }}{% endblock %}
+{% block title %}Clinical Assessment - {{ patient.full_name }}{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100">
-    <div class="container py-5">
+<div class="split-layout">
+    
+    <div class="split-sidebar">
+        <h5 class="mb-4 text-uppercase text-muted ls-1" style="font-size: 0.75rem; letter-spacing: 1px;">Assessment Protocol</h5>
         
-        <div class="row justify-content-center mb-4">
-            <div class="col-lg-8">
-                <div class="position-relative m-4">
-                    <div class="progress" style="height: 2px;">
-                        <div class="progress-bar bg-warning" role="progressbar" style="width: 0%;" id="progressBar"></div>
-                    </div>
-                    <button type="button" class="position-absolute top-0 start-0 translate-middle btn btn-sm btn-warning rounded-pill" style="width: 2rem; height:2rem;">1</button>
-                    <button type="button" class="position-absolute top-0 start-50 translate-middle btn btn-sm btn-secondary rounded-pill" style="width: 2rem; height:2rem;" id="step2-indicator">2</button>
-                    <button type="button" class="position-absolute top-0 start-100 translate-middle btn btn-sm btn-secondary rounded-pill" style="width: 2rem; height:2rem;" id="step3-indicator">3</button>
-                </div>
-                <div class="d-flex justify-content-between text-muted fs-7 px-2">
-                    <span>Safety Check</span>
-                    <span>Clinical Data</span>
-                    <span>Genetics</span>
-                </div>
-            </div>
+        <div class="step-indicator active" id="nav-step1">
+            Pre-Screening Safety
+            <div class="step-line"></div>
+        </div>
+        <div class="step-indicator" id="nav-step2">
+            Clinical Parameters
+            <div class="step-line"></div>
+        </div>
+        <div class="step-indicator" id="nav-step3">
+            Genomic Profile
         </div>
 
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-lg rounded-4">
-                    <div class="card-body p-5">
-                        
-                        <h3 class="mb-1">Warfarin Dosage Prediction</h3>
-                        <p class="text-muted mb-4">Patient: <strong>{{ patient.full_name }}</strong> | Age: {{ calculated_age }}</p>
-
-                        <form action="{{ url_for('generate_warfarin_report', patient_id=patient.id) }}" method="POST" id="wizardForm">
-                            <input type="hidden" name="doctor_name" value="{{ current_user.full_name }}">
-                            
-                            <input type="hidden" name="patient_name" value="{{ patient.full_name }}">
-                            <input type="hidden" name="patient_dob" value="{{ patient.dob }}">
-                            <input type="hidden" name="patient_gender" value="{{ patient.gender }}">
-                            <input type="hidden" name="patient_country" value="{{ patient.country }}">
-                            <input type="hidden" name="patient_address" value="{{ patient.address }}">
-
-                            <div class="step-section" id="step1">
-                                <h5 class="mb-3 text-warning"><i class="ti ti-shield-check me-2"></i>Step 1: Safety Pre-Screening</h5>
-                                <div class="alert alert-light border-warning border-start border-4" role="alert">
-                                    <i class="ti ti-info-circle me-2 text-warning"></i>
-                                    These checks ensure the patient is medically fit for Warfarin therapy.
-                                </div>
-
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-bold">Contraindications</label>
-                                        <div class="form-check card p-3 mb-2 bg-light border-0">
-                                            <input class="form-check-input" type="checkbox" name="is_pregnant" id="is_pregnant" value="yes">
-                                            <label class="form-check-label text-danger fw-bold" for="is_pregnant">
-                                                Is the patient currently pregnant? (First Trimester)
-                                            </label>
-                                        </div>
-                                        <div class="form-check card p-3 mb-2 bg-light border-0">
-                                            <input class="form-check-input" type="checkbox" name="active_bleeding" id="active_bleeding" value="yes">
-                                            <label class="form-check-label text-danger fw-bold" for="active_bleeding">
-                                                Does the patient have active bleeding (GI, intracranial)?
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label for="platelet_count" class="form-label">Platelet Count (Optional)</label>
-                                        <input type="number" class="form-control" id="platelet_count" name="platelet_count" placeholder="e.g. 150000">
-                                        <div class="form-text text-danger d-none" id="platelet-warning">Warning: Low platelets (&lt;50k) increases bleed risk.</div>
-                                    </div>
-                                    
-                                    <div class="col-md-6">
-                                        <label for="baseline_inr" class="form-label">Baseline INR (Optional)</label>
-                                        <input type="number" step="0.1" class="form-control" id="baseline_inr" name="baseline_inr" placeholder="e.g. 1.0">
-                                    </div>
-                                </div>
-
-                                <div class="mt-4 text-end">
-                                    <button type="button" class="btn btn-warning px-4" onclick="nextStep(2)">Next: Clinical Data <i class="ti ti-arrow-right ms-2"></i></button>
-                                </div>
-                            </div>
-
-                            <div class="step-section d-none" id="step2">
-                                <h5 class="mb-3 text-primary"><i class="ti ti-activity me-2"></i>Step 2: Clinical Factors</h5>
-                                
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label for="Age" class="form-label">Age (Years)</label>
-                                        <input type="number" class="form-control" id="Age" name="Age" value="{{ calculated_age }}" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="Height__cm_" class="form-label">Height (cm)</label>
-                                        <input type="number" step="0.1" class="form-control" id="Height__cm_" name="Height__cm_" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label for="Weight__kg_" class="form-label">Weight (kg)</label>
-                                        <input type="number" step="0.1" class="form-control" id="Weight__kg_" name="Weight__kg_" required>
-                                    </div>
-
-                                    <div class="col-12">
-                                        <label class="form-label">Race / Ethnicity</label>
-                                        <select class="form-select" name="Race" required>
-                                            <option value="" selected disabled>-- Select Race --</option>
-                                            <option value="Race_White">White / Caucasian</option>
-                                            <option value="Race_Asian">Asian</option>
-                                            <option value="Race_Black or African American">Black or African American</option>
-                                            <option value="Race_Unknown">Unknown / Other</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-12">
-                                        <label class="form-label text-danger">Medication Interactions (Check all that apply)</label>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="interacting_drugs" value="Amiodarone" id="drug1">
-                                                    <label class="form-check-label" for="drug1">Amiodarone (Cordarone)</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="interacting_drugs" value="Fluconazole" id="drug2">
-                                                    <label class="form-check-label" for="drug2">Fluconazole (Diflucan)</label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="interacting_drugs" value="Rifampin" id="drug3">
-                                                    <label class="form-check-label" for="drug3">Rifampin</label>
-                                                </div>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="interacting_drugs" value="Carbamazepine" id="drug4">
-                                                    <label class="form-check-label" for="drug4">Carbamazepine (Tegretol)</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mt-4 d-flex justify-content-between">
-                                    <button type="button" class="btn btn-outline-secondary" onclick="prevStep(1)"><i class="ti ti-arrow-left me-2"></i> Back</button>
-                                    <button type="button" class="btn btn-warning px-4" onclick="nextStep(3)">Next: Genomics <i class="ti ti-arrow-right ms-2"></i></button>
-                                </div>
-                            </div>
-
-                            <div class="step-section d-none" id="step3">
-                                <h5 class="mb-3 text-info"><i class="ti ti-dna me-2"></i>Step 3: Genomic Markers (Optional)</h5>
-                                <div class="alert alert-info py-2 fs-7">
-                                    <i class="ti ti-info-circle me-1"></i> If genomic data is unavailable, the AI will use the Base Clinical Model automatically.
-                                </div>
-
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">CYP2C9 Genotype</label>
-                                        <select class="form-select" name="CYP2C9_genotypes">
-                                            <option value="" selected>-- Not Available --</option>
-                                            <option value="CYP2C9_genotypes_*1/*1">*1/*1 (Normal Metabolizer)</option>
-                                            <option value="CYP2C9_genotypes_*1/*2">*1/*2 (Intermediate)</option>
-                                            <option value="CYP2C9_genotypes_*1/*3">*1/*3 (Intermediate)</option>
-                                            <option value="CYP2C9_genotypes_*2/*2">*2/*2 (Poor Metabolizer)</option>
-                                            <option value="CYP2C9_genotypes_*2/*3">*2/*3 (Poor Metabolizer)</option>
-                                            <option value="CYP2C9_genotypes_*3/*3">*3/*3 (Poor Metabolizer)</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label class="form-label">VKORC1 Genotype</label>
-                                        <select class="form-select" name="VKORC1_genotype">
-                                            <option value="" selected>-- Not Available --</option>
-                                            <option value="VKORC1_genotype_G/G">G/G (Normal Sensitivity)</option>
-                                            <option value="VKORC1_genotype_A/G">A/G (Intermediate Sensitivity)</option>
-                                            <option value="VKORC1_genotype_A/A">A/A (High Sensitivity)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="mt-5 d-flex justify-content-between align-items-center">
-                                    <button type="button" class="btn btn-outline-secondary" onclick="prevStep(2)"><i class="ti ti-arrow-left me-2"></i> Back</button>
-                                    <button type="submit" class="btn btn-success btn-lg shadow">
-                                        <i class="ti ti-report-medical me-2"></i> Generate Report
-                                    </button>
-                                </div>
-                            </div>
-
-                        </form>
-                    </div>
+        <div class="mt-auto">
+            <div class="p-3 bg-white border rounded shadow-sm">
+                <small class="text-muted d-block mb-1 text-uppercase" style="font-size: 0.7rem;">Patient Record</small>
+                <div class="fw-bold text-dark">{{ patient.full_name }}</div>
+                <div class="small text-muted mb-1">ID: {{ patient.aadhar }}</div>
+                <div class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">
+                    Age: {{ calculated_age }}
                 </div>
             </div>
         </div>
     </div>
-</main>
+
+    <div class="split-content">
+        <form action="{{ url_for('generate_warfarin_report', patient_id=patient.id) }}" method="POST" id="wizardForm">
+            
+            <input type="hidden" name="doctor_name" value="{{ current_user.full_name }}">
+            <input type="hidden" name="patient_name" value="{{ patient.full_name }}">
+            <input type="hidden" name="patient_dob" value="{{ patient.dob }}">
+            <input type="hidden" name="patient_gender" value="{{ patient.gender }}">
+            <input type="hidden" name="patient_country" value="{{ patient.country }}">
+            <input type="hidden" name="patient_address" value="{{ patient.address }}">
+            <input type="hidden" name="Age" value="{{ calculated_age }}">
+
+            <div class="form-section" id="step1">
+                <div class="form-section-header">
+                    <h2>Safety Pre-Screening</h2>
+                    <p>Verify contraindications before proceeding with dosage calculation.</p>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="alert alert-warning d-flex align-items-center" role="alert">
+                            <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
+                            <div>
+                                <strong>Clinical Warning:</strong> Warfarin is a high-alert medication. 
+                                Verify absence of active bleeding and pregnancy status.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label text-danger">Absolute Contraindications</label>
+                        <div class="d-flex gap-3 flex-column flex-md-row">
+                            <label class="selection-card flex-fill">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="is_pregnant" id="is_pregnant" value="yes">
+                                    <label class="form-check-label fw-bold" for="is_pregnant">Patient is Pregnant</label>
+                                </div>
+                                <div class="small text-muted ms-4 mt-1">Strictly contraindicated in 1st trimester (Teratogenic).</div>
+                            </label>
+
+                            <label class="selection-card flex-fill">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="active_bleeding" id="active_bleeding" value="yes">
+                                    <label class="form-check-label fw-bold" for="active_bleeding">Active Bleeding</label>
+                                </div>
+                                <div class="small text-muted ms-4 mt-1">History of GI bleed, intracranial hemorrhage, or recent surgery.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Platelet Count (/µL)</label>
+                        <input type="number" class="form-control" id="platelet_count" name="platelet_count" placeholder="Reference: 150,000 - 450,000">
+                        <div class="form-text text-danger d-none fw-bold" id="platelet-warning">
+                            <i class="fas fa-times-circle me-1"></i> Critical: Platelets < 50k
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Baseline INR</label>
+                        <input type="number" step="0.1" class="form-control" name="baseline_inr" placeholder="Normal: 0.8 - 1.2">
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-3 border-top d-flex justify-content-end">
+                    <button type="button" class="btn btn-primary btn-lg px-4" onclick="nextStep(2)">
+                        Continue to Clinical Data <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-section d-none" id="step2">
+                <div class="form-section-header">
+                    <h2>Clinical Parameters</h2>
+                    <p>Physical metrics and concomitant medications.</p>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label">Height (cm)</label>
+                        <input type="number" step="0.1" class="form-control" id="Height__cm_" name="Height__cm_" placeholder="e.g. 175" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Weight (kg)</label>
+                        <input type="number" step="0.1" class="form-control" id="Weight__kg_" name="Weight__kg_" placeholder="e.g. 70" required>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label class="form-label">Race / Ethnicity</label>
+                        <select class="form-select" name="Race" required>
+                            <option value="" selected disabled>Select...</option>
+                            <option value="Race_White">White / Caucasian</option>
+                            <option value="Race_Asian">Asian</option>
+                            <option value="Race_Black or African American">Black or African American</option>
+                            <option value="Race_Unknown">Unknown / Other</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label text-primary">Drug Interactions (Check all that apply)</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="selection-card d-block">
+                                    <input class="form-check-input me-2" type="checkbox" name="interacting_drugs" value="Amiodarone">
+                                    <span class="fw-500">Amiodarone</span>
+                                    <div class="small text-muted ms-4">Increases Warfarin effect</div>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="selection-card d-block">
+                                    <input class="form-check-input me-2" type="checkbox" name="interacting_drugs" value="Fluconazole">
+                                    <span class="fw-500">Fluconazole</span>
+                                    <div class="small text-muted ms-4">Increases Warfarin effect</div>
+                                </label>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="selection-card d-block">
+                                    <input class="form-check-input me-2" type="checkbox" name="interacting_drugs" value="Rifampin">
+                                    <span class="fw-500">Rifampin</span>
+                                    <div class="small text-muted ms-4">Decreases Warfarin effect</div>
+                                </label>
+                            </div>
+                             <div class="col-md-6">
+                                <label class="selection-card d-block">
+                                    <input class="form-check-input me-2" type="checkbox" name="interacting_drugs" value="Carbamazepine">
+                                    <span class="fw-500">Carbamazepine</span>
+                                    <div class="small text-muted ms-4">Decreases Warfarin effect</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-3 border-top d-flex justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" onclick="prevStep(1)">Back</button>
+                    <button type="button" class="btn btn-primary btn-lg px-4" onclick="nextStep(3)">
+                        Continue to Genomics <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="form-section d-none" id="step3">
+                <div class="form-section-header">
+                    <h2>Genomic Profile</h2>
+                    <p>Enter variant data if available. The AI will switch to the Enhanced Model automatically.</p>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label">CYP2C9 Genotype (Metabolism)</label>
+                        <select class="form-select" name="CYP2C9_genotypes">
+                            <option value="">Not Available (Use Clinical Model)</option>
+                            <option value="CYP2C9_genotypes_*1/*1">*1/*1 (Normal Metabolizer)</option>
+                            <option value="CYP2C9_genotypes_*1/*2">*1/*2 (Intermediate)</option>
+                            <option value="CYP2C9_genotypes_*1/*3">*1/*3 (Intermediate)</option>
+                            <option value="CYP2C9_genotypes_*2/*2">*2/*2 (Poor Metabolizer)</option>
+                            <option value="CYP2C9_genotypes_*2/*3">*2/*3 (Poor Metabolizer)</option>
+                            <option value="CYP2C9_genotypes_*3/*3">*3/*3 (Poor Metabolizer)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">VKORC1 Genotype (Sensitivity)</label>
+                        <select class="form-select" name="VKORC1_genotype">
+                            <option value="">Not Available (Use Clinical Model)</option>
+                            <option value="VKORC1_genotype_G/G">G/G (Normal Sensitivity)</option>
+                            <option value="VKORC1_genotype_A/G">A/G (Intermediate Sensitivity)</option>
+                            <option value="VKORC1_genotype_A/A">A/A (High Sensitivity)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-5 pt-3 border-top d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-secondary" onclick="prevStep(2)">Back</button>
+                    <button type="submit" class="btn btn-success btn-lg px-5 shadow-sm">
+                        <i class="fas fa-file-medical-alt me-2"></i> Generate Analysis Report
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
 
 <script>
-    // Simple JavaScript to handle the Multi-Step Logic
     function nextStep(step) {
-        // Validate current step before moving
+        // Step 1 Validation (Safety)
         if(step === 2) {
-            // Check pregnancy safety trigger
             if(document.getElementById('is_pregnant').checked || document.getElementById('active_bleeding').checked) {
-                if(!confirm("WARNING: You selected a Contraindication (Pregnancy or Bleeding).\n\nProceeding with Warfarin may be dangerous. Are you sure you want to continue?")) {
-                    return;
-                }
+               if(!confirm("⚠️ CONTRAINDICATION ALERT\n\nYou have flagged this patient as High Risk (Pregnant or Bleeding).\nDo you really want to proceed with Warfarin calculation?")) return;
             }
         }
-        if (step === 3) {
-            // Basic validation for Step 2
-            let age = document.getElementById('Age').value;
-            let h = document.getElementById('Height__cm_').value;
-            let w = document.getElementById('Weight__kg_').value;
-            if (!age || !h || !w) {
-                alert("Please fill in Age, Height, and Weight.");
+        // Step 2 Validation (Clinical)
+        if(step === 3) {
+            const height = document.getElementById('Height__cm_').value;
+            const weight = document.getElementById('Weight__kg_').value;
+            
+            if(!height || !weight) {
+                alert("Please complete the Height and Weight fields.");
                 return;
             }
         }
 
-        // Hide all steps
-        document.querySelectorAll('.step-section').forEach(el => el.classList.add('d-none'));
-        // Show next step
+        // Toggle Views
+        document.querySelectorAll('.form-section').forEach(el => el.classList.add('d-none'));
         document.getElementById('step' + step).classList.remove('d-none');
         
-        // Update Progress Bar
-        updateProgress(step);
+        // Update Sidebar Indicators
+        document.querySelectorAll('.step-indicator').forEach(el => el.classList.remove('active', 'completed'));
+        for(let i=1; i<step; i++) {
+            document.getElementById('nav-step'+i).classList.add('completed');
+        }
+        document.getElementById('nav-step'+step).classList.add('active');
     }
 
     function prevStep(step) {
-        document.querySelectorAll('.step-section').forEach(el => el.classList.add('d-none'));
+        document.querySelectorAll('.form-section').forEach(el => el.classList.add('d-none'));
         document.getElementById('step' + step).classList.remove('d-none');
-        updateProgress(step);
+        
+        // Update Sidebar Indicators
+        document.querySelectorAll('.step-indicator').forEach(el => el.classList.remove('active'));
+        document.getElementById('nav-step'+step).classList.add('active');
     }
 
-    function updateProgress(step) {
-        const bar = document.getElementById('progressBar');
-        const ind2 = document.getElementById('step2-indicator');
-        const ind3 = document.getElementById('step3-indicator');
-
-        if(step === 1) {
-            bar.style.width = '0%';
-            ind2.classList.replace('btn-warning', 'btn-secondary');
-            ind3.classList.replace('btn-warning', 'btn-secondary');
-        } else if(step === 2) {
-            bar.style.width = '50%';
-            ind2.classList.replace('btn-secondary', 'btn-warning');
-            ind3.classList.replace('btn-warning', 'btn-secondary');
-        } else if(step === 3) {
-            bar.style.width = '100%';
-            ind2.classList.replace('btn-secondary', 'btn-warning');
-            ind3.classList.replace('btn-secondary', 'btn-warning');
-        }
-    }
-
-    // Platelet Warning Logic
+    // Real-time Platelet Warning
     document.getElementById('platelet_count').addEventListener('input', function(e) {
         const val = parseInt(e.target.value);
         const warning = document.getElementById('platelet-warning');

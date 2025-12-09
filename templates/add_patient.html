@@ -2,102 +2,89 @@
 {% block title %}Add New Patient - GenMedix{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100" style="padding-top: 120px;">
+<div class="split-layout" style="padding-top: 50px;">
+    <div class="split-sidebar" style="padding-top: 50px;">
+        <h5 class="mb-4 text-uppercase text-muted ls-1">Onboarding</h5>
+        <div class="p-3 bg-white border rounded shadow-sm mb-4">
+            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-info-circle me-2"></i>Instructions</h6>
+            <p class="small text-muted mb-0">
+                Please ensure the <strong>Aadhar ID</strong> is unique and verifiable. 
+                This ID will be used as the primary key for retrieving patient history across the GenMedix network.
+            </p>
+        </div>
+        
+        <div class="mt-auto text-muted small">
+            <i class="fas fa-lock me-1"></i> Data Encryption Active
+        </div>
+    </div>
 
-    <section class="patient-header-section position-relative">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-12 col-md-12 col-sm-12">
-                    <div class="d-flex align-items-center">
-                        <div class="patient-avatar">
-                            <i class="ti ti-user-plus"></i>
-                        </div>
-                        <div>
-                            <h1 class="mb-0 text-white">Add New Patient</h1>
-                            <p class="text-white-50 mb-0" style="padding-top: 30px;">
-                                Enter the patient's general information. This is a one-time setup.
-                            </p>
-                        </div>
-                    </div>
+    <div class="split-content">
+        <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
+            <div>
+                <h2 class="mb-1">Register New Patient</h2>
+                <p class="text-muted mb-0">Create a new digital health record.</p>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+
+        <form method="POST" action="{{ url_for('add_patient') }}" style="max-width: 800px;">
+            
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Identity</h6>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Full Legal Name</label>
+                    <input type="text" class="form-control" name="full_name" placeholder="e.g. Rahul Sharma" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Aadhar ID (UIDAI)</label>
+                    <input type="text" class="form-control" name="aadhar" placeholder="12-digit ID" required>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section class="patient-list-section position-relative pb-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                {% set alert_class = 'alert-danger' if category == 'danger' else 'alert-success' %}
-                                <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-
-                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
-                        
-                        <form action="{{ url_for('add_patient') }}" method="POST">
-                            <h5 class="mb-3">Patient's General Information</h5>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="full_name" class="form-label fs-7 fw-500">Full Name</label>
-                                    <input type="text" class="form-control" id="full_name" name="full_name" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="aadhar" class="form-label fs-7 fw-500">Aadhar Number (Unique ID)</label>
-                                    <input type="text" class="form-control" id="aadhar" name="aadhar" 
-   pattern="[0-9]{12}" inputmode="numeric" 
-   title="Must be a 12-digit numeric Aadhar number" 
-   minlength="12" maxlength="12" required>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="dob" class="form-label fs-7 fw-500">Date of Birth</label>
-                                    <input type="date" class="form-control" id="dob" name="dob" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="gender" class="form-label fs-7 fw-500">Gender</label>
-                                    <select class="form-select" id="gender" name="gender" required>
-                                        <option value="" selected disabled>-- Select --</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                             <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="country" class="form-label fs-7 fw-500">Country</label>
-                                    <input type="text" class="form-control" id="country" name="country" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="phone" class="form-label fs-7 fw-500">Phone Number (Optional)</label>
-                                    <input type="tel" class="form-control" id="phone" name="phone">
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12 mb-3">
-                                    <label for="address" class="form-label fs-7 fw-500">Address (City/State)</label>
-                                    <input type="text" class="form-control" id="address" name="address" required>
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-warning btn-hover-secondery w-100 btn-lg text-capitalize mt-3">
-                                Save Patient
-                            </button>
-                        </form>
-                    </div>
+            <div class="row g-4 mb-4">
+                <div class="col-12">
+                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Demographics</h6>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Date of Birth</label>
+                    <input type="date" class="form-control" name="dob" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Biological Sex</label>
+                    <select class="form-select" name="gender" required>
+                        <option value="" selected disabled>Select...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
             </div>
-        </div>
-    </section>
-</main>
+
+            <div class="row g-4 mb-5">
+                <div class="col-12">
+                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Contact & Location</h6>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Country</label>
+                    <select class="form-select" name="country" required>
+                        <option value="India" selected>India</option>
+                        <option value="USA">USA</option>
+                        <option value="UK">UK</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label">Residential Address</label>
+                    <textarea class="form-control" name="address" rows="2" placeholder="Full street address"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary btn-lg px-5">Create Record</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

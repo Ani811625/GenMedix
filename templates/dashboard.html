@@ -2,136 +2,106 @@
 {% block title %}Clinician Dashboard - GenMedix{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100" style="padding-top: 120px;">
+<div class="container py-5" style="padding-top: 50px;">
+    
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mb-5" style="padding-top: 50px;">
+        <div>
+            <h2 class="fw-bold text-secondary mb-1">Patient Registry</h2>
+            <p class="text-muted mb-0">Manage patient records and dosage reports.</p>
+        </div>
+        <div class="d-flex gap-3 mt-3 mt-md-0">
+            <div class="d-flex align-items-center bg-white px-3 py-2 rounded border">
+                <div class="text-end me-3 border-end pe-3">
+                    <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Total Patients</div>
+                    <div class="fw-bold text-primary fs-5">{{ total_patients }}</div>
+                </div>
+                <div class="text-end">
+                    <div class="text-muted" style="font-size: 0.75rem; text-transform: uppercase;">Total Reports</div>
+                    <div class="fw-bold text-success fs-5">{{ total_reports }}</div>
+                </div>
+            </div>
+            <a href="{{ url_for('add_patient') }}" class="btn btn-primary d-flex align-items-center px-4">
+                <i class="fas fa-plus-circle me-2"></i> Add Patient
+            </a>
+        </div>
+    </div>
 
-    <section class="patient-header-section position-relative">
-        <div class="container">
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-3">
             <div class="row align-items-center">
-                
-                <div class="col-12 col-lg-8 mb-3 mb-lg-0">
-                    <div class="d-flex align-items-center">
-                        <div class="patient-avatar">
-                            <i class="ti ti-layout-dashboard"></i>
-                        </div>
-                        <div>
-                            <h1 class="mb-0 text-white">Clinician Dashboard</h1>
-                            <p class="text-white-50 mb-0">
-                                Welcome, {{ current_user.full_name }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-12 col-lg-4 text-lg-end">
-                    <a href="{{ url_for('add_patient') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-sm w-100 w-lg-auto">
-                        <i class="ti ti-user-plus me-2"></i> Add New Patient
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="dashboard-stats-section">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="ti ti-users"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Total Patients</h3>
-                            <div class="stat-number">{{ total_patients }}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="ti ti-file-text"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Total Reports</h3>
-                            <div class="stat-number">{{ total_reports }}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="ti ti-checkup-list"></i>
-                        </div>
-                        <div class="stat-content">
-                            <h3 class="stat-title">Avg. Confidence</h3>
-                            <div class="stat-number text-muted" style="font-size: 2rem;">N/A</div>
-                        </div>
+                <div class="col-md-6">
+                    <div class="input-group input-group-sm" style="max-width: 300px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control bg-light border-start-0" placeholder="Search patients...">
                     </div>
                 </div>
             </div>
         </div>
-    </section>
-
-
-    <section class="patient-list-section position-relative pb-5">
-        <div class="container">
-            
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        {% set alert_class = 'alert-danger' if category == 'danger' else 'alert-success' %}
-                        <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="row">
-                <div class="col-12">
-                    <h2 class="mb-4">Your Patient List</h2>
-                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle fs-7">
-                                <thead>
-                                    <tr>
-                                        <th scope="col" class="fs-6">Patient Name</th>
-                                        <th scope="col" class="fs-6">Date of Birth</th>
-                                        <th scope="col" class="fs-6">Aadhar Number</th>
-                                        <th scope="col" class="fs-6 text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% if patients %}
-                                        {% for patient in patients %}
-                                            <tr>
-                                                <td><strong>{{ patient.full_name }}</strong></td>
-                                                <td>{{ patient.dob }}</td>
-                                                <td>{{ patient.aadhar }}</td>
-                                                <td class="text-end">
-                                                    <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-sm btn-outline-warning">
-                                                        <i class="ti ti-user-circle me-1"></i> View Profile
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr>
-                                            <td colspan="4" class="text-center text-muted p-4">
-                                                You have not added any patients yet. <br>
-                                                <a href="{{ url_for('add_patient') }}" class="btn btn-warning mt-3">Add Your First Patient</a>
-                                            </td>
-                                        </tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Patient Name</th>
+                        <th>Aadhar ID</th>
+                        <th>Age / Gender</th>
+                        <th>Last Activity</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if patients %}
+                        {% for p in patients %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: 600;">
+                                        {{ p.full_name[0] }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ p.full_name }}</div>
+                                        <div class="small text-muted">{{ p.address[:30] }}...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-secondary fw-500">{{ p.aadhar }}</td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ p.gender }}</span>
+                                <span class="ms-1 text-muted small">{{ p.dob }}</span>
+                            </td>
+                            <td class="text-muted small">
+                                {% if p.reports %}
+                                    Report: {{ p.reports[-1].generated_at.strftime('%b %d') }}
+                                {% else %}
+                                    Created: {{ p.dob }}
+                                {% endif %}
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ url_for('view_patient', patient_id=p.id) }}" class="btn btn-outline-secondary btn-sm">
+                                    View Profile
+                                </a>
+                                <a href="{{ url_for('select_drug', patient_id=p.id) }}" class="btn btn-primary btn-sm ms-1">
+                                    <i class="fas fa-bolt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted mb-3"><i class="fas fa-user-injured fa-3x opacity-25"></i></div>
+                                <h6 class="text-secondary">No patients found</h6>
+                                <p class="small text-muted">Get started by adding your first patient to the registry.</p>
+                                <a href="{{ url_for('add_patient') }}" class="btn btn-sm btn-outline-primary">Add Patient</a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
-    </section>
-</main>
+        <div class="card-footer bg-white border-top p-3 text-end">
+            <small class="text-muted">Showing {{ patients|length }} records</small>
+        </div>
+    </div>
+</div>
 {% endblock %}

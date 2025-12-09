@@ -1,263 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-100">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}GenMedix{% endblock %}</title> <link rel="stylesheet" href="{{ url_for('static', filename='assets/libs/OwlCarousel-2/dist/assets/owl.carousel.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/iconfont/tabler-icons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='dist/css/style.css') }}?v=1.1">
-    <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+    <title>{% block title %}GenMedix{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-    <header class="main-header position-fixed w-100">
-            <div class="container">
-                <nav class="navbar navbar-expand-xl py-0">
-                    <div class="logo">
-                        <a class="navbar-brand py-0 me-0" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="DoseRight AI Logo" style=" width: 150px;"></a>
+<body class="d-flex flex-column h-100">
+
+    <nav class="navbar navbar-expand-lg bg-white border-bottom fixed-top" style="height: 64px;">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
+                <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="32" class="me-2">
+                <span style="font-weight: 700; color: #091E42; font-size: 1.25rem; letter-spacing: -0.5px;">GenMedix</span>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav ms-auto align-items-center gap-3">
+                    
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link fw-500 text-secondary" href="{{ url_for('dashboard') }}">Clinician Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link fw-500 text-secondary" href="{{ url_for('dataset') }}">Dataset</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-dark fw-600" href="#" role="button" data-bs-toggle="dropdown">
+                                <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style="width:32px; height:32px; font-size:0.9rem;">
+                                    {{ current_user.full_name[0] }}
+                                </div>
+                                <span>{{ current_user.full_name.split(' ')[0] }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2">
+                                <li><a class="dropdown-item rounded" href="{{ url_for('account') }}"><i class="fas fa-user-cog me-2"></i>Settings</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item rounded text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
+                            </ul>
+                        </li>
+
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link text-secondary fw-500" href="#features">Features</a></li>
+                        <li class="nav-item"><a class="nav-link text-secondary fw-500" href="#science">Science</a></li>
+                        <li class="nav-item ms-2">
+                            <a class="btn btn-outline-secondary px-4" href="{{ url_for('login') }}">Log In</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary px-4" href="{{ url_for('register') }}">Request Access</a>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- <div class="container" style="margin-top: 80px;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show border-0 shadow-sm" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>{{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <a class="d-inline-block d-lg-block d-xl-none d-xxl-none  nav-toggler text-decoration-none"  data-bs-toggle="offcanvas" href="#offcanvasExample" aria-controls="offcanvasExample">
-                        <i class="ti ti-menu-2 text-warning"></i>
-                    </a>
-                    <div class="collapse navbar-collapse" id="navbarSupportedContent">                       
-                        <ul class="navbar-nav ms-auto">
-    <li class="nav-item">
-        <a class="nav-link text-capitalize" href="{{ url_for('home') }}">Home</a>
-    </li>
-    {% if current_user.is_authenticated %}
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('dashboard') }}">Dashboard</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('account') }}">Account</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('logout') }}">Logout</a>
-        </li>
-    {% else %}
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('login') }}">Login</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('register') }}">Register</a>
-        </li>
-    {% endif %}
-</ul>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div> -->
+
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {% if category == 'success' %}<i class="fas fa-check-circle text-success me-3 fs-5"></i>
+                        {% elif category == 'danger' %}<i class="fas fa-exclamation-circle text-danger me-3 fs-5"></i>
+                        {% else %}<i class="fas fa-info-circle text-primary me-3 fs-5"></i>
+                        {% endif %}
                         
-                        </div>
-                </nav>
-            </div>
-
-            <div class="offcanvas offcanvas-start"  tabindex="-1" id="offcanvasExample" aria-labelledby="offcanvasExampleLabel">
-                <div class="offcanvas-header">
-                    <div class="logo">
-                        <a class="navbar-brand py-0 me-0" href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/Creato-logo.svg') }}" alt=""></a>
-                    </div> 
-                    <button type="button" class="btn-close text-reset  ms-auto" data-bs-dismiss="offcanvas" aria-label="Close"><i class="ti ti-x text-warning"></i></button>
-                </div>
-                <div class="offcanvas-body pt-0">
-                    <ul class="navbar-nav ms-auto">
-    <li class="nav-item">
-        <a class="nav-link text-capitalize" href="{{ url_for('home') }}">Home</a>
-    </li>
-    {% if current_user.is_authenticated %}
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('dashboard') }}">Dashboard</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('account') }}">Account</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('logout') }}">Logout</a>
-        </li>
-    {% else %}
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('login') }}">Login</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('dataset') }}">View Dataset</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-capitalize" href="{{ url_for('register') }}">Register</a>
-        </li>
-    {% endif %}
-</ul>
-                    
+                        <div><strong>{{ message }}</strong></div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-            </div>
-    </header>
-    {% block content %}
-    {% endblock %}
-
-    <footer class="footer">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-3 col-md-6 col-12 mb-4">
-                <div class="footer-logo-col">
-                    <a href="{{ url_for('home') }}"><img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Footer Logo"></a>
-                    <p class="blue-light mb-0 fs-7 fw-500">Leveraging pharmacogenomics and machine learning for safer dosage recommendations.</p>
-                    <div class="callus text-white fw-500 fs-7">
-                        Salt Lake, Sector V - Kolkata
-                        <div class="blue-light">Call us: <a href="#" class="text-warning fw-500 fs-7 text-decoration-none">+91 8116253439</a></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-3 col-md-6 col-12 mb-4">
-                <h5 class="text-white">Team Members</h5>
-                <ul class="list-unstyled mb-0 pl-0">
-                    <li><a href="#">Aniruddha Sarkar</a></li>
-                    <li><a href="#">Kandarpa Saha</a></li>
-                    <li><a href="#">Adrita Paul</a></li>
-                    <li><a href="#">Aniket Kumar</a></li>
-                </ul>
-            </div>
-            
-            <div class="col-lg-3 col-md-6 col-12 mb-4">
-                <h5 class="text-white">Mentor</h5>
-                <ul class="list-unstyled mb-0 pl-0">
-                    <li><a href="#">Dr. Biswajit Ghosh</a></li>
-                </ul>
-                
-                <h5 class="text-white mt-4">Project</h5>
-                <ul class="list-unstyled mb-0 pl-0">
-                    <li><a href="{{ url_for('dataset') }}">View Dataset</a></li>
-                </ul>
-            </div>
-            
-            <div class="col-lg-3 col-md-6 col-12 mb-4">
-                <div class="subscribe">
-                    <h5 class="text-white">Subscribe</h5>
-                    <p class="blue-light fw-500">Subscribe to get the latest news from us.</p>
-                    <div class="input-group">
-                        <input type="email" class="form-control br-15" placeholder="Enter email address" aria-label="Enter email address">
-                        <button class="btn btn-warning btn-hover-secondery" type="button">Register</button>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-        
-        <div class="copyrights text-center blue-light fw-500">
-            @<span id="autodate">2025</span> - All Rights Reserved by <a href="#" class="blue-light text-decoration-none">Team GenMedix</a>
-        </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
     </div>
-</footer>
-    <script src="{{ url_for('static', filename='dist/js/jquery.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='dist/js/bootstrap.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='assets/libs/OwlCarousel-2/dist/owl.carousel.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='dist/js/custom.js') }}"></script>
-    <div class="beta-banner-bottom">
-        <i class="ti ti-alert-triangle"></i>
-        <strong>BETA VERSION:</strong> This application is for demonstration and testing purposes only. It is not intended for clinical use.
-    </div>
-    <div class="modal fade" id="termsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header modal-header-custom">
-                <h5 class="modal-title" id="termsModalLabel">
-                    <i class="ti ti-shield-lock me-2"></i> Terms & Conditions of Use
-                </h5>
+
+    {% block content %}{% endblock %}
+
+    <footer class="footer mt-auto py-5 bg-dark text-white-50">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 mb-3">
+                    <h5 class="text-white mb-3">GenMedix</h5>
+                    <p class="small">Next-generation pharmacogenomic clinical decision support system. Reducing adverse drug events through precision medicine.</p>
                 </div>
-            
-            <div class="modal-body p-4">
-                <p class="fw-bold">Welcome to GenMedix (Beta Version). Please read these terms carefully before using this application.</p>
-                
-                <div class="terms-box">
-                    <p><strong>1. Acceptance of Terms</strong></p>
-                    <p>Welcome to GenMedix ("the Application"). This is a B.Tech major project, and as such, is a <strong>Beta Version</strong> provided for demonstration, academic, and testing purposes only. By checking "I accept" and using this Application, you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree to these Terms, do not use the Application.</p>
-
-                    <p><strong>2. Not Medical Advice</strong></p>
-                    <p>This Application is a <strong> Clinical Decision-Support (CDS) tool</strong>, not a medical device. The dosage recommendations (e.g., for Warfarin) are generated by an AI model and are provided for **informational and academic purposes ONLY**. The output of this Application is <strong>NOT</strong> a substitute for the independent, professional medical advice, diagnosis, or treatment of a qualified healthcare provider.</p>
-                    
-                    <p><strong>3. No Liability & "As Is" Basis</strong></p>
-                    <p>The Application is provided "as is" and "as available" without any warranties of any kind. The creators (B.Tech students) and their institution assume <strong> NO LIABILITY </strong> for any errors, omissions, or inaccuracies in the information provided, or for any decisions, actions, or outcomes (including adverse patient events) made in reliance on this information. <strong> Your use of this Application is entirely at your own risk.</strong></p>
-
-                    <p><strong>4. AI Model & Data Limitations</strong></p>
-                    <p>You acknowledge that the predictions are based on a machine learning model (the "Hybrid Model") trained on a specific, limited dataset. The "Prediction Confidence" score reflects internal model variance and is not a guarantee of clinical accuracy. The Explainable AI (SHAP) data is an approximation of the model's logic and should be interpreted with caution.</p>
-
-                    <p><strong>5. Clinician Responsibility & Data Entry</strong></p>
-                    <p>The Application is designed for use by qualified medical professionals ("Clinicians"). As a Clinician, you are solely responsible for:
-                        <ul>
-                            <li>Verifying the accuracy of all data (e.g., patient's age, weight, genetic data) entered into the system.</li>
-                            <li>The creation and management of patient profiles, including sensitive data such as Aadhar numbers. You agree to use this feature responsibly and in accordance with all applicable privacy laws.</li>
-                            <li>All patient treatment and care decisions. You must apply your own professional judgment in evaluating the output of this Application.</li>
-                        </ul>
-                    </p>
-
-                    <p><strong>6. Account & Data Security</strong></p>
-                    <p>This is an academic project and is <strong> not </strong> a HIPAA or DPDP-compliant system. While security measures (password hashing) are in place, you agree not to enter real, highly sensitive patient-identifiable information unless explicitly authorized for this demonstration. The creators are not liable for any data breaches.</p>
-                    
-                    <p><strong>7. Acceptance Agreement</strong></p>
-                    <p>By checking the box below and clicking "Accept and Continue," you confirm that you have read, fully understood, and agree to all of the foregoing terms. You acknowledge this is a non-commercial, beta-version academic project and you will not use it for any real-world clinical decision-making.</p>
+                <div class="col-6 col-lg-2 offset-lg-1 mb-3">
+                    <h6 class="text-white mb-3">Platform</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Dashboard</a></li>
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Patient Safety</a></li>
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">API Access</a></li>
+                    </ul>
                 </div>
-                
-                <div class="form-check mt-3">
-                    <input class="form-check-input" type="checkbox" value="" id="termsCheckbox">
-                    <label class="form-check-label fw-bold" for="termsCheckbox">
-                        I have read, understood, and agree to all the terms and conditions.
-                    </label>
+                <div class="col-6 col-lg-2 mb-3">
+                    <h6 class="text-white mb-3">Legal</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Privacy Policy</a></li>
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Terms of Service</a></li>
+                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Disclaimer</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-3 mb-3">
+                    <h6 class="text-white mb-3">Contact</h6>
+                    <p class="small mb-2"><i class="fas fa-envelope me-2"></i> support@genmedix.io</p>
+                    <p class="small"><i class="fas fa-map-marker-alt me-2"></i> Academic Project, 2025</p>
                 </div>
             </div>
-            
-            <div class="modal-footer">
-                <button type="button" class="btn btn-warning btn-hover-secondery btn-lg w-100 text-capitalize" id="acceptTermsBtn" disabled>
-                    Accept and Continue
-                </button>
+            <div class="border-top border-secondary mt-4 pt-4 text-center small">
+                &copy; 2025 GenMedix. For Clinical Research Use Only. Not a replacement for professional medical judgment.
             </div>
         </div>
-    </div>
-</div>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Find the modal, button, and checkbox
-        const termsModalEl = document.getElementById('termsModal');
-        const termsModal = new bootstrap.Modal(termsModalEl);
-        const acceptBtn = document.getElementById('acceptTermsBtn');
-        const termsCheckbox = document.getElementById('termsCheckbox');
+    </footer>
 
-        // 1. Check if terms have already been accepted IN THIS SESSION
-        if (sessionStorage.getItem('genmedixTermsAccepted') !== 'true') {
-            // If not accepted, show the modal
-            termsModal.show();
-        }
-
-        // 2. Listen for changes to the checkbox
-        termsCheckbox.addEventListener('change', function() {
-            if (this.checked) {
-                acceptBtn.disabled = false; // Enable button
-            } else {
-                acceptBtn.disabled = true; // Disable button
-            }
-        });
-
-        // 3. Listen for clicks on the accept button
-        acceptBtn.addEventListener('click', function() {
-            // Save the acceptance to the BROWSER SESSION
-            sessionStorage.setItem('genmedixTermsAccepted', 'true');
-            // Hide the modal
-            termsModal.hide();
-        });
-    });
-</script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
-<script>
-    AOS.init({
-        duration: 800, // Animation duration in milliseconds
-        once: true    // Only animate once
-    });
-</script>
 </html>

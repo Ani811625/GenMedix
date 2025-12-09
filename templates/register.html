@@ -2,70 +2,52 @@
 {% block title %}Register - GenMedix{% endblock %}
 
 {% block content %}
-<main class="main-content position-relative max-height-vh-100 h-100" style="padding-top: 120px;">
-    <section class="banner-three position-relative" >
-        <div class="container">
-            <div class="row align-items-center justify-content-center">
-                <div class="col-lg-10 col-md-12 col-sm-12">
-                    <div class="banner-three-content text-center">
-                        <h1 class="mb-0">Clinician Registration</h1>
-                        <p class="text-secondary fs-5" style="padding-top: 30px;">Create a secure account to manage patients and generate reports.</p>
-                    </div>
+<div class="auth-wrapper">
+    <div class="auth-card" style="max-width: 500px;">
+        <div class="auth-brand">
+            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" height="40" class="mb-3">
+            <h2>Clinician Registration</h2>
+            <p class="text-muted">Create your secure workspace</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('register') }}">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label">Full Name (Dr.)</label>
+                    <input type="text" class="form-control" name="full_name" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Medical Registration ID</label>
+                    <input type="text" class="form-control" name="medical_reg_id" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" class="form-control" name="email" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" name="password" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" name="password_confirm" required>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <section class="contact-us-section position-relative pb-5">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-lg-8">
-                    <div class="contact-us-box bg-white shadow-lg rounded-4 p-4 p-md-5">
-                        
-                        {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            {% set alert_class = 'alert-danger' if category == 'danger' else 'alert-success' %}
-            <div class="alert {{ alert_class }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div class="form-check mt-3 mb-4">
+                <input class="form-check-input" type="checkbox" required>
+                <label class="form-check-label small text-muted">
+                    I agree to the <a href="#">Terms of Service</a> and confirm I am a licensed medical professional.
+                </label>
             </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
 
-                        <form action="{{ url_for('register') }}" method="POST">
-                            <div class="mb-3">
-                                <label for="full_name" class="form-label fs-7 fw-500">Full Name</label>
-                                <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Dr. Jane Doe" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="email" class="form-label fs-7 fw-500">Email Address (This will be your username)</label>
-                                <input type="email" class="form-control" id="email" name="email" placeholder="jane.doe@hospital.org" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="medical_reg_id" class="form-label fs-7 fw-500">Medical Registration ID</label>
-                                <input type="text" class="form-control" id="medical_reg_id" name="medical_reg_id" placeholder="Your professional registration number" required>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="password" class="form-label fs-7 fw-500">Password</label>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="password_confirm" class="form-label fs-7 fw-500">Confirm Password</label>
-                                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
-                                </div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-warning btn-hover-secondery w-100 btn-lg text-capitalize mt-3">
-                                Create Account
-                            </button>
-                        </form>
-                    </div>
-                </div>
+            <button type="submit" class="btn btn-primary w-100 py-2 mb-3">Create Account</button>
+            
+            <div class="text-center small">
+                <span class="text-muted">Already have an account?</span>
+                <a href="{{ url_for('login') }}" class="fw-bold ms-1">Log In</a>
             </div>
-        </div>
-    </section>
-</main>
+        </form>
+    </div>
+</div>
 {% endblock %}

@@ -2,267 +2,312 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dosage Recommendation Report — GenMedix</title>
-
+    <title>Clinical Report - {{ patient_info.patient_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    {% if request %}
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
-    {% endif %}
-
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@300;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
-        :root{
-            --brand-orange: #ff7a00;
-            --bg-dark: #0d0d0d;
-            --panel-bg: rgba(255,255,255,0.85);
-            --glass-border: rgba(255,122,0,0.18);
-        }
-
+        /* PDF VIEWER BACKGROUND (Screen Only) */
         body {
-            background: #ffffff !important; 
-            min-height: 100vh;
+            background: #525659; /* Standard PDF viewer gray */
+            font-family: 'Open Sans', sans-serif;
+            padding: 40px 0;
+            margin: 0;
             color: #222;
-            font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-            padding: 30px 18px;
         }
 
-        @media screen {
-            body {
-                background: linear-gradient(180deg, #0b0b0b 0%, #151515 40%), #f4f6f9 !important;
-            }
-        }
-
-        .report-wrap {
-            max-width: 980px;
-            margin: 24px auto;
+        /* THE "PAPER" SHEET */
+        .paper {
+            background: white;
+            width: 210mm; /* A4 Width */
+            min-height: 297mm; /* A4 Height */
+            margin: 0 auto;
+            padding: 15mm 20mm; /* Standard Margins */
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
             position: relative;
+            box-sizing: border-box;
         }
-
-        .report-card {
-            background: #ffffff;
-            border-radius: 14px;
-            padding: 28px;
-            border: 1px solid #ddd;
-            overflow: hidden;
-        }
-
-        @media screen {
-            .report-card {
-                background: var(--panel-bg);
-                box-shadow: 0 8px 30px rgba(10,10,10,0.45);
-                backdrop-filter: blur(6px) saturate(120%);
-                border: 1px solid var(--glass-border);
-            }
-        }
-
-        .report-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid #eee;
-            padding-bottom: 20px;
-            margin-bottom: 20px;
-        }
-        .brand { display:flex; align-items:center; gap:12px; }
-        .brand img { height:48px; width:auto; }
-        .brand h2 { margin:0; font-size:1.5rem; color:var(--brand-orange); }
         
-        .section-title {
-            margin: 18px 0 10px 0;
-            font-weight:700;
-            color: #222;
-            border-bottom: 2px solid rgba(255,122,0,0.12);
-            padding-bottom: 4px;
+        /* HEADER */
+        .doc-header { 
+            border-bottom: 3px solid #333; 
+            padding-bottom: 20px; 
+            margin-bottom: 30px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: flex-end; 
+        }
+        .doc-brand {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0052cc;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .doc-title { 
+            font-family: 'Merriweather', serif; 
+            font-size: 26px; 
+            font-weight: 700; 
+            color: #111; 
+            line-height: 1.2;
+        }
+        .doc-meta { 
+            text-align: right; 
+            font-size: 11px; 
+            color: #555; 
+            line-height: 1.6;
+        }
+        
+        /* DATA GRIDS (Professional "Lab Result" Look) */
+        .data-grid { 
+            display: table; 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 25px; 
+            border: 1px solid #ccc;
+        }
+        .data-row { display: table-row; }
+        .data-cell { 
+            display: table-cell; 
+            padding: 8px 12px; 
+            border: 1px solid #ccc; 
+            font-size: 13px; 
+            vertical-align: top;
+            width: 33.33%;
+        }
+        .cell-label { 
+            display: block; 
+            font-weight: 700; 
+            color: #555; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            margin-bottom: 2px;
+        }
+        .cell-value { font-weight: 400; color: #000; }
+
+        /* SECTION HEADERS */
+        .section-head { 
+            background: #f0f0f0; 
+            padding: 6px 10px; 
+            font-family: 'Merriweather', serif;
+            font-weight: 700; 
+            font-size: 14px; 
+            border-left: 4px solid #0052cc; 
+            margin: 25px 0 10px 0; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px 18px;
+        /* RESULT BOX */
+        .result-box {
+            border: 2px solid #333;
+            background-color: #fafafa;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .info-grid p { margin: 2px 0; color: #333; }
-
-        .recommendation {
-            background: #fff8f0;
-            border-left: 5px solid var(--brand-orange);
-            padding: 18px;
-            margin-top: 16px;
-            text-align: center;
-            border-radius: 8px;
+        .dose-primary { 
+            font-family: 'Merriweather', serif; 
+            font-size: 36px; 
+            font-weight: 700; 
+            color: #000; 
         }
-        .recommendation .dose { color: var(--brand-orange); font-size: 2.1rem; font-weight:800; }
-
-        .suggestions {
-            background: #fffcf0;
-            border-left: 5px solid #ffc107;
-            padding: 14px;
-            margin-top: 18px;
-            border-radius:8px;
-        }
-
-        .signature {
-            margin-top: 40px;
-            display:flex;
-            gap: 20px;
-            align-items:flex-start;
-            page-break-inside: avoid;
-        }
-        .signature .sig-box {
-            flex: 1;
-            min-height: 100px;
-            border-bottom: 2px dashed #ccc;
-            padding: 10px;
-        }
-        .signature .sig-info {
-            flex: 0 0 35%;
-            font-size:0.9rem;
-            color:#444;
+        .dose-unit { font-size: 16px; color: #555; font-weight: 400; }
+        .dose-sub { font-size: 11px; color: #666; margin-top: 4px; }
+        
+        .guidance-box {
+            text-align: right; 
+            max-width: 50%;
+            font-size: 12px;
+            border-left: 1px solid #ddd;
+            padding-left: 20px;
         }
 
+        /* ALERTS */
+        .warning-banner { 
+            background-color: #fff5f5; 
+            border: 1px solid #dc3545; 
+            color: #a71d2a; 
+            padding: 12px; 
+            font-size: 12px; 
+            margin-bottom: 20px; 
+        }
+        .warning-title { font-weight: 700; margin-bottom: 4px; display: block; }
+
+        /* LISTS */
+        .clinical-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+        .clinical-list li { 
+            padding: 4px 0; 
+            border-bottom: 1px dotted #eee; 
+            display: flex; 
+            align-items: flex-start;
+        }
+        .clinical-list li:last-child { border-bottom: none; }
+        .bullet { color: #0052cc; margin-right: 8px; font-weight: bold; }
+
+        /* FOOTER */
+        .doc-footer {
+            margin-top: 60px;
+            padding-top: 20px;
+            border-top: 1px solid #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .signature-line {
+            border-bottom: 1px solid #000;
+            width: 250px;
+            height: 40px;
+            margin-bottom: 8px;
+        }
+
+        /* PRINT OVERRIDES (Crucial for WeasyPrint) */
         @media print {
-            body { background-color: white !important; }
+            body { background: white; padding: 0; margin: 0; }
+            .paper { width: 100%; height: auto; box-shadow: none; margin: 0; padding: 0; border: none; }
             .no-print { display: none !important; }
-            [data-aos] { opacity: 1 !important; visibility: visible !important; }
+            .result-box, .data-grid { page-break-inside: avoid; }
         }
     </style>
 </head>
 <body>
-    <div class="report-wrap">
-        <div class="report-card" {% if request %}data-aos="fade-up"{% endif %}>
-            
-            {% if interaction_warnings %}
-            <div class="alert alert-danger" role="alert">
-                <h4 class="alert-heading" style="color:#dc3545; font-size:1.1rem; font-weight:bold;">
-                    Critical Interaction Warning!
-                </h4>
-                <ul class="mb-0">
-                    {% for warning in interaction_warnings %}
-                        <li>{{ warning | safe }}</li>
-                    {% endfor %}
-                </ul>
+
+<div class="paper">
+    
+    <div class="doc-header">
+        <div>
+            <div class="doc-brand">GenMedix Clinical Systems</div>
+            <div class="doc-title">Pharmacogenomic Report</div>
+        </div>
+        <div class="doc-meta">
+            <div><strong>Report ID:</strong> {{ results.report_id }}</div>
+            <div><strong>Generated:</strong> {{ results.generated_at }}</div>
+            <div><strong>Attending:</strong> Dr. {{ doctor_name }}</div>
+        </div>
+    </div>
+
+    {% if interaction_warnings or safety_info.is_pregnant == 'Yes' or safety_info.active_bleeding == 'Yes' %}
+    <div class="warning-banner">
+        <span class="warning-title">⚠️ CLINICAL SAFETY ALERTS DETECTED</span>
+        <ul style="margin: 0; padding-left: 15px;">
+            {% if safety_info.is_pregnant == 'Yes' %}<li><strong>Contraindication:</strong> Patient marked as Pregnant.</li>{% endif %}
+            {% if safety_info.active_bleeding == 'Yes' %}<li><strong>Contraindication:</strong> Active Bleeding detected.</li>{% endif %}
+            {% for warning in interaction_warnings %}
+                <li>{{ warning | safe }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <div class="data-grid">
+        <div class="data-row">
+            <div class="data-cell">
+                <span class="cell-label">Patient Name</span>
+                <span class="cell-value">{{ patient_info.patient_name }}</span>
             </div>
-            {% endif %}
-
-            <div class="report-header">
-                <div class="brand">
-                    {% if request %}
-                        <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" />
-                    {% else %}
-                        <h2 style="color:#ff7a00; margin:0;">GenMedix</h2>
-                    {% endif %}
-                    <div>
-                        {% if request %}<h2>GenMedix</h2>{% endif %}
-                        <div style="font-size:0.9rem; color:#666;">Dosage Recommendation Report</div>
-                    </div>
-                </div>
-                <div class="text-end" style="font-size:0.9rem; color:#666;">
-                    <div><strong>Date:</strong> {{ results.generated_at }}</div>
-                    <div>ID: {{ results.report_id }}</div>
-                </div>
+            <div class="data-cell">
+                <span class="cell-label">DOB / Age</span>
+                <span class="cell-value">{{ patient_info.patient_dob }} ({{ clinical_info.Age }} yrs)</span>
             </div>
-
-            <h5 class="section-title">Patient Information</h5>
-            <div class="info-grid">
-                <p><strong>Name:</strong> {{ patient_info.patient_name }}</p>
-                <p><strong>DOB:</strong> {{ patient_info.patient_dob }}</p>
-                <p><strong>Gender:</strong> {{ patient_info.patient_gender }}</p>
-                <p><strong>Country:</strong> {{ patient_info.patient_country }}</p>
+            <div class="data-cell">
+                <span class="cell-label">Gender / Country</span>
+                <span class="cell-value">{{ patient_info.patient_gender }}, {{ patient_info.patient_country }}</span>
             </div>
-
-            <h5 class="section-title">Safety & Pre-Screening</h5>
-            <div class="info-grid">
-                <p><strong>Pregnant:</strong> 
-                    {% if safety_info.is_pregnant == 'Yes' %}
-                        <span style="color:red; font-weight:bold;">YES (WARNING)</span>
-                    {% else %} No {% endif %}
-                </p>
-                <p><strong>Active Bleeding:</strong> 
-                    {% if safety_info.active_bleeding == 'Yes' %}
-                        <span style="color:red; font-weight:bold;">YES (WARNING)</span>
-                    {% else %} No {% endif %}
-                </p>
-                <p><strong>Platelets:</strong> {{ safety_info.platelet_count }}</p>
-                <p><strong>Baseline INR:</strong> {{ safety_info.baseline_inr }}</p>
+        </div>
+        <div class="data-row">
+            <div class="data-cell">
+                <span class="cell-label">Safety: Pregnancy</span>
+                <span class="cell-value {% if safety_info.is_pregnant == 'Yes' %}text-danger fw-bold{% endif %}">
+                    {{ safety_info.is_pregnant }}
+                </span>
             </div>
-
-            <h5 class="section-title">Clinical & Genomic Data</h5>
-            <div class="info-grid">
-                <p><strong>Age:</strong> {{ clinical_info.Age }} years</p>
-                <p><strong>Height:</strong> {{ clinical_info.Height__cm_ }} cm</p>
-                <p><strong>Weight:</strong> {{ clinical_info.Weight__kg_ }} kg</p>
-                <p><strong>Race:</strong> {{ clinical_info.Race_Display }}</p>
-                <p><strong>CYP2C9:</strong> {{ clinical_info.CYP2C9_Display }}</p>
-                <p><strong>VKORC1:</strong> {{ clinical_info.VKORC1_Display }}</p>
+            <div class="data-cell">
+                <span class="cell-label">Safety: Platelets</span>
+                <span class="cell-value">{{ safety_info.platelet_count }}</span>
             </div>
-
-            <div class="recommendation" {% if request %}data-aos="zoom-in"{% endif %}>
-                <h3 style="margin:0 0 6px 0;">Recommended Weekly Dosage</h3>
-                <div class="dose">{{ results.predicted_dose_mg_per_week }} mg/week</div>
+            <div class="data-cell">
+                <span class="cell-label">Safety: Baseline INR</span>
+                <span class="cell-value">{{ safety_info.baseline_inr }}</span>
             </div>
+        </div>
+    </div>
 
-            <h5 class="section-title">Analysis Details</h5>
-            <div class="info-grid">
-                <p><strong>Model Used:</strong> {{ results.model_used }}</p>
-                <p><strong>Confidence:</strong> <span class="fw-bold">{{ results.confidence_score }}</span></p>
+    <div class="data-grid" style="margin-top: -26px; border-top: none;">
+        <div class="data-row">
+            <div class="data-cell">
+                <span class="cell-label">Height / Weight</span>
+                <span class="cell-value">{{ clinical_info.Height__cm_ }} cm / {{ clinical_info.Weight__kg_ }} kg</span>
             </div>
-            <p class="mt-2 text-muted" style="font-size:0.9rem;">{{ results.confidence_explanation }}</p>
-
-            <h5 class="section-title">Key Factors Influencing Dose</h5>
-            <ul>
-                {% for explanation in results.human_explanation %}
-                    <li>{{ explanation | safe }}</li>
-                {% endfor %}
-            </ul>
-
-            <div class="suggestions">
-                <h5 style="margin-top:0; margin-bottom:6px;">Actionable Suggestions</h5>
-                <ul>
-                    {% for suggestion in results.clinical_suggestions %}
-                        <li>{{ suggestion | safe }}</li>
-                    {% endfor %}
-                </ul>
+            <div class="data-cell">
+                <span class="cell-label">CYP2C9 Genotype</span>
+                <span class="cell-value">{{ clinical_info.CYP2C9_Display }}</span>
             </div>
-
-            <div class="signature">
-                <div class="sig-box">
-                    <div style="font-weight:700; margin-bottom:8px;">Doctor's Signature</div>
-                    <div style="color:#777; font-size:0.9rem;">(Please sign here)</div>
-                </div>
-                <div class="sig-info">
-                    <div style="font-weight:700; margin-bottom:8px;">Doctor Details</div>
-                    <div style="color:#555; font-size:0.95rem;">
-                        Name: <strong>{{ doctor_name }}</strong><br>
-                        Date: ____________________
-                    </div>
-                </div>
+            <div class="data-cell">
+                <span class="cell-label">VKORC1 Genotype</span>
+                <span class="cell-value">{{ clinical_info.VKORC1_Display }}</span>
             </div>
+        </div>
+    </div>
 
-            <div style="margin-top:20px; color:#6c757d; font-size:0.8rem; text-align:center;">
-                <strong>Disclaimer:</strong> This AI-generated report is for clinical decision-support only. 
-                It does not replace professional medical judgment.
-            </div>
+    <div class="section-head">Therapeutic Recommendation</div>
+    <div class="result-box">
+        <div>
+            <div class="cell-label" style="font-size: 11px;">Calculated Initial Dose</div>
+            <div class="dose-primary">{{ results.predicted_dose_mg_per_week }} <span class="dose-unit">mg/week</span></div>
+            <div class="dose-sub">Model: {{ results.model_used }} (Conf: {{ results.confidence_score }})</div>
+        </div>
+        <div class="guidance-box">
+            <div class="cell-label" style="margin-bottom: 5px;">Titration Protocol</div>
+            Initiate therapy at calculated dose. Monitor INR every 2-3 days until therapeutic range (2.0-3.0) is stable.
+        </div>
+    </div>
 
-            {% if request %} 
-            <div class="text-center no-print" style="margin-top:25px;">
-                <form action="{{ url_for('download_report') }}" method="POST">
-                    {% for key, value in request.form.items() %}
-                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                    {% endfor %}
-                    <button type="submit" class="btn btn-outline-dark btn-lg">
-                        <i class="fas fa-download me-2"></i>Download as PDF
-                    </button>
-                </form>
-            </div>
-            {% endif %}
+    <div class="section-head">Factor Analysis (SHAP)</div>
+    <ul class="clinical-list">
+        {% for explanation in results.human_explanation %}
+        <li><span class="bullet">•</span> {{ explanation | safe }}</li>
+        {% endfor %}
+    </ul>
 
+    <div class="section-head" style="margin-top: 20px;">Clinical Guidance</div>
+    <ul class="clinical-list">
+        {% for suggestion in results.clinical_suggestions %}
+        <li><span class="bullet">›</span> {{ suggestion | safe }}</li>
+        {% endfor %}
+    </ul>
+
+    <div class="doc-footer">
+        <div>
+            <div class="signature-line"></div>
+            <div style="font-size: 11px; font-weight: bold;">Dr. {{ doctor_name }}</div>
+            <div style="font-size: 10px; color: #666;">Electronic Signature Verified</div>
+        </div>
+        <div style="text-align: right; font-size: 9px; color: #888; max-width: 40%;">
+            <strong>Disclaimer:</strong> This report is a Clinical Decision Support (CDS) tool generated by AI. 
+            It is intended for use by qualified healthcare professionals only and does not replace clinical judgment.
         </div>
     </div>
 
     {% if request %}
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-    <script>AOS.init({ once: true, duration: 700 });</script>
+    <div class="text-center no-print" style="margin-top: 50px;">
+        <form action="{{ url_for('download_report') }}" method="POST">
+            {% for key in request.form %}
+                {% for value in request.form.getlist(key) %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endfor %}
+            {% endfor %}
+            
+            <button class="btn btn-dark btn-lg shadow">
+                Download Official PDF
+            </button>
+        </form>
+    </div>
     {% endif %}
+
+</div>
 
 </body>
 </html>

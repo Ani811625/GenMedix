@@ -1,127 +1,129 @@
-
-
 {% extends "base.html" %}
-{% block title %}GenMedix - AI-Powered Dosage Prediction{% endblock %}
+{% block title %}GenMedix - Precision Medicine Platform{% endblock %}
 
 {% block content %}
-<section class="hero-section-light">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 col-12 mb-4" data-aos="fade-right">
-                <h1 class="hero-title display-3 fw-bolder">Precision Dosing, Powered by AI</h1>
-                <p class="hero-subtitle fs-5 my-4">
-                    Welcome to GenMedix. The clinical decision-support platform using AI and pharmacogenomics 
-                    to provide safe, accurate, and personalized drug dosage recommendations.
-                </p>
-                <a href="{{ url_for('register') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-lg">
-                    Get Started
-                </a>
-            </div>
-            <div class="col-lg-6 col-12" data-aos="fade-left" data-aos-delay="100">
-                <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=800&q=80" alt="Doctor at computer" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="how-it-works-section">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8" data-aos="fade-up">
-                <div class="text-center mb-5">
-                    <h2 class="section-title mb-3">Your Workflow in 3 Simple Steps</h2>
-                    <p class="section-subtitle">A seamless process designed for clinicians.</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="row">
-            <div class="col-lg-4 col-md-6 col-12 mb-4" data-aos="fade-up" data-aos-delay="100">
-                <div class="step-card-light">
-                    <div class="step-icon">
-                        <i class="ti ti-user-plus"></i>
+<main>
+    <section class="hero-section position-relative overflow-hidden py-5" style="background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);">
+        <div class="container py-5 mt-4">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0">
+                    <div class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill mb-4 fw-600">
+                        <i class="fas fa-check-circle me-2"></i> Now with AI-Enhanced Safety Checks
                     </div>
-                    <h5 class="mt-4 mb-3">Register Patient</h5>
-                    <p class="fs-7">Create a secure profile for your patient with their general information. This is a one-time setup.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6 col-12 mb-4" data-aos="fade-up" data-aos-delay="200">
-                <div class="step-card-light">
-                    <div class="step-icon">
-                        <i class="ti ti-file-text"></i>
+                    <h1 class="display-4 fw-bold text-dark mb-4" style="letter-spacing: -1px; line-height: 1.1;">
+                        Precision Dosing for <br> <span class="text-primary">Complex Anticoagulation.</span>
+                    </h1>
+                    <p class="lead text-muted mb-5 pe-lg-5">
+                        Reduce adverse drug events and reach therapeutic INR faster. 
+                        GenMedix integrates clinical factors, genomic markers, and safety protocols into one intelligent workflow.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4 py-3 shadow-sm">
+                            Get Started
+                        </a>
+                        <a href="#how-it-works" class="btn btn-outline-secondary btn-lg px-4 py-3">
+                            <i class="fas fa-play-circle me-2"></i> How it Works
+                        </a>
                     </div>
-                    <h5 class="mt-4 mb-3">Enter Clinical Data</h5>
-                    <p class="fs-7">Select the drug (e.g., Warfarin) and input the patient's current clinical & genomic data into our simple form.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6 col-12 mb-4" data-aos="fade-up" data-aos-delay="300">
-                <div class="step-card-light">
-                    <div class="step-icon">
-                        <i class="ti ti-report-medical"></i>
+                    <div class="mt-5 text-muted small">
+                        <i class="fas fa-shield-alt me-2 text-success"></i> HIPAA-Aligned Architecture &nbsp;|&nbsp; 
+                        <i class="fas fa-database me-2 text-success"></i> Evidence-Based Algorithms
                     </div>
-                    <h5 class="mt-4 mb-3">Generate & Save Report</h5>
-                    <p class="fs-7">Instantly receive a detailed, explainable report. The results are automatically saved to the patient's history.</p>
+                </div>
+                <div class="col-lg-6 position-relative">
+                    <div class="card border-0 shadow-lg rounded-4 p-2 bg-white" style="transform: perspective(1000px) rotateY(-5deg) rotateX(2deg);">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-4 border-bottom pb-3">
+                                <div class="bg-primary rounded-circle p-2 text-white me-3"><i class="fas fa-user-md"></i></div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">Dosage Recommendation</h6>
+                                    <small class="text-muted">Algorithm: Hybrid-Random Forest (v2.1)</small>
+                                </div>
+                                <div class="ms-auto badge bg-success">High Confidence</div>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-4">
+                                    <div class="bg-light p-2 rounded text-center">
+                                        <small class="d-block text-muted">CYP2C9</small>
+                                        <strong>*2/*3</strong>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-light p-2 rounded text-center">
+                                        <small class="d-block text-muted">VKORC1</small>
+                                        <strong>A/A</strong>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="bg-light p-2 rounded text-center">
+                                        <small class="d-block text-muted">Age</small>
+                                        <strong>68</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-primary border-0 d-flex align-items-center">
+                                <h2 class="mb-0 me-3 fw-bold">2.5</h2>
+                                <div>
+                                    <div class="fw-bold">mg/day</div>
+                                    <small>Predicted Initial Dose</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="position-absolute bg-warning rounded-circle opacity-25" style="width: 200px; height: 200px; top: -50px; right: -50px; z-index: -1; filter: blur(40px);"></div>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
-<section class="feature-section-light">
-    <div class="container">
-        <div class="row align-items-center mb-5 pb-5">
-            <div class="col-lg-6 col-12 mb-4" data-aos="fade-right">
-                <img src="https://images.unsplash.com/photo-1614935151651-0bea6508db6b?auto=format&fit=crop&w=800&q=80" alt="Explainable AI Chart" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
-            </div>
-            <div class="col-lg-6 col-12" data-aos="fade-left" data-aos-delay="100">
-                <h2 class="section-title mb-3">From "Black Box" to "Glass Box"</h2>
-                <h5 class="text-warning fw-600">Full Explainable AI (XAI) Integration</h5>
-                <p class="section-subtitle mt-4">
-                    Trust is not optional in medicine. Our platform doesn't just give you a number; it gives you a reason. 
-                    Using state-of-the-art SHAP analysis, we provide a clear, human-readable explanation for every single prediction.
+    <section id="features" class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <h6 class="text-primary text-uppercase fw-bold ls-2">Core Capabilities</h6>
+                <h2 class="fw-bold mb-3">Why Clinicians Choose GenMedix</h2>
+                <p class="text-muted mx-auto" style="max-width: 600px;">
+                    Move beyond "one-size-fits-all" medicine. Our platform adapts to the unique biological profile of every patient.
                 </p>
-                <ul class="list-unstyled mt-4 fs-7">
-                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> See the top 5 factors that influenced the dose.</li>
-                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> Understand *why* a genotype increased or decreased the recommendation.</li>
-                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> Gain full confidence in the AI's decision-making process.</li>
-                </ul>
             </div>
-        </div>
-        
-        <div class="row align-items-center">
-            <div class="col-lg-6 col-12 order-lg-2 mb-4" data-aos="fade-left">
-                <img src="https://images.unsplash.com/photo-1532187643623-db661b34e4f2?auto=format&fit=crop&w=800&q=80" alt="Hybrid AI Diagram" class="img-fluid" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);">
-            </div>
-            <div class="col-lg-6 col-12 order-lg-1" data-aos="fade-right" data-aos-delay="100">
-                <h2 class="section-title mb-3">Hybrid AI Engine</h2>
-                <h5 class="text-warning fw-600">The Best Model for Every Situation</h5>
-                <p class="section-subtitle mt-4">
-                    GenMedix is built on a powerful "Hybrid AI" engine. It automatically detects the available data and selects the best model for the job.
-                </p>
-                <ul class="list-unstyled mt-4 fs-7">
-                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> **Enhanced Model:** Uses full clinical + genomic data for the highest accuracy.</li>
-                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> **Base Model:** Uses clinical-only data when genomic info is unavailable.</li>
-                    <li class="mb-2"><i class="ti ti-check text-warning me-2"></i> Ensures you always get a reliable prediction.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</section>
 
-<section class="cta-section">
-    <div class="container">
-        <div class="row">
-            <div class="col-12 text-center" data-aos="fade-up">
-                <h2 class="text-white">Enhance Your Clinical Workflow Today</h2>
-                <p class="text-white-50 fs-5 mb-4">
-                    Join the future of personalized medicine. Create your secure clinician account in minutes.
-                </pre>
-                <a href="{{ url_for('register') }}" class="btn btn-warning btn-hover-secondery btn-lg text-capitalize shadow-lg">
-                    Register for Free
-                </a>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="p-4 rounded-4 bg-light h-100 border transition-hover">
+                        <div class="mb-4 text-primary display-6"><i class="fas fa-dna"></i></div>
+                        <h4 class="fw-bold">Genomic Integration</h4>
+                        <p class="text-muted">
+                            Automatically adjusts dosage models based on CYP2C9 and VKORC1 variants, detecting slow metabolizers instantly.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 rounded-4 bg-light h-100 border transition-hover">
+                        <div class="mb-4 text-danger display-6"><i class="fas fa-capsules"></i></div>
+                        <h4 class="fw-bold">Drug Interaction AI</h4>
+                        <p class="text-muted">
+                            Real-time screening for high-risk concomitant medications like Amiodarone and Rifampin during the prescription workflow.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-4 rounded-4 bg-light h-100 border transition-hover">
+                        <div class="mb-4 text-success display-6"><i class="fas fa-file-medical-alt"></i></div>
+                        <h4 class="fw-bold">Automated Reporting</h4>
+                        <p class="text-muted">
+                            Generate PDF reports with SHAP-based explainability, ensuring you understand <em>why</em> the AI made a specific recommendation.
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
+    <section class="py-5 bg-dark text-white text-center">
+        <div class="container py-5">
+            <h2 class="fw-bold mb-4">Ready to modernize your practice?</h2>
+            <p class="lead text-white-50 mb-5">Join the beta program and start using AI-driven precision dosing today.</p>
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold">Create Free Account</a>
+        </div>
+    </section>
+</main>
 {% endblock %}
