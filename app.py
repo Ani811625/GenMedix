@@ -1,27 +1,30 @@
 import json
 import os
-from datetime import datetime
+import random
+import string
+from datetime import datetime, timedelta
+from threading import Thread
+
 from flask import (
     Flask, request, jsonify, render_template, make_response, 
     Response, redirect, url_for, session, flash, abort
 )
-import joblib
-import pandas as pd
-import shap
-import numpy as np
-from weasyprint import HTML
-from sqlalchemy import inspect
-from threading import Thread
-
-# --- IMPORTS FOR DATABASE, LOGIN & EMAIL ---
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_mail import Mail, Message
+from sqlalchemy import inspect
 
-# --- IMPORT FOR SUPABASE STORAGE ---
+# --- ML & PDF IMPORTS ---
+import joblib
+import pandas as pd
+import shap
+import numpy as np
+from weasyprint import HTML
+
+# --- SUPABASE IMPORT ---
 from supabase import create_client, Client
 
 # --- APP CONFIGURATION ---
@@ -74,7 +77,16 @@ if SUPABASE_URL and SUPABASE_KEY:
 def inject_user():
     return dict(current_user=current_user)
 
-# --- AUTO-CREATE TABLES ON STARTUP (SMARTER VERSION) ---
+# --- ERROR HANDLERS ---
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+# --- AUTO-CREATE TABLES ---
 @app.before_request
 def check_maintenance_and_db():
     if os.environ.get('MAINTENANCE_MODE') == 'true':
@@ -84,21 +96,19 @@ def check_maintenance_and_db():
     try:
         inspector = inspect(db.engine)
         existing_tables = inspector.get_table_names()
-        
-        # Check if any key table is missing
-        if "user" not in existing_tables or "report" not in existing_tables or "patient" not in existing_tables:
-            print("--- ⚠️ Missing tables detected. Creating all tables... ---")
+        if "user" not in existing_tables or "report" not in existing_tables:
+            # Only print if we are actually creating something to avoid log spam
+            # print("--- Checking Database Schema... ---") 
             with app.app_context():
                 db.create_all()
-            print("--- ✅ Database tables created successfully. ---")
     except Exception as e:
-        print(f"--- ❌ ERROR checking/creating tables: {e} ---")
+        print(f"--- ❌ DB Check Error: {e} ---")
 
-# --- LOGIN MANAGER SETUP ---
+# --- LOGIN MANAGER ---
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = "You must be logged in to access this page."
+login_manager.login_message = "Please log in to access the clinical dashboard."
 login_manager.login_message_category = "info"
 
 @login_manager.user_loader
@@ -122,6 +132,10 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
+    
+    # 2FA Fields
+    otp_secret = db.Column(db.String(6))
+    otp_expiry = db.Column(db.DateTime)
     
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
@@ -177,7 +191,7 @@ try:
     
     enhanced_explainer = shap.TreeExplainer(enhanced_model)
     base_explainer = shap.TreeExplainer(base_model)
-    print("--- All models, column lists, and SHAP explainers loaded successfully. ---")
+    print("--- Models loaded. ---")
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
     pass 
@@ -250,13 +264,13 @@ def run_model_prediction(patient_data_dict):
 def get_confidence_score(std_dev):
     if std_dev < 0.5:
         score = "High"
-        explanation = "The model's internal estimators are in strong agreement."
+        explanation = "Model estimators are in strong agreement."
     elif std_dev < 1.0:
         score = "Medium"
-        explanation = "The model's internal estimators show some variance. Use with caution."
+        explanation = "Model estimators show variance. Use with caution."
     else:
         score = "Low"
-        explanation = "The model's internal estimators have significant disagreement. Verify input and proceed with caution."
+        explanation = "Significant disagreement in estimators. Proceed with caution."
     return score, explanation
 
 def get_human_explanation(shap_dict):
@@ -268,9 +282,7 @@ def get_human_explanation(shap_dict):
         elif feature.startswith("VKORC1"): display_name = "VKORC1 Genotype"
         else: display_name = feature.replace("Race_", "")
 
-        if value > 0: direction = "<strong>increased</strong>"
-        else: direction = "<strong>decreased</strong>"
-            
+        direction = "<strong>increased</strong>" if value > 0 else "<strong>decreased</strong>"
         explanations.append(f"<strong>{display_name}</strong> {direction} the dose recommendation.")
     return explanations
 
@@ -278,22 +290,21 @@ def get_clinical_suggestions(shap_dict, confidence):
     suggestions = []
     for feature in shap_dict.keys():
         if "VKORC1" in feature and shap_dict[feature] < -0.5:
-            suggestions.append("<strong>High Sensitivity Detected:</strong> VKORC1 genotype suggests a lower dose requirement.")
+            suggestions.append("<strong>High Sensitivity:</strong> VKORC1 genotype suggests lower dose requirement.")
         if "CYP2C9" in feature and shap_dict[feature] < -0.5:
-            suggestions.append("<strong>Slow Metabolizer Detected:</strong> CYP2C9 genotype suggests slower drug clearance.")
+            suggestions.append("<strong>Slow Metabolizer:</strong> CYP2C9 genotype suggests slower clearance.")
 
     if "Weight__kg_" in shap_dict and shap_dict["Weight__kg_"] > 1.0:
-         suggestions.append("Patient's high body weight is a major factor increasing the dose.")
+         suggestions.append("High body weight is a major factor increasing the dose.")
     
     if confidence == "Low":
-        suggestions.append("<strong>Low Model Confidence:</strong> Please review all patient data and proceed with extra caution.")
+        suggestions.append("<strong>Low Confidence:</strong> Review all data carefully.")
 
     if not suggestions:
         suggestions.append("Standard dosing protocol advised. Monitor INR as per guidelines.")
     return suggestions
 
 def process_prediction_data(form_data):
-    # Capture Patient Info
     patient_info_dict = {
         "patient_name": form_data.get('patient_name'),
         "patient_dob": form_data.get('patient_dob'),
@@ -302,7 +313,6 @@ def process_prediction_data(form_data):
         "patient_address": form_data.get('patient_address')
     }
     
-    # Capture New Safety Data for Display
     safety_data_dict = {
         "is_pregnant": "Yes" if form_data.get('is_pregnant') else "No",
         "active_bleeding": "Yes" if form_data.get('active_bleeding') else "No",
@@ -310,7 +320,6 @@ def process_prediction_data(form_data):
         "baseline_inr": form_data.get('baseline_inr') or "Not Provided"
     }
 
-    # Capture Clinical Info
     clinical_data_dict = {
         "Age": float(form_data.get('Age')),
         "Height__cm_": float(form_data.get('Height__cm_')),
@@ -339,15 +348,15 @@ def process_prediction_data(form_data):
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     
-    # Append Safety Warnings to Suggestions
+    # Append Safety Warnings
     if form_data.get('is_pregnant'):
-        suggestions.append("<strong>CONTRAINDICATION:</strong> Patient is marked Pregnant. Warfarin is contraindicated in 1st trimester.")
+        suggestions.append("<strong>CONTRAINDICATION:</strong> Patient marked Pregnant. Warfarin contraindicated.")
     if form_data.get('active_bleeding'):
-        suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected. Anticoagulation is dangerous.")
+        suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected.")
     if form_data.get('platelet_count'):
         try:
             if int(form_data.get('platelet_count')) < 50000:
-                suggestions.append("<strong>SAFETY ALERT:</strong> Severe Thrombocytopenia (<50k). High bleed risk.")
+                suggestions.append("<strong>SAFETY ALERT:</strong> Severe Thrombocytopenia (<50k).")
         except: pass
 
     results_dict = {
@@ -361,7 +370,6 @@ def process_prediction_data(form_data):
         "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
     
-    # Return 4 values now (added safety_data_dict)
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
 # --- ROUTES ---
@@ -378,9 +386,76 @@ def dataset():
         headers = df.columns.tolist()
         rows = df.head(200).to_dict('records')
         row_count = len(df)
-    except Exception:
+    except:
         headers, rows, row_count = [], [], 0
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
+
+# --- NEW: 2FA LOGIN FLOW ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        user = User.query.filter_by(email=email).first()
+
+        if user and user.check_password(password):
+            # 1. Generate 6-Digit OTP
+            otp_code = ''.join(random.choices(string.digits, k=6))
+            
+            # 2. Save to DB with 10-minute expiry
+            user.otp_secret = otp_code
+            user.otp_expiry = datetime.utcnow() + timedelta(minutes=10)
+            db.session.commit()
+            
+            # 3. Store User ID in Session temporarily (Staging)
+            session['temp_user_id'] = user.id
+            
+            # 4. Send Email (Async)
+            msg = Message("Your GenMedix Login Code", recipients=[user.email])
+            msg.body = f"Hello Dr. {user.full_name},\n\nYour Verification Code is: {otp_code}\n\nIt expires in 10 minutes.\n\nGenMedix Security"
+            Thread(target=send_async_email, args=(app, msg)).start()
+            
+            flash('Verification code sent to your email.', 'info')
+            return redirect(url_for('verify_otp'))
+
+        flash('Invalid email or password.', 'danger')
+        return redirect(url_for('login'))
+
+    return render_template('login.html')
+
+# --- NEW: VERIFY OTP ROUTE ---
+@app.route('/verify_otp', methods=['GET', 'POST'])
+def verify_otp():
+    if 'temp_user_id' not in session:
+        return redirect(url_for('login'))
+        
+    if request.method == 'POST':
+        entered_otp = request.form.get('otp')
+        user_id = session.get('temp_user_id')
+        user = User.query.get(user_id)
+        
+        if user and user.otp_secret == entered_otp:
+            if user.otp_expiry > datetime.utcnow():
+                # SUCCESS: Log in
+                login_user(user)
+                
+                # Clear security fields
+                user.otp_secret = None
+                user.otp_expiry = None
+                db.session.commit()
+                session.pop('temp_user_id', None)
+                
+                return redirect(url_for('dashboard'))
+            else:
+                flash("Code has expired. Please login again.", "danger")
+                return redirect(url_for('login'))
+        else:
+            flash("Invalid Code. Please try again.", "danger")
+            
+    return render_template('verify_otp.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -413,12 +488,11 @@ def register():
             db.session.add(new_doctor)
             db.session.commit()
 
-            # Async email sending
             msg = Message("Welcome to GenMedix!", recipients=[email])
-            msg.body = f"Welcome Dr. {name} to GenMedix. Your account is created."
+            msg.body = f"Welcome Dr. {name}.\nYour clinician account is active."
             Thread(target=send_async_email, args=(app, msg)).start()
 
-            flash('Account created successfully! Please log in.', 'success')
+            flash('Account created! Please log in.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating account: {e}', 'danger')
@@ -427,25 +501,6 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
-
-        if user is None or not user.check_password(password):
-            flash('Invalid email or password.', 'danger')
-            return redirect(url_for('login'))
-
-        login_user(user)
-        return redirect(url_for('dashboard'))
-
-    return render_template('login.html') 
 
 @app.route('/logout')
 @login_required
@@ -467,7 +522,7 @@ def add_patient():
     if request.method == 'POST':
         aadhar = request.form.get('aadhar')
         if Patient.query.filter_by(aadhar=aadhar).first():
-            flash('A patient with this Aadhar number is already registered.', 'danger')
+            flash('Aadhar number already registered.', 'danger')
             return render_template('add_patient.html')
         
         new_patient = Patient(
@@ -481,7 +536,7 @@ def add_patient():
         )
         db.session.add(new_patient)
         db.session.commit()
-        flash(f'Patient {new_patient.full_name} added successfully!', 'success')
+        flash(f'Patient {new_patient.full_name} added.', 'success')
         return redirect(url_for('dashboard'))
     return render_template('add_patient.html')
 
@@ -518,7 +573,7 @@ def redirect_to_drug_form(patient_id):
 def warfarin_form(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
     
     calculated_age = 0
@@ -529,23 +584,20 @@ def warfarin_form(patient_id):
     except: pass
     return render_template('warfarin_form.html', patient=patient, calculated_age=calculated_age)
 
-# --- UPDATED: GENERATE REPORT (With Safety Checks) ---
 @app.route('/patient/<int:patient_id>/generate_warfarin_report', methods=['POST'])
 @login_required
 def generate_warfarin_report(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
 
-    # Re-use the process function to get all data including safety info
     patient_info, clinical_info, safety_info, results = process_prediction_data(request.form)
     
     doctor_name = request.form.get('doctor_name')
     interacting_drugs = request.form.getlist('interacting_drugs')
     interaction_warnings = get_interaction_warnings(interacting_drugs)
 
-    # Re-package results with ID for this specific run
     timestamp_str = datetime.now().strftime('%Y%m%d%H%M%S')
     report_id_display = f"GM-{datetime.now().strftime('%Y%m%d')}-{patient.id}"
     results['report_id'] = report_id_display
@@ -553,18 +605,18 @@ def generate_warfarin_report(patient_id):
     full_report_data = {
         "patient_info": patient_info,
         "clinical_info": clinical_info,
-        "safety_info": safety_info, # Added Safety Data
+        "safety_info": safety_info,
         "results": results,
         "doctor_name": doctor_name,
         "interacting_drugs": interacting_drugs
     }
 
-    # 1. Generate PDF in-memory
+    # Generate PDF
     html_string = render_template(
         'display_report.html',
         patient_info=patient_info,
         clinical_info=clinical_info,
-        safety_info=safety_info, # Pass safety info
+        safety_info=safety_info,
         results=results,
         doctor_name=doctor_name,
         request=None,
@@ -572,13 +624,12 @@ def generate_warfarin_report(patient_id):
     )
     pdf_bytes = HTML(string=html_string).write_pdf()
 
-    # 2. Upload to Supabase
+    # Upload to Supabase
     pdf_path = None
     if supabase:
         try:
             filename = f"report_{patient.id}_{timestamp_str}.pdf"
-            bucket_name = "medical_reports"
-            supabase.storage.from_(bucket_name).upload(
+            supabase.storage.from_("medical_reports").upload(
                 path=filename,
                 file=pdf_bytes,
                 file_options={"content-type": "application/pdf"}
@@ -588,7 +639,7 @@ def generate_warfarin_report(patient_id):
         except Exception as e:
             print(f"--- ❌ Supabase Upload Failed: {e} ---")
 
-    # 3. Save to Database
+    # Save to Database
     new_report = Report(
         drug_name="Warfarin",
         predicted_dose=f"{results['predicted_dose_mg_per_week']} mg/week",
@@ -602,7 +653,7 @@ def generate_warfarin_report(patient_id):
     db.session.add(new_report)
     db.session.commit()
 
-    # 4. Render Response
+    # Render Response
     response = make_response(render_template(
         'display_report.html',
         patient_info=patient_info,
@@ -625,21 +676,19 @@ def download_archived_report(report_id):
         return redirect(url_for('dashboard'))
     
     if not report.pdf_storage_path or not supabase:
-        flash("No archived PDF found for this report.", "warning")
+        flash("No archived PDF found.", "warning")
         return redirect(url_for('view_report', report_id=report_id))
 
     try:
-        bucket_name = "medical_reports"
-        res = supabase.storage.from_(bucket_name).create_signed_url(
+        res = supabase.storage.from_("medical_reports").create_signed_url(
             report.pdf_storage_path, 60
         )
         if res and 'signedURL' in res:
             return redirect(res['signedURL'])
         else:
-            flash("Could not generate download link.", "danger")
+            flash("Could not generate link.", "danger")
             return redirect(url_for('view_report', report_id=report_id))
-    except Exception as e:
-        print(f"Error fetching signed URL: {e}")
+    except Exception:
         flash("Error retrieving file.", "danger")
         return redirect(url_for('view_report', report_id=report_id))
 
@@ -648,13 +697,13 @@ def download_archived_report(report_id):
 def view_report(report_id):
     report = Report.query.get_or_404(report_id)
     if report.patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
 
     try:
         report_data = json.loads(report.report_data_json)
     except:
-        flash("Error: Report data is corrupted.", "danger")
+        flash("Error: Report corrupted.", "danger")
         return redirect(url_for('view_patient', patient_id=report.patient_id))
     
     saved_interacting_drugs = report_data.get('interacting_drugs', [])
@@ -664,7 +713,7 @@ def view_report(report_id):
         'display_report.html',
         patient_info=report_data.get('patient_info'),
         clinical_info=report_data.get('clinical_info'),
-        safety_info=report_data.get('safety_info', {}), # Retrieve safety info
+        safety_info=report_data.get('safety_info', {}),
         results=report_data.get('results'),
         doctor_name=report_data.get('doctor_name'),
         request=None,
@@ -677,7 +726,6 @@ def view_report(report_id):
 @login_required
 def download_report():
     form_data = request.form
-    # Unpack 4 values now
     patient_info, clinical_info, safety_info, results = process_prediction_data(form_data)
     doctor_name = form_data.get('doctor_name', current_user.full_name)
 
@@ -699,18 +747,17 @@ def delete_report(report_id):
     report = Report.query.get_or_404(report_id)
     patient_id = report.patient.id 
     if report.patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
         
     if report.pdf_storage_path and supabase:
         try:
             supabase.storage.from_("medical_reports").remove([report.pdf_storage_path])
-        except Exception as e:
-            print(f"--- Error deleting PDF: {e} ---")
+        except Exception: pass
             
     db.session.delete(report)
     db.session.commit()
-    flash("Report deleted successfully.", "success")
+    flash("Report deleted.", "success")
     return redirect(url_for('view_patient', patient_id=patient_id))
 
 @app.route('/patient/<int:patient_id>/delete', methods=['POST'])
@@ -718,12 +765,12 @@ def delete_report(report_id):
 def delete_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
     
     db.session.delete(patient)
     db.session.commit()
-    flash(f"Patient '{patient.full_name}' deleted.", "success")
+    flash(f"Patient deleted.", "success")
     return redirect(url_for('dashboard'))
 
 @app.route('/patient/<int:patient_id>/edit', methods=['GET', 'POST'])
@@ -731,24 +778,17 @@ def delete_patient(patient_id):
 def edit_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
         
     if request.method == 'POST':
-        new_aadhar = request.form.get('aadhar')
-        if new_aadhar != patient.aadhar:
-            if Patient.query.filter_by(aadhar=new_aadhar).first():
-                flash('That Aadhar number is already assigned.', 'danger')
-                return render_template('edit_patient.html', patient=patient)
-        
         patient.full_name = request.form.get('full_name')
-        patient.aadhar = new_aadhar
         patient.dob = request.form.get('dob')
         patient.gender = request.form.get('gender')
         patient.country = request.form.get('country')
         patient.address = request.form.get('address')
         db.session.commit()
-        flash('Patient details updated.', 'success')
+        flash('Details updated.', 'success')
         return redirect(url_for('view_patient', patient_id=patient.id))
     
     return render_template('edit_patient.html', patient=patient)
@@ -758,7 +798,7 @@ def edit_patient(patient_id):
 def add_note(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
         
     note_text = request.form.get('note_text')
@@ -769,7 +809,7 @@ def add_note(patient_id):
     new_note = Note(note_text=note_text, patient_id=patient.id, doctor_id=current_user.id)
     db.session.add(new_note)
     db.session.commit()
-    flash("Note added successfully.", "success")
+    flash("Note added.", "success")
     return redirect(url_for('view_patient', patient_id=patient_id, _anchor='notes-tab'))
 
 @app.route('/account', methods=['GET', 'POST'])
@@ -778,22 +818,10 @@ def account():
     action = request.form.get('action')
     if request.method == 'POST':
         if action == 'update_details':
-            new_email = request.form.get('email')
-            new_reg_id = request.form.get('medical_reg_id')
-
-            if new_email != current_user.email and User.query.filter_by(email=new_email).first():
-                flash('Email already in use.', 'danger')
-                return redirect(url_for('account'))
-            
-            if new_reg_id != current_user.medical_reg_id and User.query.filter_by(medical_reg_id=new_reg_id).first():
-                flash('Medical ID already in use.', 'danger')
-                return redirect(url_for('account'))
-
             current_user.full_name = request.form.get('full_name')
-            current_user.email = new_email
-            current_user.medical_reg_id = new_reg_id
+            current_user.email = request.form.get('email')
             db.session.commit()
-            flash('Details updated successfully.', 'success')
+            flash('Details updated.', 'success')
             return redirect(url_for('account'))
 
         elif action == 'delete_account':
@@ -808,13 +836,6 @@ def account():
             return redirect(url_for('home'))
 
     return render_template('account.html')
-
-# --- REPAIR ROUTE ---
-@app.route('/force_repair')
-def force_repair():
-    with app.app_context():
-        db.create_all()
-    return "<h1>Fixed! Database tables have been rebuilt.</h1>"
 
 if __name__ == '__main__':
     app.run(debug=True)
