@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Verify Identity - GenMedix{% endblock %}
+
+{% block content %}
+<style>
+    /* Internal CSS to ensure centering works instantly */
+    body { background-color: #f4f5f7 !important; }
+    
+    .auth-wrapper {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+    }
+    
+    .auth-card {
+        background: white;
+        width: 100%;
+        max-width: 400px;
+        padding: 40px;
+        border-radius: 8px;
+        border: 1px solid #dfe1e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        text-align: center;
+    }
+
+    .otp-input {
+        letter-spacing: 8px;
+        font-size: 1.5rem;
+        text-align: center;
+        font-weight: 700;
+        color: #0052cc;
+    }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="mb-4">
+            <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h4 class="fw-bold text-secondary">Two-Factor Authentication</h4>
+            <p class="text-muted small">
+                For security, we sent a 6-digit code to your registered email.
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('verify_otp') }}">
+            <div class="mb-4">
+                <input type="text" class="form-control otp-input" name="otp" maxlength="6" placeholder="000000" autofocus required>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 mb-3 fw-bold">Verify & Login</button>
+            
+            <a href="{{ url_for('login') }}" class="small text-muted text-decoration-none">
+                <i class="fas fa-arrow-left me-1"></i> Back to Login
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}
