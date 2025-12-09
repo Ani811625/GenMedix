@@ -2,11 +2,41 @@
 {% block title %}Register - GenMedix{% endblock %}
 
 {% block content %}
-<div class="central-layout-wrapper" style="align-items: center;">
-    <div class="central-card auth-card-width" style="max-width: 550px;">
-        <div class="text-center mb-4" style="padding-top: 50px;">
-            <h3 class="h4 fw-bold text-secondary">Register Account</h3>
-            <p class="text-muted small">Join the precision medicine network.</p>
+<style>
+    body { background-color: #f4f5f7 !important; }
+    
+    .auth-wrapper {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+    }
+    
+    .auth-card {
+        background: white;
+        width: 100%;
+        max-width: 500px; /* Slightly wider for registration */
+        padding: 40px;
+        border-radius: 8px;
+        border: 1px solid #dfe1e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .form-control {
+        background-color: #FAFBFC;
+        border: 1px solid #dfe1e6;
+        padding: 10px;
+    }
+    .form-label { font-size: 0.75rem; font-weight: 700; color: #5e6c84; text-transform: uppercase; }
+    .btn-primary { background-color: #0052cc; border: none; padding: 10px; font-weight: 600; }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card" style="padding-top: 120px;">
+        <div class="text-center mb-4" >
+            <h4 class="fw-bold text-secondary">Clinician Registration</h4>
+            <p class="text-muted small">Join the precision medicine network</p>
         </div>
 
         <form method="POST" action="{{ url_for('register') }}">
@@ -39,14 +69,14 @@
             <div class="form-check mt-3 mb-4">
                 <input class="form-check-input" type="checkbox" required>
                 <label class="form-check-label small text-muted">
-                    I verify I am a medical professional.
+                    I verify I am a licensed medical professional.
                 </label>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Create Account</button>
+            <button type="submit" class="btn btn-primary w-100 mb-3">Create Account</button>
             
-            <div class="text-center mt-3">
-                <a href="{{ url_for('login') }}" class="small fw-bold">Already have an account?</a>
+            <div class="text-center">
+                <a href="{{ url_for('login') }}" class="small fw-bold text-decoration-none">Already have an account?</a>
             </div>
         </form>
     </div>

@@ -2,22 +2,52 @@
 {% block title %}Prediction - {{ patient.full_name }}{% endblock %}
 
 {% block content %}
-<div class="central-layout-wrapper">
+<style>
+    body { background-color: #f4f5f7 !important; }
+    
+    .central-wrapper {
+        display: flex;
+        justify-content: center;
+        padding-top: 50px;
+        padding-bottom: 50px;
+    }
+    
+    .central-card {
+        background: white;
+        width: 100%;
+        max-width: 850px;
+        padding: 40px 50px;
+        border-radius: 8px;
+        border: 1px solid #dfe1e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    /* Selection Cards */
+    .selection-card {
+        display: block;
+        border: 1px solid #dfe1e6;
+        border-radius: 6px;
+        padding: 15px;
+        background: #fff;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .selection-card:hover { border-color: #0052cc; background-color: #f4f8fd; }
+    .selection-card:has(input:checked) { border-color: #0052cc; background-color: #eef5ff; }
+
+    /* Wizard Steps */
+    .wizard-steps { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; }
+    .w-step { font-weight: 600; color: #ccc; text-transform: uppercase; font-size: 0.85rem; }
+    .w-step.active { color: #0052cc; border-bottom: 2px solid #0052cc; margin-bottom: -17px; padding-bottom: 15px; }
+</style>
+
+<div class="central-wrapper">
     <div class="central-card">
         
-        <div class="wizard-stepper" style="padding-top: 50px;">
-            <div class="wizard-step active" id="head-step1">
-                <div class="wizard-number">1</div>
-                <div>Safety</div>
-            </div>
-            <div class="wizard-step" id="head-step2">
-                <div class="wizard-number">2</div>
-                <div>Clinical</div>
-            </div>
-            <div class="wizard-step" id="head-step3">
-                <div class="wizard-number">3</div>
-                <div>Genomics</div>
-            </div>
+        <div class="wizard-steps" style="padding-top: 50px;">
+            <div class="w-step active" id="head-step1">1. Safety</div>
+            <div class="w-step" id="head-step2">2. Clinical</div>
+            <div class="w-step" id="head-step3">3. Genomics</div>
         </div>
 
         <div class="text-center mb-4">
@@ -35,9 +65,8 @@
             <input type="hidden" name="Age" value="{{ calculated_age }}">
 
             <div class="form-section" id="step1">
-                <div class="alert alert-warning d-flex align-items-center mb-4">
-                    <i class="fas fa-exclamation-triangle me-3 fs-4"></i>
-                    <div>Verify absolute contraindications before proceeding.</div>
+                <div class="alert alert-warning border-0 small mb-4">
+                    <strong>Check:</strong> Ensure no active bleeding before proceeding.
                 </div>
 
                 <div class="row g-4">
@@ -60,36 +89,33 @@
                         </label>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Platelet Count</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="platelet_count" name="platelet_count" placeholder="150000">
-                            <span class="input-group-text">/µL</span>
-                        </div>
-                        <div class="form-text text-danger d-none fw-bold" id="platelet-warning">Critical: < 50k</div>
+                        <label class="form-label small fw-bold text-muted">Platelet Count</label>
+                        <input type="number" class="form-control" id="platelet_count" name="platelet_count" placeholder="150000">
+                        <div class="text-danger d-none fw-bold small mt-1" id="platelet-warning">Critical: < 50k</div>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Baseline INR</label>
+                        <label class="form-label small fw-bold text-muted">Baseline INR</label>
                         <input type="number" step="0.1" class="form-control" name="baseline_inr" placeholder="1.0">
                     </div>
                 </div>
 
                 <div class="text-end mt-5">
-                    <button type="button" class="btn btn-primary px-4" onclick="nextStep(2)">Next Step <i class="fas fa-arrow-right ms-2"></i></button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next Step</button>
                 </div>
             </div>
 
             <div class="form-section d-none" id="step2">
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <label class="form-label">Height (cm)</label>
+                        <label class="form-label small fw-bold text-muted">Height (cm)</label>
                         <input type="number" step="0.1" class="form-control" id="Height__cm_" name="Height__cm_" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Weight (kg)</label>
+                        <label class="form-label small fw-bold text-muted">Weight (kg)</label>
                         <input type="number" step="0.1" class="form-control" id="Weight__kg_" name="Weight__kg_" required>
                     </div>
                     <div class="col-md-12">
-                        <label class="form-label">Race / Ethnicity</label>
+                        <label class="form-label small fw-bold text-muted">Race</label>
                         <select class="form-select" name="Race" required>
                             <option value="" selected disabled>Select...</option>
                             <option value="Race_White">White / Caucasian</option>
@@ -99,7 +125,7 @@
                         </select>
                     </div>
                     <div class="col-12">
-                        <label class="form-label text-primary">Interactions</label>
+                        <label class="form-label small fw-bold text-muted text-primary">Interactions</label>
                         <div class="row g-2">
                             <div class="col-6"><label class="selection-card py-2"><input class="form-check-input me-2" type="checkbox" name="interacting_drugs" value="Amiodarone"> Amiodarone</label></div>
                             <div class="col-6"><label class="selection-card py-2"><input class="form-check-input me-2" type="checkbox" name="interacting_drugs" value="Fluconazole"> Fluconazole</label></div>
@@ -110,20 +136,17 @@
                 </div>
                 <div class="d-flex justify-content-between mt-5">
                     <button type="button" class="btn btn-outline-secondary" onclick="prevStep(1)">Back</button>
-                    <button type="button" class="btn btn-primary px-4" onclick="nextStep(3)">Next Step</button>
+                    <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next Step</button>
                 </div>
             </div>
 
             <div class="form-section d-none" id="step3">
-                <div class="alert alert-info small mb-4">
-                    <i class="fas fa-info-circle me-2"></i> Leave blank if genomic data is unavailable.
-                </div>
                 <div class="row g-4">
                     <div class="col-md-6">
-                        <label class="form-label">CYP2C9 Genotype</label>
+                        <label class="form-label small fw-bold text-muted">CYP2C9 Genotype</label>
                         <select class="form-select" name="CYP2C9_genotypes">
                             <option value="">Not Available</option>
-                            <option value="CYP2C9_genotypes_*1/*1">*1/*1 (Normal)</option>
+                            <option value="CYP2C9_genotypes_*1/*1">*1/*1</option>
                             <option value="CYP2C9_genotypes_*1/*2">*1/*2</option>
                             <option value="CYP2C9_genotypes_*1/*3">*1/*3</option>
                             <option value="CYP2C9_genotypes_*2/*2">*2/*2</option>
@@ -132,10 +155,10 @@
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">VKORC1 Genotype</label>
+                        <label class="form-label small fw-bold text-muted">VKORC1 Genotype</label>
                         <select class="form-select" name="VKORC1_genotype">
                             <option value="">Not Available</option>
-                            <option value="VKORC1_genotype_G/G">G/G (Normal)</option>
+                            <option value="VKORC1_genotype_G/G">G/G</option>
                             <option value="VKORC1_genotype_A/G">A/G</option>
                             <option value="VKORC1_genotype_A/A">A/A</option>
                         </select>
@@ -143,7 +166,7 @@
                 </div>
                 <div class="d-flex justify-content-between mt-5">
                     <button type="button" class="btn btn-outline-secondary" onclick="prevStep(2)">Back</button>
-                    <button type="button" class="btn btn-success px-5 shadow-sm">Generate Report</button>
+                    <button type="button" class="btn btn-success" onclick="document.getElementById('wizardForm').submit();">Generate Report</button>
                 </div>
             </div>
         </form>
@@ -151,12 +174,6 @@
 </div>
 
 <script>
-    function updateStepper(step) {
-        document.querySelectorAll('.wizard-step').forEach(el => el.classList.remove('active', 'completed'));
-        for(let i=1; i<step; i++) document.getElementById('head-step'+i).classList.add('completed');
-        document.getElementById('head-step'+step).classList.add('active');
-    }
-
     function nextStep(step) {
         if(step === 2 && (document.getElementById('is_pregnant').checked || document.getElementById('active_bleeding').checked)) {
            if(!confirm("⚠️ High Risk Flagged. Proceed anyway?")) return;
@@ -166,20 +183,22 @@
         }
         document.querySelectorAll('.form-section').forEach(el => el.classList.add('d-none'));
         document.getElementById('step' + step).classList.remove('d-none');
-        updateStepper(step);
+        
+        document.querySelectorAll('.w-step').forEach(el => el.classList.remove('active'));
+        document.getElementById('head-step'+step).classList.add('active');
     }
 
     function prevStep(step) {
         document.querySelectorAll('.form-section').forEach(el => el.classList.add('d-none'));
         document.getElementById('step' + step).classList.remove('d-none');
-        updateStepper(step);
+        document.querySelectorAll('.w-step').forEach(el => el.classList.remove('active'));
+        document.getElementById('head-step'+step).classList.add('active');
     }
 
     document.getElementById('platelet_count').addEventListener('input', function(e) {
         const val = parseInt(e.target.value);
-        const warning = document.getElementById('platelet-warning');
-        if(val && val < 50000) warning.classList.remove('d-none');
-        else warning.classList.add('d-none');
+        if(val && val < 50000) document.getElementById('platelet-warning').classList.remove('d-none');
+        else document.getElementById('platelet-warning').classList.add('d-none');
     });
 </script>
 {% endblock %}

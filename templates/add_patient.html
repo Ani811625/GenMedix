@@ -2,7 +2,42 @@
 {% block title %}Add Patient - GenMedix{% endblock %}
 
 {% block content %}
-<div class="central-layout-wrapper">
+<style>
+    body { background-color: #f4f5f7 !important; }
+    
+    .central-wrapper {
+        display: flex;
+        justify-content: center;
+        padding-top: 60px;
+        padding-bottom: 60px;
+    }
+    
+    .central-card {
+        background: white;
+        width: 100%;
+        max-width: 800px;
+        padding: 40px 50px;
+        border-radius: 8px;
+        border: 1px solid #dfe1e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .form-section-title {
+        color: #0052cc;
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 5px;
+    }
+
+    .form-control, .form-select { background-color: #FAFBFC; border: 1px solid #dfe1e6; padding: 10px; }
+    .btn-primary { background-color: #0052cc; padding: 10px 30px; font-weight: 600; border: none; }
+</style>
+
+<div class="central-wrapper">
     <div class="central-card">
         
         <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" style="padding-top: 50px;">
@@ -16,28 +51,22 @@
         <form method="POST" action="{{ url_for('add_patient') }}">
             
             <div class="mb-4">
-                <h6 class="text-uppercase text-primary fw-bold mb-3 small" style="letter-spacing: 1px;">Identity & Demographics</h6>
+                <div class="form-section-title">Identity & Demographics</div>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Full Name</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-user"></i></span>
-                            <input type="text" class="form-control" name="full_name" required>
-                        </div>
+                        <label class="form-label small text-muted fw-bold">Full Name</label>
+                        <input type="text" class="form-control" name="full_name" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Aadhar ID (UIDAI)</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
-                            <input type="text" class="form-control" name="aadhar" required>
-                        </div>
+                        <label class="form-label small text-muted fw-bold">Aadhar ID (UIDAI)</label>
+                        <input type="text" class="form-control" name="aadhar" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Date of Birth</label>
+                        <label class="form-label small text-muted fw-bold">Date of Birth</label>
                         <input type="date" class="form-control" name="dob" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Gender</label>
+                        <label class="form-label small text-muted fw-bold">Gender</label>
                         <select class="form-select" name="gender" required>
                             <option value="" selected disabled>Select...</option>
                             <option value="Male">Male</option>
@@ -49,10 +78,10 @@
             </div>
 
             <div class="mb-4">
-                <h6 class="text-uppercase text-primary fw-bold mb-3 small" style="letter-spacing: 1px;">Location Details</h6>
+                <div class="form-section-title">Location Details</div>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Country</label>
+                        <label class="form-label small text-muted fw-bold">Country</label>
                         <select class="form-select" name="country" required>
                             <option value="India">India</option>
                             <option value="USA">USA</option>
@@ -60,16 +89,14 @@
                         </select>
                     </div>
                     <div class="col-md-12">
-                        <label class="form-label">Residential Address</label>
-                        <textarea class="form-control" name="address" rows="2" placeholder="Street, City, State"></textarea>
+                        <label class="form-label small text-muted fw-bold">Address</label>
+                        <textarea class="form-control" name="address" rows="2"></textarea>
                     </div>
                 </div>
             </div>
 
             <div class="text-end pt-3 border-top">
-                <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
-                    <i class="fas fa-save me-2"></i> Save Record
-                </button>
+                <button type="submit" class="btn btn-primary">Save Record</button>
             </div>
         </form>
     </div>

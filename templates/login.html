@@ -2,39 +2,73 @@
 {% block title %}Log In - GenMedix{% endblock %}
 
 {% block content %}
-<div class="central-layout-wrapper" style="align-items: center;"> 
-    <div class="central-card auth-card-width">
-        <div class="text-center mb-4" style="padding-top: 50px;">
+<style>
+    /* Internal CSS - Forces Professional Layout */
+    body { background-color: #f4f5f7 !important; }
+    
+    .auth-wrapper {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+    }
+    
+    .auth-card {
+        background: white;
+        width: 100%;
+        max-width: 420px;
+        padding: 40px;
+        border-radius: 8px;
+        border: 1px solid #dfe1e6;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .form-control {
+        background-color: #FAFBFC;
+        border: 1px solid #dfe1e6;
+        padding: 10px;
+    }
+    
+    .form-control:focus {
+        border-color: #0052cc;
+        box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2);
+    }
+
+    .btn-primary {
+        background-color: #0052cc;
+        border: none;
+        padding: 10px;
+        font-weight: 600;
+    }
+    .btn-primary:hover { background-color: #0047b3; }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="text-center mb-4">
             <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="40" class="mb-3">
-            <h3 class="h4 fw-bold text-secondary">Clinician Login</h3>
-            <p class="text-muted small">Access your secure dashboard.</p>
+            <h4 class="fw-bold text-secondary">Welcome Back</h4>
+            <p class="text-muted small">Sign in to your clinical dashboard</p>
         </div>
 
         <form method="POST" action="{{ url_for('login') }}">
             <div class="mb-3">
-                <label class="form-label">Email Address</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                    <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
-                </div>
+                <label class="form-label small fw-bold text-uppercase text-muted">Email Address</label>
+                <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
             </div>
 
             <div class="mb-4">
                 <div class="d-flex justify-content-between">
-                    <label class="form-label">Password</label>
-                    <a href="#" class="text-decoration-none small fw-bold" style="font-size: 0.8rem;">Forgot?</a>
+                    <label class="form-label small fw-bold text-uppercase text-muted">Password</label>
                 </div>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                    <input type="password" class="form-control" name="password" placeholder="••••••••" required>
-                </div>
+                <input type="password" class="form-control" name="password" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm mb-3">Sign In</button>
+            <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
             
-            <div class="text-center pt-3 border-top">
-                <span class="text-muted small">New user?</span>
-                <a href="{{ url_for('register') }}" class="fw-bold small ms-1">Create Account</a>
+            <div class="text-center border-top pt-3">
+                <a href="{{ url_for('register') }}" class="small fw-bold text-decoration-none">Create New Account</a>
             </div>
         </form>
     </div>
