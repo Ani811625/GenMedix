@@ -366,3 +366,80 @@ html {
 .alert-danger { border-left-color: var(--danger); }
 .alert-warning { border-left-color: var(--warning); }
 .alert-info { border-left-color: var(--primary); }
+
+/* --- ENTERPRISE AUTH LAYOUT (Login/Register) --- */
+.auth-split-screen {
+    min-height: 100vh;
+    display: flex;
+    background-color: #fff;
+}
+
+.auth-visual {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary) 0%, #003d99 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Decorative circle in background */
+.auth-visual::after {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 400px;
+    height: 400px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+}
+
+.auth-form-container {
+    width: 500px; /* Fixed professional width */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    background-color: #fff;
+    overflow-y: auto;
+}
+
+@media (max-width: 992px) {
+    .auth-visual { display: none; } /* Hide image on mobile */
+    .auth-form-container { width: 100%; padding: 30px; }
+}
+
+/* --- CLINICAL FORM PANELS (Warfarin Form) --- */
+.clinical-panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px; /* Tighter radius */
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.clinical-panel-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Tighter, cleaner inputs for forms */
+.input-group-text {
+    background-color: #f4f5f7;
+    border-color: var(--border);
+    color: var(--text-muted);
+}

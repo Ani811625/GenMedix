@@ -1,51 +1,70 @@
 {% extends "base.html" %}
-{% block title %}Register - GenMedix{% endblock %}
+{% block title %}Request Access - GenMedix{% endblock %}
 
 {% block content %}
-<div class="auth-wrapper">
-    <div class="auth-card" style="max-width: 500px;">
-        <div class="auth-brand">
-            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" height="40" class="mb-3">
-            <h2>Clinician Registration</h2>
-            <p class="text-muted">Create your secure workspace</p>
+<div class="auth-split-screen">
+    
+    <div class="auth-visual" style="background: linear-gradient(135deg, #0052cc 0%, #253858 100%);" style="padding-top: 50px;">
+        <div class="mb-auto">
+            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" height="40" style="filter: brightness(0) invert(1);">
+        </div>
+        <div class="mb-5">
+            <h1 class="display-5 fw-bold mb-3" style="color:white;">Join the Network.</h1>
+            <p class="lead" style="opacity: 0.9;">Empower your practice with next-generation clinical decision support.</p>
+        </div>
+        <div class="mt-auto small" style="opacity: 0.7;">
+            <i class="fas fa-shield-alt me-2"></i> Verified Clinical Personnel Only.
+        </div>
+    </div>
+
+    <div class="auth-form-container">
+        <div class="mb-4">
+            <h3 class="fw-bold text-secondary">Clinician Registration</h3>
+            <p class="text-muted">Create your secure workspace.</p>
         </div>
 
         <form method="POST" action="{{ url_for('register') }}">
             <div class="row g-3">
                 <div class="col-12">
                     <label class="form-label">Full Name (Dr.)</label>
-                    <input type="text" class="form-control" name="full_name" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user-md"></i></span>
+                        <input type="text" class="form-control" name="full_name" placeholder="e.g. Rahul Sharma" required>
+                    </div>
                 </div>
                 <div class="col-12">
                     <label class="form-label">Medical Registration ID</label>
-                    <input type="text" class="form-control" name="medical_reg_id" required>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-id-badge"></i></span>
+                        <input type="text" class="form-control" name="medical_reg_id" required>
+                    </div>
                 </div>
                 <div class="col-12">
                     <label class="form-label">Email Address</label>
-                    <input type="email" class="form-control" name="email" required>
+                    <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Password</label>
                     <input type="password" class="form-control" name="password" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Confirm Password</label>
+                    <label class="form-label">Confirm</label>
                     <input type="password" class="form-control" name="password_confirm" required>
                 </div>
             </div>
 
-            <div class="form-check mt-3 mb-4">
-                <input class="form-check-input" type="checkbox" required>
-                <label class="form-check-label small text-muted">
-                    I agree to the <a href="#">Terms of Service</a> and confirm I am a licensed medical professional.
+            <div class="form-check mt-4 mb-4">
+                <input class="form-check-input" type="checkbox" required id="terms">
+                <label class="form-check-label small text-muted" for="terms">
+                    I verify that I am a licensed medical professional and agree to the Terms.
                 </label>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 mb-3">Create Account</button>
+            <button type="submit" class="btn btn-primary w-100 py-2 mb-3 fw-bold">Create Account</button>
             
-            <div class="text-center small">
-                <span class="text-muted">Already have an account?</span>
-                <a href="{{ url_for('login') }}" class="fw-bold ms-1">Log In</a>
+            <div class="text-center">
+                <span class="text-muted small">Already have an account?</span>
+                <a href="{{ url_for('login') }}" class="fw-bold small ms-1">Log In</a>
             </div>
         </form>
     </div>
