@@ -33,6 +33,12 @@
 
                         <form action="{{ url_for('generate_warfarin_report', patient_id=patient.id) }}" method="POST" id="wizardForm">
                             <input type="hidden" name="doctor_name" value="{{ current_user.full_name }}">
+                            
+                            <input type="hidden" name="patient_name" value="{{ patient.full_name }}">
+                            <input type="hidden" name="patient_dob" value="{{ patient.dob }}">
+                            <input type="hidden" name="patient_gender" value="{{ patient.gender }}">
+                            <input type="hidden" name="patient_country" value="{{ patient.country }}">
+                            <input type="hidden" name="patient_address" value="{{ patient.address }}">
 
                             <div class="step-section" id="step1">
                                 <h5 class="mb-3 text-warning"><i class="ti ti-shield-check me-2"></i>Step 1: Safety Pre-Screening</h5>
