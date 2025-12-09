@@ -14,7 +14,6 @@ from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Mail, Message
 from sqlalchemy import inspect
 
 # --- ML & PDF IMPORTS ---
@@ -33,19 +32,6 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
 
-# --- EMAIL CONFIGURATION (BREVO SMTP) ---
-app.config['MAIL_SERVER'] = 'smtp-relay.brevo.com'
-app.config['MAIL_PORT'] = 2525
-app.config['MAIL_USE_TLS'] = True  # Brevo requires TLS
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-# IMPORTANT: Use the email you registered with Brevo as the sender
-app.config['MAIL_DEFAULT_SENDER'] = 'aniruddhas387@gmail.com' 
-app.config['MAIL_DEBUG'] = True
-
-mail = Mail(app)
-
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -61,7 +47,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# --- SUPABASE STORAGE SETUP ---
+# --- SUPABASE CLIENT SETUP (Auth & Storage) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 supabase: Client = None
@@ -69,7 +55,7 @@ supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("--- ✅ SUCCESS: CONNECTED TO SUPABASE STORAGE ---")
+        print("--- ✅ SUCCESS: CONNECTED TO SUPABASE AUTH & STORAGE ---")
     except Exception as e:
         print(f"--- ❌ ERROR CONNECTING TO SUPABASE: {e} ---")
 
@@ -97,9 +83,7 @@ def check_maintenance_and_db():
     try:
         inspector = inspect(db.engine)
         existing_tables = inspector.get_table_names()
-        if "user" not in existing_tables or "report" not in existing_tables:
-            # Only print if we are actually creating something to avoid log spam
-            # print("--- Checking Database Schema... ---") 
+        if "user" not in existing_tables:
             with app.app_context():
                 db.create_all()
     except Exception as e:
@@ -116,15 +100,6 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- ASYNC EMAIL HELPER ---
-def send_async_email(app, msg):
-    with app.app_context():
-        try:
-            mail.send(msg)
-            print("--- ✅ Email sent successfully! ---")
-        except Exception as e:
-            print(f"--- ❌ Error sending email: {e} ---")
-
 # --- DATABASE MODELS ---
 
 class User(db.Model, UserMixin):
@@ -134,9 +109,7 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
     
-    # 2FA Fields
-    otp_secret = db.Column(db.String(6))
-    otp_expiry = db.Column(db.DateTime)
+    # NOTE: OTP fields removed because Supabase handles verification state now
     
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
@@ -192,7 +165,7 @@ try:
     
     enhanced_explainer = shap.TreeExplainer(enhanced_model)
     base_explainer = shap.TreeExplainer(base_model)
-    print("--- Models loaded. ---")
+    print("--- All models loaded. ---")
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
     pass 
@@ -391,7 +364,8 @@ def dataset():
         headers, rows, row_count = [], [], 0
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
 
-# --- NEW: 2FA LOGIN FLOW ---
+# --- SUPABASE OTP LOGIN FLOW ---
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -400,62 +374,69 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-        user = User.query.filter_by(email=email).first()
+        
+        # 1. Check Local DB first (Does this user exist?)
+        local_user = User.query.filter_by(email=email).first()
+        if not local_user:
+            flash('No account found with this email.', 'danger')
+            return redirect(url_for('login'))
+            
+        # 2. Check Password (The first Factor)
+        if not local_user.check_password(password):
+            flash('Incorrect password.', 'danger')
+            return redirect(url_for('login'))
 
-        if user and user.check_password(password):
-            # 1. Generate 6-Digit OTP
-            otp_code = ''.join(random.choices(string.digits, k=6))
+        # 3. Trigger Supabase OTP (The Second Factor)
+        try:
+            if not supabase:
+                raise Exception("Supabase Client not configured.")
+                
+            # Request OTP from Supabase
+            res = supabase.auth.sign_in_with_otp({"email": email})
             
-            # 2. Save to DB with 10-minute expiry
-            user.otp_secret = otp_code
-            user.otp_expiry = datetime.utcnow() + timedelta(minutes=10)
-            db.session.commit()
-            
-            # 3. Store User ID in Session temporarily (Staging)
-            session['temp_user_id'] = user.id
-            
-            # 4. Send Email (Async)
-            msg = Message("Your GenMedix Login Code", recipients=[user.email])
-            msg.body = f"Hello Dr. {user.full_name},\n\nYour Verification Code is: {otp_code}\n\nIt expires in 10 minutes.\n\nGenMedix Security"
-            Thread(target=send_async_email, args=(app, msg)).start()
-            
-            flash('Verification code sent to your email.', 'info')
+            # Store email in session to verify next step
+            session['auth_email'] = email
+            flash('Two-Factor Code sent to your email by Supabase.', 'info')
             return redirect(url_for('verify_otp'))
-
-        flash('Invalid email or password.', 'danger')
-        return redirect(url_for('login'))
+            
+        except Exception as e:
+            print(f"--- ❌ Supabase Auth Error: {e} ---")
+            flash('Error sending OTP. Please try again.', 'danger')
+            return redirect(url_for('login'))
 
     return render_template('login.html')
 
-# --- NEW: VERIFY OTP ROUTE ---
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
-    if 'temp_user_id' not in session:
+    # Security Check: Must have started login flow
+    if 'auth_email' not in session:
         return redirect(url_for('login'))
-        
+    
     if request.method == 'POST':
-        entered_otp = request.form.get('otp')
-        user_id = session.get('temp_user_id')
-        user = User.query.get(user_id)
+        otp = request.form.get('otp')
+        email = session.get('auth_email')
         
-        if user and user.otp_secret == entered_otp:
-            if user.otp_expiry > datetime.utcnow():
-                # SUCCESS: Log in
-                login_user(user)
-                
-                # Clear security fields
-                user.otp_secret = None
-                user.otp_expiry = None
-                db.session.commit()
-                session.pop('temp_user_id', None)
-                
+        try:
+            # 1. Verify Token with Supabase API
+            res = supabase.auth.verify_otp({
+                "email": email,
+                "token": otp,
+                "type": "email"
+            })
+            
+            # 2. If no error thrown, OTP is valid. Log in via Flask-Login
+            local_user = User.query.filter_by(email=email).first()
+            if local_user:
+                login_user(local_user)
+                session.pop('auth_email', None) # Clear session
                 return redirect(url_for('dashboard'))
             else:
-                flash("Code has expired. Please login again.", "danger")
-                return redirect(url_for('login'))
-        else:
-            flash("Invalid Code. Please try again.", "danger")
-            
+                flash("Login verified, but user record missing in DB.", "danger")
+                
+        except Exception as e:
+            print(f"--- ❌ OTP Verification Failed: {e} ---")
+            flash("Invalid or expired code. Please try again.", "danger")
+
     return render_template('verify_otp.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -488,12 +469,11 @@ def register():
         try:
             db.session.add(new_doctor)
             db.session.commit()
-
-            msg = Message("Welcome to GenMedix!", recipients=[email])
-            msg.body = f"Welcome Dr. {name}.\nYour clinician account is active."
-            Thread(target=send_async_email, args=(app, msg)).start()
-
-            flash('Account created! Please log in.', 'success')
+            
+            # NOTE: We do NOT need to create the user in Supabase manually.
+            # Supabase auto-creates "Auth Users" the first time we request an OTP for them.
+            
+            flash('Account created successfully! Please log in.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating account: {e}', 'danger')
@@ -507,6 +487,7 @@ def register():
 @login_required
 def logout():
     logout_user()
+    session.clear() # Clear any leftover auth data
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
 
@@ -625,7 +606,7 @@ def generate_warfarin_report(patient_id):
     )
     pdf_bytes = HTML(string=html_string).write_pdf()
 
-    # Upload to Supabase
+    # Upload to Supabase Storage
     pdf_path = None
     if supabase:
         try:
