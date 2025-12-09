@@ -33,14 +33,15 @@ app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
 
-# --- EMAIL CONFIGURATION ---
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME') 
+# --- EMAIL CONFIGURATION (BREVO SMTP) ---
+app.config['MAIL_SERVER'] = 'smtp-relay.brevo.com'
+app.config['MAIL_PORT'] = 2525
+app.config['MAIL_USE_TLS'] = True  # Brevo requires TLS
+app.config['MAIL_USE_SSL'] = False
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
+# IMPORTANT: Use the email you registered with Brevo as the sender
+app.config['MAIL_DEFAULT_SENDER'] = 'aniruddhas387@gmail.com' 
 app.config['MAIL_DEBUG'] = True
 
 mail = Mail(app)
