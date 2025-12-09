@@ -6,25 +6,25 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-    /* Medical Palette */
-    --primary: #0052cc;       /* Enterprise Blue */
+    /* Enterprise Blue Palette */
+    --primary: #0052cc;
     --primary-hover: #0047b3;
     --secondary: #253858;     /* Dark Slate Text */
-    --success: #00875a;       /* Medical Green */
+    --success: #00875a;
     --warning: #ffab00;
     --danger: #de350b;
     
     /* Surfaces */
-    --background: #f4f5f7;    /* Light Gray/Blue Tint */
+    --background: #f4f5f7;    /* Professional Gray/Blue Background */
     --surface: #ffffff;
-    --border: #dfe1e6;        /* Subtle Border */
+    --border: #dfe1e6;
     
     /* Text */
     --text-main: #172b4d;
     --text-muted: #6b778c;
     
     /* Spacing */
-    --radius: 4px;            /* Sharper corners = More professional */
+    --radius: 6px;
 }
 
 /* 2. GLOBAL RESET */
@@ -33,29 +33,28 @@ body {
     background-color: var(--background);
     color: var(--text-main);
     line-height: 1.5;
-    font-size: 14px; /* Higher data density */
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
+    padding-top: 64px; /* Space for fixed navbar */
 }
 
 h1, h2, h3, h4, h5, h6 {
     color: var(--secondary);
-    font-weight: 600;
+    font-weight: 700;
     margin-bottom: 0.75rem;
 }
 
 a { text-decoration: none; color: var(--primary); transition: 0.2s; }
 a:hover { color: var(--primary-hover); text-decoration: underline; }
 
-/* 3. PROFESSIONAL COMPONENTS */
-
-/* Buttons */
+/* 3. BUTTONS & INPUTS */
 .btn {
-    border-radius: var(--radius);
-    font-weight: 500;
+    border-radius: 4px;
+    font-weight: 600;
     font-size: 0.9rem;
-    padding: 8px 16px;
-    letter-spacing: 0.2px;
-    box-shadow: none !important; /* Remove Bootstrap shadows */
+    padding: 10px 20px;
+    letter-spacing: 0.3px;
+    box-shadow: none !important;
 }
 
 .btn-primary {
@@ -70,31 +69,20 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
 .btn-outline-secondary {
     border-color: var(--border);
     color: var(--text-main);
+    background: white;
 }
 .btn-outline-secondary:hover {
     background-color: #ebecf0;
     color: var(--text-main);
-    border-color: var(--border);
-}
-
-/* Forms */
-.form-label {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    color: var(--text-muted);
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
 }
 
 .form-control, .form-select {
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 4px;
     padding: 10px 12px;
     font-size: 0.95rem;
     color: var(--text-main);
-    background-color: #FAFBFC;
-    transition: border-color 0.2s, background-color 0.2s;
+    background-color: #FAFBFC; /* Slight off-white for inputs */
 }
 
 .form-control:focus, .form-select:focus {
@@ -103,277 +91,111 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
     box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2);
 }
 
+.form-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--secondary);
+    margin-bottom: 6px;
+}
+
 .input-group-text {
     background-color: #f4f5f7;
     border-color: var(--border);
     color: var(--text-muted);
 }
 
-/* 4. SPLIT LAYOUT (FOR WIZARD FORMS) */
-.split-layout {
+/* 4. CENTRAL CARD LAYOUT (The "Box" Look) */
+.central-layout-wrapper {
+    min-height: calc(100vh - 64px);
+    background-color: #f4f5f7;
     display: flex;
-    flex-direction: row;
-    min-height: calc(100vh - 64px); /* Adjust based on your Navbar height */
-    background: var(--surface);
-    overflow: hidden;
+    justify-content: center;
+    align-items: flex-start; /* Aligns to top with padding */
+    padding: 60px 20px;
 }
 
-.split-sidebar {
-    width: 280px;
-    background-color: #fff;
-    border-right: 1px solid var(--border);
-    padding: 40px 30px;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    z-index: 10;
-}
-
-.split-content {
-    flex: 1;
-    background-color: #f4f5f7; /* Medical Gray Background */
-    padding: 40px;
-    overflow-y: auto;
-}
-
-/* Clinical Card (The white box inside the gray background) */
-.clinical-card {
+.central-card {
     background: #ffffff;
-    border: 1px solid #dfe1e6;
+    width: 100%;
+    max-width: 850px; /* Standard Width */
     border-radius: 8px;
-    padding: 40px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    max-width: 850px;
-    margin: 0 auto;
-}
-
-/* Clinical Panels (For grouping form sections) */
-.clinical-panel {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 24px;
-    margin-bottom: 24px;
+    border: 1px solid #dfe1e6;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    padding: 40px 50px;
     position: relative;
 }
 
-.clinical-panel-header {
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: var(--primary);
-    font-weight: 700;
-    letter-spacing: 0.5px;
+/* Specific width for Auth (Login/Register) */
+.auth-card-width {
+    max-width: 480px;
+}
+
+/* 5. WIZARD STEPPER (Horizontal Top Bar) */
+.wizard-stepper {
     display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-@media (max-width: 992px) {
-    .split-layout { flex-direction: column; height: auto; overflow: visible; }
-    .split-sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid var(--border); }
-    .split-content { padding: 20px; }
-    .clinical-card { padding: 20px; }
-}
-
-/* 5. WIZARD STEPPERS */
-.step-indicator {
+    justify-content: space-between;
+    margin-bottom: 40px;
     position: relative;
-    padding-left: 35px;
-    margin-bottom: 25px;
-    color: var(--text-muted);
-    font-weight: 500;
-    font-size: 0.95rem;
-    cursor: default;
-    transition: 0.3s;
 }
 
-.step-indicator::before {
+/* The connecting line */
+.wizard-stepper::before {
     content: '';
     position: absolute;
+    top: 15px;
     left: 0;
-    top: 3px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid #c1c7d0;
-    background: #fff;
-    z-index: 2;
+    right: 0;
+    height: 2px;
+    background: #ebecf0;
+    z-index: 0;
 }
 
-.step-line {
-    position: absolute;
-    left: 6px;
-    top: 20px;
-    bottom: -15px;
-    width: 2px;
-    background-color: #ebecf0;
+.wizard-step {
+    position: relative;
     z-index: 1;
+    background: #ffffff; /* Must match card bg to hide line */
+    padding: 0 15px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
-.step-indicator:last-child .step-line { display: none; }
 
-.step-indicator.active { color: var(--primary); font-weight: 700; }
-.step-indicator.active::before { border-color: var(--primary); background: var(--primary); }
-
-.step-indicator.completed { color: var(--success); }
-.step-indicator.completed::before { border-color: var(--success); background: var(--success); }
-.step-indicator.completed .step-line { background-color: var(--success); }
-
-/* 6. AUTH PAGES (Login/Register) */
-.auth-container-centered {
-    min-height: calc(100vh - 64px);
+.wizard-number {
+    width: 32px;
+    height: 32px;
+    background: #fff;
+    border: 2px solid #dfe1e6;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #f4f5f7 0%, #e2e6ea 100%);
-    padding: 20px;
-}
-
-.auth-box {
-    background: white;
-    width: 100%;
-    max-width: 480px;
-    padding: 40px;
-    border-radius: 8px;
-    border: 1px solid #dfe1e6;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-}
-
-/* Split Auth Layout (Alternative) */
-.auth-split-screen {
-    min-height: calc(100vh - 64px);
-    display: flex;
-    background-color: #fff;
-}
-
-.auth-visual {
-    flex: 1;
-    background: linear-gradient(135deg, var(--primary) 0%, #003d99 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
-
-.auth-form-container {
-    width: 500px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px;
-    background-color: #fff;
-    overflow-y: auto;
-}
-
-@media (max-width: 992px) {
-    .auth-visual { display: none; }
-    .auth-form-container { width: 100%; padding: 30px; }
-}
-
-/* 7. DASHBOARD & TABLES */
-.table {
-    margin-bottom: 0;
-    color: var(--text-main);
-}
-
-.table thead th {
-    background-color: #f4f5f7;
-    text-transform: uppercase;
-    font-size: 0.75rem;
+    margin: 0 auto 8px auto;
     font-weight: 700;
     color: var(--text-muted);
-    border-bottom: 2px solid var(--border);
-    padding: 12px 16px;
+    transition: all 0.3s;
 }
 
-.table tbody td {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: middle;
+/* Active Step */
+.wizard-step.active .wizard-number {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 0 0 3px rgba(0, 82, 204, 0.2);
 }
+.wizard-step.active { color: var(--primary); }
 
-.table-hover tbody tr:hover {
-    background-color: #fafbfc;
+/* Completed Step */
+.wizard-step.completed .wizard-number {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
 }
+.wizard-step.completed { color: var(--success); }
 
-/* 8. ALERTS & BADGES */
-/* Floating Alerts Fix */
-.flash-container {
-    position: fixed;
-    top: 90px; /* Below Navbar */
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2000;
-    width: 90%;
-    max-width: 600px;
-    pointer-events: none;
-}
-
-.flash-container .alert {
-    pointer-events: auto;
-    background: #fff;
-    color: var(--text-main);
-    border: 1px solid rgba(0,0,0,0.1);
-    border-left-width: 5px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-    margin-bottom: 10px;
-    display: flex;
-    align-items: center;
-    padding: 16px 20px;
-}
-
-.alert-success { border-left-color: var(--success); }
-.alert-danger { border-left-color: var(--danger); }
-.alert-warning { border-left-color: var(--warning); }
-.alert-info { border-left-color: var(--primary); }
-
-.badge {
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    padding: 5px 10px;
-    border-radius: 12px;
-}
-.bg-success-subtle { background-color: #e3fcef !important; color: #006644 !important; }
-.bg-warning-subtle { background-color: #fff0b3 !important; color: #172b4d !important; }
-.bg-danger-subtle { background-color: #ffebe6 !important; color: #de350b !important; }
-.bg-primary-subtle { background-color: #deebff !important; color: #0052cc !important; }
-
-/* 9. EXTRAS */
-/* Custom Selection Cards */
-.selection-card {
-    display: block;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    background: #fff;
-    cursor: pointer;
-    transition: all 0.2s;
-    height: 100%;
-}
-.selection-card:hover { border-color: var(--primary); background-color: #ebecf0; }
-.selection-card:has(input:checked) { border-color: var(--primary); background-color: #deebff; }
-
-/* Landing Page Hover Effects */
-.transition-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
-.transition-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-    background-color: #fff !important;
-    border-color: var(--primary) !important;
-}
-
-/* Navbar Logo */
-.navbar-brand img { height: 32px; width: auto; }
-
-/* Smooth Scroll */
-html { scroll-behavior: smooth; }
-
-/* --- 1. CRITICAL ALERT FIX --- */
+/* 6. ALERTS (FIXED & CENTERED) */
 .flash-container {
     position: fixed;
     top: 80px; /* Clear the navbar */
@@ -381,90 +203,74 @@ html { scroll-behavior: smooth; }
     transform: translateX(-50%);
     width: 90%;
     max-width: 600px;
-    z-index: 9999 !important; /* Ensure it is ABOVE the navbar */
-    pointer-events: none;
+    z-index: 9999 !important; /* Force on top of everything */
+    pointer-events: none; /* Allow clicks to pass through empty area */
 }
+
 .flash-container .alert {
-    pointer-events: auto;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-/* --- 2. CENTRAL FORM LAYOUT (The "Box" Look) --- */
-.central-layout-wrapper {
-    min-height: calc(100vh - 64px);
-    background-color: #f4f5f7; /* Professional Gray Background */
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Start from top, don't center vertically */
-    padding-top: 50px;
-    padding-bottom: 50px;
-}
-
-.central-card {
-    background: #ffffff;
-    width: 100%;
-    max-width: 800px; /* Perfect reading width */
-    border-radius: 12px;
-    border: 1px solid #dfe1e6;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.06); /* Soft, expensive shadow */
-    padding: 40px 50px;
-    position: relative;
-}
-
-/* Auth boxes are narrower */
-.central-card.auth-card-width {
-    max-width: 480px;
-}
-
-/* --- 3. HORIZONTAL WIZARD STEPPER (For the Box Layout) --- */
-.wizard-stepper {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 40px;
-    position: relative;
-}
-.wizard-stepper::before {
-    content: '';
-    position: absolute;
-    top: 14px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: #ebecf0;
-    z-index: 0;
-}
-.wizard-step {
-    position: relative;
-    z-index: 1;
-    background: #f4f5f7; /* Matches body bg to hide line behind number */
-    padding: 0 10px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-.wizard-number {
-    width: 30px;
-    height: 30px;
+    pointer-events: auto; /* Allow clicking the close button */
     background: #fff;
-    border: 2px solid #dfe1e6;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 5px auto;
-    font-weight: 700;
-    transition: all 0.3s;
+    color: var(--text-main);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-left: 5px solid; /* Color accent */
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    margin-bottom: 15px;
+    padding: 15px 20px;
+    font-weight: 500;
 }
-.wizard-step.active .wizard-number {
+
+.alert-success { border-left-color: var(--success); }
+.alert-danger { border-left-color: var(--danger); }
+.alert-warning { border-left-color: var(--warning); }
+.alert-info { border-left-color: var(--primary); }
+
+/* 7. EXTRAS */
+/* Custom Selection Cards (Checkboxes that look like cards) */
+.selection-card {
+    display: block;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 15px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 100%;
+}
+.selection-card:hover {
     border-color: var(--primary);
-    background: var(--primary);
-    color: white;
+    background-color: #f4f8fd;
 }
-.wizard-step.active { color: var(--primary); }
-.wizard-step.completed .wizard-number {
-    background: var(--success);
-    border-color: var(--success);
-    color: white;
+/* When Checked */
+.selection-card:has(input:checked) {
+    border-color: var(--primary);
+    background-color: #eef5ff;
+    box-shadow: 0 0 0 1px var(--primary);
 }
+
+/* Navbar Tweaks */
+.navbar {
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+    background: #fff !important;
+}
+.navbar-brand img { height: 32px; width: auto; }
+
+/* Dashboard Tables */
+.table { margin-bottom: 0; }
+.table thead th {
+    background-color: #f4f5f7;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border);
+    padding: 12px 16px;
+}
+.table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+}
+
+/* Helper Classes */
+.fw-500 { font-weight: 500; }
+.text-justify { text-align: justify; }
+.avatar-circle { font-weight: 600; font-size: 1rem; }
