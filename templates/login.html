@@ -1,53 +1,34 @@
 {% extends "base.html" %}
-{% block title %}Clinician Login - GenMedix{% endblock %}
+{% block title %}Log In - GenMedix{% endblock %}
 
 {% block content %}
-<div class="auth-split-screen">
-    
-    <div class="auth-visual" style="padding-top: 50px;">
-        <div class="mb-auto">
-            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" height="40" style="filter: brightness(0) invert(1);">
-        </div>
-        <div class="mb-5">
-            <h1 class="display-5 fw-bold mb-3" style="color:white;">Precision Medicine,<br>Simplified.</h1>
-            <p class="lead" style="opacity: 0.9;">Securely access your patient cohorts and AI-driven pharmacogenomic tools.</p>
-        </div>
-        <div class="mt-auto small" style="opacity: 0.7;">
-            &copy; 2025 GenMedix Clinical Systems. <br>HIPAA Aligned Architecture.
-        </div>
-    </div>
-
-    <div class="auth-form-container">
-        <div class="mb-5">
+<div class="auth-container-centered">
+    <div class="auth-box">
+        <div class="text-center mb-4" style="padding-top: 50px;">
+            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="48" class="mb-3">
             <h3 class="fw-bold text-secondary">Welcome Back</h3>
-            <p class="text-muted">Enter your credentials to access the dashboard.</p>
+            <p class="text-muted small">Sign in to your clinical dashboard</p>
         </div>
 
         <form method="POST" action="{{ url_for('login') }}">
-            <div class="mb-4">
+            <div class="mb-3">
                 <label class="form-label">Email Address</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                    <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
-                </div>
+                <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
             </div>
 
             <div class="mb-4">
                 <div class="d-flex justify-content-between">
                     <label class="form-label">Password</label>
-                    <a href="#" class="small text-decoration-none fw-bold">Forgot?</a>
+                    <a href="#" class="text-decoration-none small fw-bold">Forgot password?</a>
                 </div>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                    <input type="password" class="form-control" name="password" placeholder="••••••••" required>
-                </div>
+                <input type="password" class="form-control" name="password" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 py-2 mb-4 fw-bold">Sign In</button>
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm mb-3">Sign In</button>
             
-            <div class="text-center">
-                <span class="text-muted small">New to GenMedix?</span>
-                <a href="{{ url_for('register') }}" class="fw-bold small ms-1">Request Access</a>
+            <div class="text-center border-top pt-3">
+                <span class="text-muted small">No account yet?</span>
+                <a href="{{ url_for('register') }}" class="fw-bold small ms-1">Register as Clinician</a>
             </div>
         </form>
     </div>

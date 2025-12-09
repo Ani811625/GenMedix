@@ -103,36 +103,79 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
     box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2);
 }
 
+.input-group-text {
+    background-color: #f4f5f7;
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
 /* 4. SPLIT LAYOUT (FOR WIZARD FORMS) */
 .split-layout {
     display: flex;
     flex-direction: row;
-    min-height: calc(100vh - 56px); /* Adjust based on your Navbar height */
+    min-height: calc(100vh - 64px); /* Adjust based on your Navbar height */
     background: var(--surface);
     overflow: hidden;
 }
 
 .split-sidebar {
     width: 280px;
-    background-color: #F4F5F7;
+    background-color: #fff;
     border-right: 1px solid var(--border);
     padding: 40px 30px;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    z-index: 10;
 }
 
 .split-content {
     flex: 1;
-    padding: 50px 80px; /* Generous padding for professional feel */
+    background-color: #f4f5f7; /* Medical Gray Background */
+    padding: 40px;
     overflow-y: auto;
-    background-color: #fff;
+}
+
+/* Clinical Card (The white box inside the gray background) */
+.clinical-card {
+    background: #ffffff;
+    border: 1px solid #dfe1e6;
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+/* Clinical Panels (For grouping form sections) */
+.clinical-panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.clinical-panel-header {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--primary);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 @media (max-width: 992px) {
-    .split-layout { flex-direction: column; }
+    .split-layout { flex-direction: column; height: auto; overflow: visible; }
     .split-sidebar { width: 100%; height: auto; padding: 20px; border-right: none; border-bottom: 1px solid var(--border); }
-    .split-content { padding: 30px; }
+    .split-content { padding: 20px; }
+    .clinical-card { padding: 20px; }
 }
 
 /* 5. WIZARD STEPPERS */
@@ -147,7 +190,6 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
     transition: 0.3s;
 }
 
-/* Circle Dot */
 .step-indicator::before {
     content: '';
     position: absolute;
@@ -161,7 +203,6 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
     z-index: 2;
 }
 
-/* Connecting Line */
 .step-line {
     position: absolute;
     left: 6px;
@@ -173,63 +214,68 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
 }
 .step-indicator:last-child .step-line { display: none; }
 
-/* Active State */
 .step-indicator.active { color: var(--primary); font-weight: 700; }
 .step-indicator.active::before { border-color: var(--primary); background: var(--primary); }
 
-/* Completed State */
 .step-indicator.completed { color: var(--success); }
 .step-indicator.completed::before { border-color: var(--success); background: var(--success); }
 .step-indicator.completed .step-line { background-color: var(--success); }
 
-/* 6. FORM SECTION HEADERS */
-.form-section-header {
-    margin-bottom: 35px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border);
-}
-.form-section-header h2 {
-    font-size: 1.5rem;
-    color: var(--secondary);
-    margin: 0;
-}
-.form-section-header p {
-    color: var(--text-muted);
-    margin-top: 5px;
-    font-size: 0.95rem;
+/* 6. AUTH PAGES (Login/Register) */
+.auth-container-centered {
+    min-height: calc(100vh - 64px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f4f5f7 0%, #e2e6ea 100%);
+    padding: 20px;
 }
 
-/* 7. SELECTION CARDS (CHECKBOXES) */
-.selection-card {
-    display: block;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    background: #fff;
-    cursor: pointer;
-    transition: all 0.2s;
-    height: 100%;
+.auth-box {
+    background: white;
+    width: 100%;
+    max-width: 480px;
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid #dfe1e6;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
 }
 
-.selection-card:hover {
-    border-color: var(--primary);
-    background-color: #ebecf0;
+/* Split Auth Layout (Alternative) */
+.auth-split-screen {
+    min-height: calc(100vh - 64px);
+    display: flex;
+    background-color: #fff;
 }
 
-/* Highlight border when checked (requires JS or specific CSS structure) */
-.selection-card:has(input:checked) {
-    border-color: var(--primary);
-    background-color: #deebff; /* Light blue tint */
+.auth-visual {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary) 0%, #003d99 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    color: white;
+    position: relative;
+    overflow: hidden;
 }
 
-/* 8. DASHBOARD & TABLES */
-.dashboard-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+.auth-form-container {
+    width: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px;
+    background-color: #fff;
+    overflow-y: auto;
 }
 
+@media (max-width: 992px) {
+    .auth-visual { display: none; }
+    .auth-form-container { width: 100%; padding: 30px; }
+}
+
+/* 7. DASHBOARD & TABLES */
 .table {
     margin-bottom: 0;
     color: var(--text-main);
@@ -255,98 +301,17 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
     background-color: #fafbfc;
 }
 
-/* 9. ALERTS & BADGES */
-.alert {
-    border: none;
-    border-radius: var(--radius);
-    font-size: 0.9rem;
-}
-.alert-warning {
-    background-color: #fff0b3;
-    color: #172b4d;
-    border-left: 4px solid #ff991f;
-}
-.alert-danger {
-    background-color: #ffebe6;
-    color: #bf2600;
-    border-left: 4px solid #de350b;
-}
-
-.badge {
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    padding: 5px 10px;
-    border-radius: 12px;
-}
-.bg-success-subtle { background-color: #e3fcef !important; color: #006644 !important; }
-.bg-warning-subtle { background-color: #fff0b3 !important; color: #172b4d !important; }
-.bg-danger-subtle { background-color: #ffebe6 !important; color: #de350b !important; }
-
-/* 10. AUTH PAGES (LOGIN/REGISTER) - Centered Layout */
-.auth-wrapper {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #f4f5f7;
-}
-
-.auth-card {
-    background: white;
-    width: 100%;
-    max-width: 400px;
-    padding: 40px;
-    border-radius: var(--radius);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    border: 1px solid var(--border);
-}
-
-.auth-brand {
-    text-align: center;
-    margin-bottom: 30px;
-}
-.auth-brand h2 { color: var(--primary); font-weight: 700; letter-spacing: -0.5px; }
-
-/* --- LANDING PAGE EXTRAS --- */
-
-/* Hover effect for feature cards */
-.transition-hover {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.transition-hover:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-    background-color: #fff !important;
-    border-color: var(--primary) !important;
-}
-
-/* Navbar Logo Adjustment */
-.navbar-brand img {
-    height: 32px;
-    width: auto;
-}
-
-/* Footer Links */
-.footer a:hover {
-    color: #fff !important;
-    text-decoration: underline;
-}
-
-/* Smooth Scroll */
-html {
-    scroll-behavior: smooth;
-}
-
-/* --- CENTERED FLASH ALERTS --- */
+/* 8. ALERTS & BADGES */
+/* Floating Alerts Fix */
 .flash-container {
     position: fixed;
-    top: 30px;
+    top: 90px; /* Below Navbar */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1060; /* Above Navbar */
-    width: 100%;
+    z-index: 2000;
+    width: 90%;
     max-width: 600px;
-    pointer-events: none; /* Let clicks pass through empty space */
+    pointer-events: none;
 }
 
 .flash-container .alert {
@@ -354,7 +319,7 @@ html {
     background: #fff;
     color: var(--text-main);
     border: 1px solid rgba(0,0,0,0.1);
-    border-left-width: 5px; /* Professional accent */
+    border-left-width: 5px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.12);
     margin-bottom: 10px;
     display: flex;
@@ -367,79 +332,43 @@ html {
 .alert-warning { border-left-color: var(--warning); }
 .alert-info { border-left-color: var(--primary); }
 
-/* --- ENTERPRISE AUTH LAYOUT (Login/Register) --- */
-.auth-split-screen {
-    min-height: 100vh;
-    display: flex;
-    background-color: #fff;
+.badge {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    padding: 5px 10px;
+    border-radius: 12px;
 }
+.bg-success-subtle { background-color: #e3fcef !important; color: #006644 !important; }
+.bg-warning-subtle { background-color: #fff0b3 !important; color: #172b4d !important; }
+.bg-danger-subtle { background-color: #ffebe6 !important; color: #de350b !important; }
+.bg-primary-subtle { background-color: #deebff !important; color: #0052cc !important; }
 
-.auth-visual {
-    flex: 1;
-    background: linear-gradient(135deg, var(--primary) 0%, #003d99 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
-
-/* Decorative circle in background */
-.auth-visual::after {
-    content: '';
-    position: absolute;
-    top: -100px;
-    right: -100px;
-    width: 400px;
-    height: 400px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50%;
-}
-
-.auth-form-container {
-    width: 500px; /* Fixed professional width */
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 60px;
-    background-color: #fff;
-    overflow-y: auto;
-}
-
-@media (max-width: 992px) {
-    .auth-visual { display: none; } /* Hide image on mobile */
-    .auth-form-container { width: 100%; padding: 30px; }
-}
-
-/* --- CLINICAL FORM PANELS (Warfarin Form) --- */
-.clinical-panel {
-    background: #fff;
+/* 9. EXTRAS */
+/* Custom Selection Cards */
+.selection-card {
+    display: block;
     border: 1px solid var(--border);
-    border-radius: 6px; /* Tighter radius */
-    padding: 24px;
-    margin-bottom: 24px;
-    position: relative;
+    border-radius: var(--radius);
+    padding: 16px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 100%;
+}
+.selection-card:hover { border-color: var(--primary); background-color: #ebecf0; }
+.selection-card:has(input:checked) { border-color: var(--primary); background-color: #deebff; }
+
+/* Landing Page Hover Effects */
+.transition-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.transition-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    background-color: #fff !important;
+    border-color: var(--primary) !important;
 }
 
-.clinical-panel-header {
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    color: var(--primary);
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+/* Navbar Logo */
+.navbar-brand img { height: 32px; width: auto; }
 
-/* Tighter, cleaner inputs for forms */
-.input-group-text {
-    background-color: #f4f5f7;
-    border-color: var(--border);
-    color: var(--text-muted);
-}
+/* Smooth Scroll */
+html { scroll-behavior: smooth; }
