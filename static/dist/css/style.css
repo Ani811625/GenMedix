@@ -372,3 +372,99 @@ a:hover { color: var(--primary-hover); text-decoration: underline; }
 
 /* Smooth Scroll */
 html { scroll-behavior: smooth; }
+
+/* --- 1. CRITICAL ALERT FIX --- */
+.flash-container {
+    position: fixed;
+    top: 80px; /* Clear the navbar */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 600px;
+    z-index: 9999 !important; /* Ensure it is ABOVE the navbar */
+    pointer-events: none;
+}
+.flash-container .alert {
+    pointer-events: auto;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* --- 2. CENTRAL FORM LAYOUT (The "Box" Look) --- */
+.central-layout-wrapper {
+    min-height: calc(100vh - 64px);
+    background-color: #f4f5f7; /* Professional Gray Background */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Start from top, don't center vertically */
+    padding-top: 50px;
+    padding-bottom: 50px;
+}
+
+.central-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 800px; /* Perfect reading width */
+    border-radius: 12px;
+    border: 1px solid #dfe1e6;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06); /* Soft, expensive shadow */
+    padding: 40px 50px;
+    position: relative;
+}
+
+/* Auth boxes are narrower */
+.central-card.auth-card-width {
+    max-width: 480px;
+}
+
+/* --- 3. HORIZONTAL WIZARD STEPPER (For the Box Layout) --- */
+.wizard-stepper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    position: relative;
+}
+.wizard-stepper::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #ebecf0;
+    z-index: 0;
+}
+.wizard-step {
+    position: relative;
+    z-index: 1;
+    background: #f4f5f7; /* Matches body bg to hide line behind number */
+    padding: 0 10px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.wizard-number {
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    border: 2px solid #dfe1e6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 5px auto;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+.wizard-step.active .wizard-number {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: white;
+}
+.wizard-step.active { color: var(--primary); }
+.wizard-step.completed .wizard-number {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+}

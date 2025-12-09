@@ -1,85 +1,77 @@
 {% extends "base.html" %}
-{% block title %}Register New Patient - GenMedix{% endblock %}
+{% block title %}Add Patient - GenMedix{% endblock %}
 
 {% block content %}
-<div class="split-layout">
-    
-    <div class="split-sidebar" style="padding-top: 50px;">
-        <h5 class="mb-4 text-uppercase text-muted ls-1" style="font-size: 0.75rem;">Onboarding</h5>
-        <div class="p-3 bg-white border rounded shadow-sm mb-3">
-            <div class="fw-bold text-dark mb-1">New Record</div>
-            <p class="small text-muted mb-0">Enter verifiable patient demographics.</p>
-        </div>
-        <div class="alert alert-info border-0 small py-2 px-3">
-            <i class="fas fa-info-circle me-1"></i> Aadhar ID is the primary key.
-        </div>
-    </div>
-
-    <div class="split-content">
-        <div class="clinical-card">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h4 class="mb-0 fw-bold text-secondary">Patient Registration</h4>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+<div class="central-layout-wrapper">
+    <div class="central-card">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" style="padding-top: 50px;">
+            <div>
+                <h4 class="mb-1 text-secondary fw-bold">New Patient Registration</h4>
+                <p class="text-muted small mb-0">Create a digital health record.</p>
             </div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+        </div>
 
-            <form method="POST" action="{{ url_for('add_patient') }}">
-                <div class="mb-4">
-                    <h6 class="text-uppercase text-primary fw-bold mb-3 small">Identity</h6>
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Full Name</label>
+        <form method="POST" action="{{ url_for('add_patient') }}">
+            
+            <div class="mb-4">
+                <h6 class="text-uppercase text-primary fw-bold mb-3 small" style="letter-spacing: 1px;">Identity & Demographics</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Full Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-user"></i></span>
                             <input type="text" class="form-control" name="full_name" required>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Aadhar ID</label>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Aadhar ID (UIDAI)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-id-card"></i></span>
                             <input type="text" class="form-control" name="aadhar" required>
                         </div>
                     </div>
-                </div>
-
-                <div class="mb-4">
-                    <h6 class="text-uppercase text-primary fw-bold mb-3 small">Demographics</h6>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" name="dob" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Gender</label>
-                            <select class="form-select" name="gender" required>
-                                <option value="" selected disabled>Select...</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control" name="dob" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" name="gender" required>
+                            <option value="" selected disabled>Select...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                 </div>
+            </div>
 
-                <div class="mb-4">
-                    <h6 class="text-uppercase text-primary fw-bold mb-3 small">Location</h6>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Country</label>
-                            <select class="form-select" name="country" required>
-                                <option value="India">India</option>
-                                <option value="USA">USA</option>
-                                <option value="UK">UK</option>
-                            </select>
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Address</label>
-                            <textarea class="form-control" name="address" rows="2"></textarea>
-                        </div>
+            <div class="mb-4">
+                <h6 class="text-uppercase text-primary fw-bold mb-3 small" style="letter-spacing: 1px;">Location Details</h6>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Country</label>
+                        <select class="form-select" name="country" required>
+                            <option value="India">India</option>
+                            <option value="USA">USA</option>
+                            <option value="UK">UK</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Residential Address</label>
+                        <textarea class="form-control" name="address" rows="2" placeholder="Street, City, State"></textarea>
                     </div>
                 </div>
+            </div>
 
-                <div class="text-end pt-3 border-top">
-                    <button type="submit" class="btn btn-primary px-5 fw-bold">Create Record</button>
-                </div>
-            </form>
-        </div>
+            <div class="text-end pt-3 border-top">
+                <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
+                    <i class="fas fa-save me-2"></i> Save Record
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

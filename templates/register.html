@@ -2,27 +2,28 @@
 {% block title %}Register - GenMedix{% endblock %}
 
 {% block content %}
-<div class="auth-container-centered">
-    <div class="auth-box" style="max-width: 550px;"> <div class="text-center mb-4" style="padding-top: 50px;">
-            <h3 class="fw-bold text-secondary">Clinician Access</h3>
-            <p class="text-muted small">Create a secure GenMedix account</p>
+<div class="central-layout-wrapper" style="align-items: center;">
+    <div class="central-card auth-card-width" style="max-width: 550px;">
+        <div class="text-center mb-4" style="padding-top: 50px;">
+            <h3 class="h4 fw-bold text-secondary">Register Account</h3>
+            <p class="text-muted small">Join the precision medicine network.</p>
         </div>
 
         <form method="POST" action="{{ url_for('register') }}">
             <div class="row g-3">
                 <div class="col-12">
-                    <label class="form-label">Full Name (Dr.)</label>
-                    <input type="text" class="form-control" name="full_name" placeholder="e.g. Rahul Sharma" required>
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" name="full_name" placeholder="Dr. Name" required>
                 </div>
                 
                 <div class="col-12">
                     <label class="form-label">Medical Registration ID</label>
-                    <input type="text" class="form-control" name="medical_reg_id" placeholder="Licence Number" required>
+                    <input type="text" class="form-control" name="medical_reg_id" required>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Email Address</label>
-                    <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email" required>
                 </div>
 
                 <div class="col-md-6">
@@ -36,16 +37,16 @@
             </div>
 
             <div class="form-check mt-3 mb-4">
-                <input class="form-check-input" type="checkbox" required id="terms">
-                <label class="form-check-label small text-muted" for="terms">
-                    I verify I am a medical professional and agree to the Terms.
+                <input class="form-check-input" type="checkbox" required>
+                <label class="form-check-label small text-muted">
+                    I verify I am a medical professional.
                 </label>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">Create Account</button>
             
             <div class="text-center mt-3">
-                <a href="{{ url_for('login') }}" class="small fw-bold">Return to Login</a>
+                <a href="{{ url_for('login') }}" class="small fw-bold">Already have an account?</a>
             </div>
         </form>
     </div>

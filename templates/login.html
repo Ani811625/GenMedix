@@ -2,33 +2,38 @@
 {% block title %}Log In - GenMedix{% endblock %}
 
 {% block content %}
-<div class="auth-container-centered">
-    <div class="auth-box">
+<div class="central-layout-wrapper" style="align-items: center;"> <div class="central-card auth-card-width">
         <div class="text-center mb-4" style="padding-top: 50px;">
-            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="48" class="mb-3">
-            <h3 class="fw-bold text-secondary">Welcome Back</h3>
-            <p class="text-muted small">Sign in to your clinical dashboard</p>
+            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="40" class="mb-3">
+            <h3 class="h4 fw-bold text-secondary">Clinician Login</h3>
+            <p class="text-muted small">Access your secure dashboard.</p>
         </div>
 
         <form method="POST" action="{{ url_for('login') }}">
             <div class="mb-3">
                 <label class="form-label">Email Address</label>
-                <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                    <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
+                </div>
             </div>
 
             <div class="mb-4">
                 <div class="d-flex justify-content-between">
                     <label class="form-label">Password</label>
-                    <a href="#" class="text-decoration-none small fw-bold">Forgot password?</a>
+                    <a href="#" class="text-decoration-none small fw-bold" style="font-size: 0.8rem;">Forgot?</a>
                 </div>
-                <input type="password" class="form-control" name="password" placeholder="••••••••" required>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                    <input type="password" class="form-control" name="password" placeholder="••••••••" required>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm mb-3">Sign In</button>
             
-            <div class="text-center border-top pt-3">
-                <span class="text-muted small">No account yet?</span>
-                <a href="{{ url_for('register') }}" class="fw-bold small ms-1">Register as Clinician</a>
+            <div class="text-center pt-3 border-top">
+                <span class="text-muted small">New user?</span>
+                <a href="{{ url_for('register') }}" class="fw-bold small ms-1">Create Account</a>
             </div>
         </form>
     </div>
