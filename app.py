@@ -105,7 +105,8 @@ class Patient(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     dob = db.Column(db.String(10)) 
     gender = db.Column(db.String(10))
-    aadhar = db.Column(db.String(14), index=True) # Storing format XXXX XXXX XXXX or raw
+    # UPDATED: Removed unique=True so multiple doctors can add same Aadhar
+    aadhar = db.Column(db.String(14), index=True) 
     
     # --- Contact ---
     country = db.Column(db.String(50))
@@ -557,27 +558,19 @@ def patient_logout():
     flash("Patient logged out.", "success")
     return redirect(url_for('home'))
 
-# --- 2. PATIENT: VIEW ONLY (Inline Tab) ---
 @app.route('/patient/download/<int:report_id>')
 def download_archived_report_patient(report_id):
-    if 'patient_aadhar' not in session: 
-        return redirect(url_for('patient_login'))
+    if 'patient_aadhar' not in session: return redirect(url_for('patient_login'))
     
     report = Report.query.get_or_404(report_id)
-    
-    # Clean Aadhar check (remove spaces just in case)
-    session_aadhar = session['patient_aadhar'].replace(' ', '')
-    report_aadhar = report.patient.aadhar.replace(' ', '')
-    
-    if report_aadhar != session_aadhar:
+    # Check if this report belongs to the logged-in Aadhar (even if doctor is different)
+    if report.patient.aadhar != session['patient_aadhar']:
         abort(403)
         
     if not report.pdf_storage_path or not supabase:
         flash("File unavailable.", "warning")
         return redirect(url_for('patient_dashboard'))
 
-    # KEEP LOGIC: Generate Signed URL
-    # This URL naturally opens in a browser PDF viewer
     res = supabase.storage.from_("medical_reports").create_signed_url(report.pdf_storage_path, 60)
     return redirect(res['signedURL'])
 
@@ -602,8 +595,14 @@ def add_patient():
             flash('Invalid Aadhar: Must be 12 digits.', 'danger')
             return render_template('add_patient.html')
 
-        if Patient.query.filter_by(aadhar=clean_aadhar).first():
-            flash('This Aadhar ID is already registered.', 'warning')
+        # NEW CHECK: Only prevent duplicate patients FOR THIS DOCTOR
+        existing_patient = Patient.query.filter_by(
+            aadhar=clean_aadhar, 
+            doctor_id=current_user.id
+        ).first()
+
+        if existing_patient:
+            flash('You have already registered this patient.', 'warning')
             return render_template('add_patient.html')
         
         new_patient = Patient(
@@ -796,7 +795,7 @@ def view_report(report_id):
         report_obj=report 
     ))
 
-# --- 1. DOCTOR: FORCE DOWNLOAD (Attachment) ---
+# --- DOCTOR: DOWNLOAD FILE (Attachment) ---
 @app.route('/download_archived_report/<int:report_id>')
 @login_required
 def download_archived_report(report_id):
@@ -810,10 +809,8 @@ def download_archived_report(report_id):
         return redirect(url_for('view_report', report_id=report_id))
 
     try:
-        # NEW LOGIC: Download bytes from Supabase and serve as attachment
-        # This prevents "Opening in new tab" and forces "Save As"
+        # Download bytes from Supabase and serve as attachment
         file_bytes = supabase.storage.from_("medical_reports").download(report.pdf_storage_path)
-        
         return Response(
             file_bytes,
             mimetype='application/pdf',
