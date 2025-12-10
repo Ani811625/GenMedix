@@ -1,139 +1,160 @@
 <!DOCTYPE html>
-<html lang="en" class="h-100">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}GenMedix{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=2) }}">
-</head>
-<body class="d-flex flex-column h-100">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=3) }}">
 
-    <nav class="navbar navbar-expand-lg bg-white border-bottom fixed-top" style="height: 64px;">
+    <style>
+        /* GLOBAL NOTIFICATION POPUP STYLES */
+        .notification-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); /* Dim background */
+            z-index: 9998; /* Behind popup, above everything else */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .notification-card {
+            background: white;
+            min-width: 320px;
+            max-width: 450px;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            position: relative;
+            z-index: 9999;
+            transform: translateY(0);
+            animation: slideUp 0.3s ease;
+        }
+
+        .notification-close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #999;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .notification-close:hover { color: #333; }
+
+        .notification-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg fixed-top bg-white border-bottom" style="height: 64px;">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
-                <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="32" class="me-2">
-                <span style="font-weight: 700; color: #091E42; font-size: 1.25rem; letter-spacing: -0.5px;">GenMedix</span>
+                <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" height="32" class="me-2">
+                <span class="fw-bold" style="color: #253858;">GenMedix</span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-
-            <div class="collapse navbar-collapse" id="mainNav">
-                <ul class="navbar-nav ms-auto align-items-center gap-3">
-                    
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
                     {% if current_user.is_authenticated %}
-                        <li class="nav-item">
-                            <a class="nav-link fw-500 text-secondary" href="{{ url_for('dashboard') }}">Clinician Dashboard</a>
+                        <li class="nav-item me-3">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+                                <i class="fas fa-user-md me-1"></i> Dr. {{ current_user.full_name.split()[0] }}
+                            </span>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link fw-500 text-secondary" href="{{ url_for('dataset') }}">Dataset</a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-dark fw-600" href="#" role="button" data-bs-toggle="dropdown">
-                                <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center rounded-circle" style="width:32px; height:32px; font-size:0.9rem;">
-                                    {{ current_user.full_name[0] }}
-                                </div>
-                                <span>{{ current_user.full_name.split(' ')[0] }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg p-2">
-                                <li><a class="dropdown-item rounded" href="{{ url_for('account') }}"><i class="fas fa-user-cog me-2"></i>Settings</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item rounded text-danger" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Sign Out</a></li>
-                            </ul>
-                        </li>
-
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link text-secondary fw-500" href="#features">Features</a></li>
-                        <li class="nav-item"><a class="nav-link text-secondary fw-500" href="#science">Science</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('account') }}">Account</a></li>
                         <li class="nav-item ms-2">
-                            <a class="btn btn-outline-secondary px-4" href="{{ url_for('login') }}">Log In</a>
+                            <a class="btn btn-outline-danger btn-sm" href="{{ url_for('logout') }}">Log Out</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="btn btn-primary px-4" href="{{ url_for('register') }}">Request Access</a>
+                    {% elif session.get('patient_aadhar') %}
+                        <li class="nav-item me-3">
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                                <i class="fas fa-user-injured me-1"></i> Patient Portal
+                            </span>
+                        </li>
+                        <li class="nav-item ms-2">
+                            <a class="btn btn-outline-danger btn-sm" href="{{ url_for('patient_logout') }}">Log Out</a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('dataset') }}">Dataset</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Clinician Login</a></li>
+                        <li class="nav-item ms-2">
+                            <a class="btn btn-primary btn-sm px-3" href="{{ url_for('register') }}">Request Access</a>
                         </li>
                     {% endif %}
-
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- <div class="container" style="margin-top: 80px;">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="notification-overlay" id="flash-overlay">
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show border-0 shadow-sm" role="alert">
-                        <i class="fas fa-info-circle me-2"></i>{{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div> -->
-
-    <div class="flash-container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {% if category == 'success' %}<i class="fas fa-check-circle text-success me-3 fs-5"></i>
-                        {% elif category == 'danger' %}<i class="fas fa-exclamation-circle text-danger me-3 fs-5"></i>
-                        {% else %}<i class="fas fa-info-circle text-primary me-3 fs-5"></i>
+                <div class="notification-card">
+                    <button class="notification-close" onclick="closePopup()">&times;</button>
+                    
+                    <div class="notification-icon">
+                        {% if category == 'success' %}
+                            <i class="fas fa-check-circle text-success"></i>
+                        {% elif category == 'danger' %}
+                            <i class="fas fa-times-circle text-danger"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle text-primary"></i>
                         {% endif %}
-                        
-                        <div><strong>{{ message }}</strong></div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
+
+                    <h5 class="fw-bold text-dark mb-2">
+                        {% if category == 'success' %}Success{% elif category == 'danger' %}Error{% else %}Notice{% endif %}
+                    </h5>
+                    <p class="text-muted mb-0">{{ message }}</p>
+                </div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
+            </div>
+
+            <script>
+                // Auto-close after 3 seconds
+                setTimeout(function() {
+                    const overlay = document.getElementById('flash-overlay');
+                    if(overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => overlay.remove(), 300);
+                    }
+                }, 3000);
+
+                // Manual Close
+                function closePopup() {
+                    const overlay = document.getElementById('flash-overlay');
+                    if(overlay) overlay.remove();
+                }
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <div style="padding-top: 64px;"> {% block content %}{% endblock %}
     </div>
 
-    {% block content %}{% endblock %}
-
-    <footer class="footer mt-auto py-5 bg-dark text-white-50">
-        <div class="container">
-            <div class="row g-4">
-                <div class="col-lg-4 mb-3">
-                    <h5 class="text-white mb-3">GenMedix</h5>
-                    <p class="small">Next-generation pharmacogenomic clinical decision support system. Reducing adverse drug events through precision medicine.</p>
-                </div>
-                <div class="col-6 col-lg-2 offset-lg-1 mb-3">
-                    <h6 class="text-white mb-3">Platform</h6>
-                    <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Dashboard</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Patient Safety</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">API Access</a></li>
-                    </ul>
-                </div>
-                <div class="col-6 col-lg-2 mb-3">
-                    <h6 class="text-white mb-3">Legal</h6>
-                    <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Privacy Policy</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Terms of Service</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Disclaimer</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-3 mb-3">
-                    <h6 class="text-white mb-3">Contact</h6>
-                    <p class="small mb-2"><i class="fas fa-envelope me-2"></i> support@genmedix.io</p>
-                    <p class="small"><i class="fas fa-map-marker-alt me-2"></i> Academic Project, 2025</p>
-                </div>
-            </div>
-            <div class="border-top border-secondary mt-4 pt-4 text-center small">
-                &copy; 2025 GenMedix. For Clinical Research Use Only. Not a replacement for professional medical judgment.
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

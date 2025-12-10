@@ -1,41 +1,104 @@
 {% extends "base.html" %}
-{% block title %}Patient Portal - GenMedix{% endblock %}
+{% block title %}Patient Access - GenMedix{% endblock %}
 
 {% block content %}
-<div class="central-layout-wrapper" style="align-items: center;">
-    <div class="central-card auth-card-width" style="border-top: 5px solid #00875a;"> <div class="text-center mb-4">
-            <div class="bg-success-subtle text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+<style>
+    /* Internal CSS for Centralized Layout */
+    body { background-color: #f4f5f7 !important; }
+    
+    .auth-wrapper {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px 20px;
+    }
+    
+    .auth-card {
+        background: white;
+        width: 100%;
+        max-width: 450px;
+        padding: 40px;
+        border-radius: 8px;
+        border: 1px solid #dfe1e6;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border-top: 5px solid #00875a; /* Patient Green Accent */
+    }
+
+    .form-control {
+        background-color: #FAFBFC;
+        border: 1px solid #dfe1e6;
+        padding: 12px;
+        font-size: 0.95rem;
+    }
+    .form-control:focus {
+        border-color: #00875a; /* Green Focus */
+        box-shadow: 0 0 0 2px rgba(0, 135, 90, 0.2);
+    }
+
+    .btn-success {
+        background-color: #00875a;
+        border: none;
+        padding: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .btn-success:hover { background-color: #006644; }
+
+    .icon-circle {
+        width: 60px; height: 60px;
+        background-color: #e3fcef;
+        color: #00875a;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <div class="icon-circle">
                 <i class="fas fa-user-injured"></i>
             </div>
-            <h3 class="h4 fw-bold text-secondary">Patient Portal</h3>
-            <p class="text-muted small">View your medical history and reports securely.</p>
+            <h4 class="fw-bold text-secondary">Patient Portal</h4>
+            <p class="text-muted small">View your reports securely.</p>
         </div>
 
         <form method="POST" action="{{ url_for('patient_login') }}">
             <div class="mb-3">
-                <label class="form-label">Aadhar ID (Username)</label>
+                <label class="form-label small fw-bold text-uppercase text-muted">Aadhar ID</label>
                 <div class="input-group">
-                    <span class="input-group-text"><i class="fas fa-fingerprint"></i></span>
-                    <input type="text" class="form-control fw-bold" id="pAadhar" name="aadhar" 
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-fingerprint text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0" id="pAadhar" name="aadhar" 
                            placeholder="0000 0000 0000" maxlength="14" required>
                 </div>
             </div>
 
             <div class="mb-4">
-                <label class="form-label">Date of Birth (Password)</label>
-                <input type="date" class="form-control" name="dob" required>
+                <label class="form-label small fw-bold text-uppercase text-muted">Date of Birth</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-calendar-alt text-muted"></i></span>
+                    <input type="date" class="form-control border-start-0" name="dob" required>
+                </div>
             </div>
 
-            <button type="submit" class="btn btn-success w-100 py-2 fw-bold shadow-sm mb-3">Access Records</button>
+            <button type="submit" class="btn btn-success w-100 mb-3 shadow-sm">Access Records</button>
             
             <div class="text-center pt-3 border-top">
-                <a href="{{ url_for('login') }}" class="small fw-bold text-decoration-none text-primary">Are you a Doctor? Login here</a>
+                <a href="{{ url_for('login') }}" class="small fw-bold text-decoration-none text-secondary">
+                    <i class="fas fa-user-md me-1"></i> Are you a Doctor? Login here
+                </a>
             </div>
         </form>
     </div>
 </div>
 
 <script>
+    // Auto-format Aadhar
     document.getElementById('pAadhar').addEventListener('input', function (e) {
         var target = e.target;
         var input = target.value.replace(/\D/g, '').substring(0,12);
