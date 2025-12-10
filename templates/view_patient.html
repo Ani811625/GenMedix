@@ -1,150 +1,118 @@
 {% extends "base.html" %}
-{% block title %}{{ patient.full_name }} - Clinical Profile{% endblock %}
+{% block title %}{{ patient.full_name }} - GenMedix{% endblock %}
 
 {% block content %}
 <div class="container py-5">
     
-    <div class="d-flex justify-content-between align-items-start mb-5" style="padding-top: 50px;">
+    <div class="d-flex justify-content-between align-items-start mb-5">
         <div class="d-flex align-items-center">
-            <div class="avatar-circle bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-4 shadow-sm" style="width: 72px; height: 72px; font-size: 1.75rem;">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 64px; height: 64px; font-size: 1.5rem; font-weight: 700;">
                 {{ patient.full_name[0] }}
             </div>
             <div>
-                <h1 class="fw-bold text-secondary mb-1" style="font-size: 1.75rem;">{{ patient.full_name }}</h1>
-                <div class="text-muted d-flex gap-3 small">
-                    <span><i class="fas fa-id-card me-2"></i>{{ patient.aadhar }}</span>
-                    <span><i class="fas fa-birthday-cake me-2"></i>{{ patient.dob }}</span>
-                    <span><i class="fas fa-venus-mars me-2"></i>{{ patient.gender }}</span>
+                <h2 class="fw-bold text-dark mb-0">{{ patient.full_name }}</h2>
+                <div class="text-muted small mt-1">
+                    <i class="fas fa-id-card me-1"></i> {{ patient.aadhar }} &nbsp;|&nbsp; 
+                    <i class="fas fa-calendar-alt me-1"></i> {{ patient.dob }} &nbsp;|&nbsp; 
+                    {{ patient.gender }}
                 </div>
             </div>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">
-                <i class="fas fa-edit me-2"></i>Edit Profile
+        <div>
+            <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="fas fa-edit me-1"></i> Edit Profile
             </a>
-            <a href="{{ url_for('select_drug', patient_id=patient.id) }}" class="btn btn-primary shadow-sm">
-                <i class="fas fa-plus me-2"></i>New Assessment
+            <a href="{{ url_for('select_drug', patient_id=patient.id) }}" class="btn btn-primary btn-sm shadow-sm">
+                <i class="fas fa-plus me-1"></i> New Assessment
             </a>
         </div>
     </div>
 
     <div class="row g-4">
-        
         <div class="col-lg-8">
-            <ul class="nav nav-tabs border-bottom-0 mb-3" id="chartTabs" role="tablist">
-                <li class="nav-item">
-                    <button class="nav-link active fw-600 px-4" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button">Assessments</button>
-                </li>
-                <li class="nav-item">
-                    <button class="nav-link fw-600 px-4" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button">Clinical Notes</button>
-                </li>
-            </ul>
-
-            <div class="tab-content">
-                <div class="tab-pane fade show active" id="reports">
-                    <div class="card border border-light-subtle shadow-sm rounded-3 overflow-hidden">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th class="ps-4">Date</th>
-                                        <th>Drug</th>
-                                        <th>Recommendation</th>
-                                        <th>Confidence</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% if reports %}
-                                        {% for report in reports %}
-                                        <tr>
-                                            <td class="ps-4 text-muted small fw-600">{{ report.generated_at.strftime('%Y-%m-%d') }}</td>
-                                            <td><span class="badge bg-light text-dark border">{{ report.drug_name }}</span></td>
-                                            <td class="fw-bold text-dark">{{ report.predicted_dose }}</td>
-                                            <td>
-                                                {% if report.confidence == 'High' %}<span class="text-success small fw-bold"><i class="fas fa-check-circle me-1"></i>High</span>
-                                                {% elif report.confidence == 'Medium' %}<span class="text-warning small fw-bold"><i class="fas fa-exclamation-circle me-1"></i>Medium</span>
-                                                {% else %}<span class="text-danger small fw-bold"><i class="fas fa-times-circle me-1"></i>Low</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-end pe-4">
-                                                {% if report.pdf_storage_path %}
-                                                <a href="{{ url_for('download_archived_report', report_id=report.id) }}" class="btn btn-link p-0 me-3 text-primary" title="Download Archived PDF" target="_blank">
-                                                    <i class="fas fa-cloud-download-alt"></i>
-                                                </a>
-                                                {% endif %}
-                                                <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-link p-0 me-3 text-secondary" title="View Details">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                <form action="{{ url_for('delete_report', report_id=report.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this report?');">
-                                                    <button class="btn btn-link p-0 text-danger border-0 bg-transparent" title="Delete">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    {% else %}
-                                        <tr><td colspan="5" class="text-center py-5 text-muted">No assessment history found.</td></tr>
-                                    {% endif %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-header bg-white border-bottom p-3">
+                    <ul class="nav nav-tabs card-header-tabs">
+                        <li class="nav-item"><a class="nav-link active" href="#">Assessments</a></li>
+                        <li class="nav-item"><a class="nav-link text-muted" href="#notes-section">Clinical Notes</a></li>
+                    </ul>
                 </div>
-
-                <div class="tab-pane fade" id="notes">
-                    <div class="card border border-light-subtle shadow-sm rounded-3 p-4 mb-4">
-                        <form action="{{ url_for('add_note', patient_id=patient.id) }}" method="POST">
-                            <label class="form-label">Add Clinical Observation</label>
-                            <textarea class="form-control mb-3" name="note_text" rows="3" placeholder="Type notes here..."></textarea>
-                            <div class="text-end"><button class="btn btn-primary btn-sm">Save Note</button></div>
-                        </form>
-                    </div>
-                    
-                    <div class="d-flex flex-column gap-3">
-                        {% if notes %}
-                            {% for note in notes %}
-                            <div class="card border-0 shadow-sm p-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <small class="fw-bold text-primary">{{ note.patient.doctor.full_name }}</small>
-                                    <small class="text-muted">{{ note.created_at.strftime('%d %b %Y, %H:%M') }}</small>
-                                </div>
-                                <p class="mb-0 small text-secondary" style="white-space: pre-wrap;">{{ note.note_text }}</p>
-                            </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center text-muted py-4">No notes available.</div>
-                        {% endif %}
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Date</th>
+                                <th>Drug</th>
+                                <th>Recommendation</th>
+                                <th>Confidence</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if reports %}
+                                {% for r in reports %}
+                                <tr>
+                                    <td class="ps-4 text-muted small">{{ r.generated_at.strftime('%Y-%m-%d') }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ r.drug_name }}</span></td>
+                                    <td class="fw-bold">{{ r.predicted_dose }}</td>
+                                    <td>
+                                        {% if 'High' in r.confidence %}<span class="badge bg-success-subtle text-success"><i class="fas fa-check-circle me-1"></i>High</span>
+                                        {% elif 'Medium' in r.confidence %}<span class="badge bg-warning-subtle text-warning"><i class="fas fa-exclamation-circle me-1"></i>Med</span>
+                                        {% else %}<span class="badge bg-danger-subtle text-danger"><i class="fas fa-times-circle me-1"></i>Low</span>{% endif %}
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="{{ url_for('view_report', report_id=r.id) }}" class="text-secondary me-3" title="View Details">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('download_archived_report', report_id=r.id) }}" class="text-primary me-3" title="Download PDF" target="_blank">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        <form action="{{ url_for('delete_report', report_id=r.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this report?');">
+                                            <button type="submit" class="btn btn-link p-0 text-danger" title="Delete">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr><td colspan="5" class="text-center py-5 text-muted">No reports generated yet.</td></tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
             <div class="card border-0 shadow-sm rounded-3 mb-4">
-                <div class="card-header bg-white border-bottom fw-bold text-secondary">
-                    Patient Demographics
-                </div>
                 <div class="card-body">
-                    <dl class="row mb-0 small">
-                        <dt class="col-4 text-muted">Country</dt><dd class="col-8">{{ patient.country }}</dd>
-                        <dt class="col-4 text-muted">Address</dt><dd class="col-8">{{ patient.address }}</dd>
-                    </dl>
+                    <h6 class="text-uppercase text-muted fw-bold small mb-3">Patient Demographics</h6>
+                    <div class="row g-3 small">
+                        <div class="col-4 text-muted">Phone:</div>
+                        <div class="col-8 fw-500">{{ patient.phone or 'N/A' }}</div>
+                        <div class="col-4 text-muted">Emergency:</div>
+                        <div class="col-8 fw-500">{{ patient.emergency_contact or 'N/A' }}</div>
+                        <div class="col-4 text-muted">Blood Grp:</div>
+                        <div class="col-8 fw-500">{{ patient.blood_group or 'N/A' }}</div>
+                        <div class="col-4 text-muted">Address:</div>
+                        <div class="col-8 fw-500">{{ patient.address or 'N/A' }}, {{ patient.country }}</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card border border-danger border-opacity-25 bg-white shadow-none">
-                <div class="card-body p-3">
-                    <h6 class="text-danger fw-bold mb-2">Delete Patient Record</h6>
-                    <p class="small text-muted mb-3">Permanently remove this patient and all associated clinical data.</p>
-                    <form action="{{ url_for('delete_patient', patient_id=patient.id) }}" method="POST" onsubmit="return confirm('WARNING: This will permanently delete this patient and ALL reports. This cannot be undone.');">
-                        <button class="btn btn-outline-danger btn-sm w-100">Delete Patient</button>
+            <div class="card border-danger-subtle shadow-sm rounded-3">
+                <div class="card-body">
+                    <h6 class="text-danger fw-bold small">Delete Patient Record</h6>
+                    <p class="text-muted small mb-3" style="font-size: 0.8rem;">
+                        Permanently remove this patient and all associated clinical data.
+                    </p>
+                    <form action="{{ url_for('delete_patient', patient_id=patient.id) }}" method="POST" onsubmit="return confirm('WARNING: This cannot be undone. Delete patient?');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">Delete Patient</button>
                     </form>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 {% endblock %}
