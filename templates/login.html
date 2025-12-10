@@ -3,7 +3,7 @@
 
 {% block content %}
 <style>
-    /* Internal CSS - Forces Professional Layout */
+    /* Internal CSS for Instant Styling */
     body { background-color: #f4f5f7 !important; }
     
     .auth-wrapper {
@@ -17,19 +17,19 @@
     .auth-card {
         background: white;
         width: 100%;
-        max-width: 420px;
+        max-width: 450px;
         padding: 40px;
         border-radius: 8px;
         border: 1px solid #dfe1e6;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     .form-control {
         background-color: #FAFBFC;
         border: 1px solid #dfe1e6;
-        padding: 10px;
+        padding: 12px;
+        font-size: 0.95rem;
     }
-    
     .form-control:focus {
         border-color: #0052cc;
         box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2);
@@ -38,39 +38,75 @@
     .btn-primary {
         background-color: #0052cc;
         border: none;
-        padding: 10px;
+        padding: 12px;
         font-weight: 600;
+        font-size: 1rem;
     }
     .btn-primary:hover { background-color: #0047b3; }
+
+    /* Divider */
+    .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 25px 0;
+        color: #6b778c;
+        font-size: 0.85rem;
+    }
+    .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #dfe1e6;
+    }
+    .divider:not(:empty)::before { margin-right: .5em; }
+    .divider:not(:empty)::after { margin-left: .5em; }
 </style>
 
 <div class="auth-wrapper">
     <div class="auth-card">
         <div class="text-center mb-4">
-            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="40" class="mb-3">
-            <h4 class="fw-bold text-secondary">Welcome Back</h4>
-            <p class="text-muted small">Sign in to your clinical dashboard</p>
+            <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="GenMedix" height="42" class="mb-3">
+            <h4 class="fw-bold text-secondary">Clinician Login</h4>
+            <p class="text-muted small">Access your patient cohorts securely.</p>
         </div>
 
         <form method="POST" action="{{ url_for('login') }}">
             <div class="mb-3">
                 <label class="form-label small fw-bold text-uppercase text-muted">Email Address</label>
-                <input type="email" class="form-control" name="email" placeholder="name@hospital.org" required>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-envelope text-muted"></i></span>
+                    <input type="email" class="form-control border-start-0" name="email" placeholder="doctor@hospital.org" required>
+                </div>
             </div>
 
             <div class="mb-4">
                 <div class="d-flex justify-content-between">
                     <label class="form-label small fw-bold text-uppercase text-muted">Password</label>
+                    <a href="#" class="small text-decoration-none fw-bold" style="font-size: 0.8rem;">Forgot?</a>
                 </div>
-                <input type="password" class="form-control" name="password" placeholder="••••••••" required>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                    <input type="password" class="form-control border-start-0" name="password" placeholder="••••••••" required>
+                </div>
             </div>
 
             <button type="submit" class="btn btn-primary w-100 mb-3">Sign In</button>
             
-            <div class="text-center border-top pt-3">
-                <a href="{{ url_for('register') }}" class="small fw-bold text-decoration-none">Create New Account</a>
+            <div class="text-center">
+                <span class="text-muted small">New Clinician?</span>
+                <a href="{{ url_for('register') }}" class="small fw-bold text-decoration-none ms-1">Create Account</a>
             </div>
         </form>
+
+        <div class="divider">OR</div>
+
+        <div class="text-center">
+            <a href="{{ url_for('patient_login') }}" class="btn btn-outline-success w-100 fw-bold" style="border-width: 2px;">
+                <i class="fas fa-user-injured me-2"></i> Patient Portal Login
+            </a>
+            <div class="small text-muted mt-2">View your reports with Aadhar ID</div>
+        </div>
+
     </div>
 </div>
 {% endblock %}

@@ -1,88 +1,98 @@
 {% extends "base.html" %}
-{% block title %}Edit Patient - {{ patient.full_name }}{% endblock %}
+{% block title %}Edit Patient - GenMedix{% endblock %}
 
 {% block content %}
-<div class="split-layout">
-    <div class="split-sidebar" style="padding-top: 50px;">
-        <h5 class="mb-4 text-uppercase text-muted ls-1">Record Management</h5>
-        <div class="p-3 bg-white border rounded shadow-sm mb-4">
-            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-edit me-2"></i>Editing Record</h6>
-            <p class="small text-muted mb-0">
-                Update demographic or contact details. Changes will be reflected in all future reports.
-            </p>
-        </div>
+<style>
+    /* Exact same internal CSS as add_patient.html for consistency */
+    body { background-color: #f4f5f7 !important; }
+    .central-wrapper { display: flex; justify-content: center; padding-top: 40px; padding-bottom: 60px; }
+    .central-card { background: white; width: 100%; max-width: 850px; padding: 40px 50px; border-radius: 8px; border: 1px solid #dfe1e6; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .section-title { color: #0052cc; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; border-bottom: 1px solid #ebecf0; padding-bottom: 8px; margin-top: 10px; }
+    .form-label { font-size: 0.75rem; font-weight: 700; color: #6b778c; text-transform: uppercase; margin-bottom: 5px; }
+    .form-control, .form-select { background-color: #FAFBFC; border: 1px solid #dfe1e6; padding: 10px 12px; font-size: 0.95rem; border-radius: 4px; }
+    .form-control:focus { background-color: #fff; border-color: #0052cc; box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.2); }
+    .btn-primary { background-color: #0052cc; border: none; padding: 12px 30px; font-weight: 600; }
+</style>
+
+<div class="central-wrapper">
+    <div class="central-card">
         
-        <div class="mt-auto">
-            <div class="small text-muted text-uppercase fw-bold mb-2">Current Record</div>
-            <div class="fw-bold text-dark">{{ patient.full_name }}</div>
-            <div class="small text-muted">ID: {{ patient.aadhar }}</div>
-        </div>
-    </div>
-
-    <div class="split-content">
-        <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
             <div>
-                <h2 class="mb-1">Edit Patient Details</h2>
-                <p class="text-muted mb-0">Update patient demographics and identifiers.</p>
+                <h3 class="fw-bold text-secondary mb-1">Edit Patient Details</h3>
+                <p class="text-muted small mb-0">Update demographics and clinical data.</p>
             </div>
-            <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary">Cancel</a>
+            <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary btn-sm">Cancel</a>
         </div>
 
-        <form method="POST" action="{{ url_for('edit_patient', patient_id=patient.id) }}" style="max-width: 800px;">
+        <form method="POST" action="{{ url_for('edit_patient', patient_id=patient.id) }}">
             
-            <div class="row g-4 mb-4">
-                <div class="col-12">
-                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Identity</h6>
-                </div>
-                <div class="col-md-8">
-                    <label class="form-label">Full Legal Name</label>
+            <div class="section-title">Identity</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Full Name</label>
                     <input type="text" class="form-control" name="full_name" value="{{ patient.full_name }}" required>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label">Aadhar ID (UIDAI)</label>
-                    <input type="text" class="form-control" name="aadhar" value="{{ patient.aadhar }}" required>
-                </div>
-            </div>
-
-            <div class="row g-4 mb-4">
-                <div class="col-12">
-                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Demographics</h6>
-                </div>
                 <div class="col-md-6">
+                    <label class="form-label text-muted">Aadhar ID (Read-Only)</label>
+                    <input type="text" class="form-control bg-light" value="{{ patient.aadhar }}" readonly>
+                </div>
+                <div class="col-md-4">
                     <label class="form-label">Date of Birth</label>
                     <input type="date" class="form-control" name="dob" value="{{ patient.dob }}" required>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label">Biological Sex</label>
-                    <select class="form-select" name="gender" required>
+                <div class="col-md-4">
+                    <label class="form-label">Gender</label>
+                    <select class="form-select" name="gender">
                         <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
                         <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
                         <option value="Other" {% if patient.gender == 'Other' %}selected{% endif %}>Other</option>
                     </select>
                 </div>
+                <div class="col-md-4">
+                    <label class="form-label">Blood Group</label>
+                    <input type="text" class="form-control" name="blood_group" value="{{ patient.blood_group or '' }}" placeholder="e.g. O+">
+                </div>
             </div>
 
-            <div class="row g-4 mb-5">
-                <div class="col-12">
-                    <h6 class="text-uppercase text-muted fw-bold mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">Contact & Location</h6>
+            <div class="section-title">Clinical History</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-12">
+                    <label class="form-label">Allergies</label>
+                    <input type="text" class="form-control" name="allergies" value="{{ patient.allergies or '' }}">
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Country</label>
-                    <select class="form-select" name="country" required>
-                        <option value="India" {% if patient.country == 'India' %}selected{% endif %}>India</option>
-                        <option value="USA" {% if patient.country == 'USA' %}selected{% endif %}>USA</option>
-                        <option value="UK" {% if patient.country == 'UK' %}selected{% endif %}>UK</option>
-                        <option value="Other" {% if patient.country == 'Other' %}selected{% endif %}>Other</option>
-                    </select>
+                    <label class="form-label">Current Medications</label>
+                    <textarea class="form-control" name="current_medications" rows="2">{{ patient.current_medications or '' }}</textarea>
                 </div>
-                <div class="col-md-12">
-                    <label class="form-label">Residential Address</label>
-                    <textarea class="form-control" name="address" rows="2">{{ patient.address }}</textarea>
+                <div class="col-md-6">
+                    <label class="form-label">Medical History</label>
+                    <textarea class="form-control" name="medical_history" rows="2">{{ patient.medical_history or '' }}</textarea>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end gap-3">
-                <button type="submit" class="btn btn-primary btn-lg px-5">Save Changes</button>
+            <div class="section-title">Contact</div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Phone</label>
+                    <input type="text" class="form-control" name="phone" value="{{ patient.phone or '' }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Emergency Contact</label>
+                    <input type="text" class="form-control" name="emergency_contact" value="{{ patient.emergency_contact or '' }}">
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label">Address</label>
+                    <input type="text" class="form-control" name="address" value="{{ patient.address or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Country</label>
+                    <input type="text" class="form-control" name="country" value="{{ patient.country or '' }}">
+                </div>
+            </div>
+
+            <div class="text-end pt-3 border-top">
+                <button type="submit" class="btn btn-primary shadow-sm">Save Changes</button>
             </div>
         </form>
     </div>
