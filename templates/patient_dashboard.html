@@ -25,7 +25,7 @@
                         <th>Medication</th>
                         <th>Prescribing Doctor</th>
                         <th>Dosage</th>
-                        <th class="text-end pe-4">Download</th>
+                        <th class="text-end pe-4">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -33,19 +33,27 @@
                         {% for r in reports %}
                         <tr>
                             <td class="ps-4 text-muted fw-600">{{ r.generated_at.strftime('%d %b %Y') }}</td>
-                            <td><span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ r.drug_name }}</span></td>
+                            <td>
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                    {{ r.drug_name }}
+                                </span>
+                            </td>
                             <td class="fw-bold text-secondary">Dr. {{ r.doctor_name }}</td>
                             <td class="fw-bold text-dark">{{ r.predicted_dose }}</td>
                             <td class="text-end pe-4">
-                                <a href="{{ url_for('download_archived_report_patient', report_id=r.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
-                                    <i class="fas fa-download me-1"></i> PDF
+                                <a href="{{ url_for('download_archived_report_patient', report_id=r.id) }}" 
+                                   class="btn btn-sm btn-outline-primary shadow-sm" 
+                                   target="_blank">
+                                    <i class="fas fa-eye me-1"></i> View Report
                                 </a>
                             </td>
                         </tr>
                         {% endfor %}
                     {% else %}
                         <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">No medical reports found linked to this Aadhar ID.</td>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                No medical reports found linked to this Aadhar ID.
+                            </td>
                         </tr>
                     {% endif %}
                 </tbody>

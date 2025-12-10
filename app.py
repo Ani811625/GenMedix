@@ -557,18 +557,27 @@ def patient_logout():
     flash("Patient logged out.", "success")
     return redirect(url_for('home'))
 
+# --- 2. PATIENT: VIEW ONLY (Inline Tab) ---
 @app.route('/patient/download/<int:report_id>')
 def download_archived_report_patient(report_id):
-    if 'patient_aadhar' not in session: return redirect(url_for('patient_login'))
+    if 'patient_aadhar' not in session: 
+        return redirect(url_for('patient_login'))
     
     report = Report.query.get_or_404(report_id)
-    if report.patient.aadhar != session['patient_aadhar']:
+    
+    # Clean Aadhar check (remove spaces just in case)
+    session_aadhar = session['patient_aadhar'].replace(' ', '')
+    report_aadhar = report.patient.aadhar.replace(' ', '')
+    
+    if report_aadhar != session_aadhar:
         abort(403)
         
     if not report.pdf_storage_path or not supabase:
         flash("File unavailable.", "warning")
         return redirect(url_for('patient_dashboard'))
 
+    # KEEP LOGIC: Generate Signed URL
+    # This URL naturally opens in a browser PDF viewer
     res = supabase.storage.from_("medical_reports").create_signed_url(report.pdf_storage_path, 60)
     return redirect(res['signedURL'])
 
@@ -787,21 +796,34 @@ def view_report(report_id):
         report_obj=report 
     ))
 
+# --- 1. DOCTOR: FORCE DOWNLOAD (Attachment) ---
 @app.route('/download_archived_report/<int:report_id>')
 @login_required
 def download_archived_report(report_id):
     report = Report.query.get_or_404(report_id)
-    if report.patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+    if report.patient.doctor_id != current_user.id:
+        flash("Unauthorized.", "danger")
+        return redirect(url_for('dashboard'))
     
     if not report.pdf_storage_path or not supabase:
         flash("No archived PDF found.", "warning")
         return redirect(url_for('view_report', report_id=report_id))
 
     try:
-        res = supabase.storage.from_("medical_reports").create_signed_url(report.pdf_storage_path, 60)
-        return redirect(res['signedURL'])
-    except:
-        flash("Error retrieving file.", "danger")
+        # NEW LOGIC: Download bytes from Supabase and serve as attachment
+        # This prevents "Opening in new tab" and forces "Save As"
+        file_bytes = supabase.storage.from_("medical_reports").download(report.pdf_storage_path)
+        
+        return Response(
+            file_bytes,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment;filename=Report_{report.patient.full_name}_{report.generated_at.strftime("%Y%m%d")}.pdf'
+            }
+        )
+    except Exception as e:
+        print(f"Download Error: {e}")
+        flash("Error retrieving file. It may have been deleted.", "danger")
         return redirect(url_for('view_report', report_id=report_id))
 
 @app.route('/download_report', methods=['POST'])

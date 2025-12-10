@@ -64,8 +64,8 @@
                                         <a href="{{ url_for('view_report', report_id=r.id) }}" class="text-secondary me-3" title="View Details">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ url_for('download_archived_report', report_id=r.id) }}" class="text-primary me-3" title="Download PDF" target="_blank">
-                                            <i class="fas fa-file-pdf"></i>
+                                        <a href="{{ url_for('download_archived_report', report_id=r.id) }}" class="text-primary me-3" title="Download PDF">
+    <i class="fas fa-download"></i> </a>
                                         </a>
                                         <form action="{{ url_for('delete_report', report_id=r.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this report?');">
                                             <button type="submit" class="btn btn-link p-0 text-danger" title="Delete">
