@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Pricing - GenMedix{% endblock %}
+
+{% block content %}
+<script src="https://js.stripe.com/v3/"></script>
+
+<div class="container py-5 text-center">
+    <h2 class="fw-bold text-secondary mb-5">Select Subscription</h2>
+
+    <div class="row justify-content-center g-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-primary h-100">
+                <div class="card-header bg-primary text-white py-3"><h4>Individual</h4></div>
+                <div class="card-body">
+                    <h1 class="card-title">₹999 <small>/mo</small></h1>
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>1 Doctor Account</li>
+                        <li>Unlimited Records</li>
+                    </ul>
+                    <button class="btn btn-primary w-100" onclick="checkout('Individual')">Choose Plan</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-dark h-100">
+                <div class="card-header bg-dark text-white py-3"><h4>Enterprise</h4></div>
+                <div class="card-body">
+                    <h1 class="card-title">₹19,999 <small>/mo</small></h1>
+                    <ul class="list-unstyled mt-3 mb-4">
+                        <li>50 Doctor Accounts</li>
+                        <li>Admin Dashboard</li>
+                    </ul>
+                    <button class="btn btn-dark w-100" onclick="checkout('Enterprise')">Contact Sales</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var stripe = Stripe('{{ key }}'); // Uses keys passed from Flask
+
+    function checkout(plan) {
+        const email = prompt("Enter the email for this subscription:");
+        if(!email) return;
+
+        fetch('/create-checkout-session', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ plan_type: plan, email: email })
+        })
+        .then(response => response.json())
+        .then(session => {
+            return stripe.redirectToCheckout({ sessionId: session.id });
+        })
+        .then(result => {
+            if (result.error) alert(result.error.message);
+        })
+        .catch(error => console.error('Error:', error));
+    }
+</script>
+{% endblock %}

@@ -26,6 +26,135 @@ from weasyprint import HTML
 # --- SUPABASE IMPORT ---
 from supabase import create_client, Client
 
+
+# =======================================================
+# PAYMENT SETUP
+# =======================================================
+
+
+import os
+import stripe
+from flask import request, jsonify, render_template, url_for
+
+# --- STRIPE CONFIGURATION ---
+# 1. READ KEYS FROM ENVIRONMENT (Secure)
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# --- UPDATE DATABASE MODELS ---
+class Subscription(db.Model):
+    email = db.Column(db.String(150), primary_key=True)
+    stripe_customer_id = db.Column(db.String(100))
+    plan_type = db.Column(db.String(50))
+    max_seats = db.Column(db.Integer)
+    is_active = db.Column(db.Boolean, default=True)
+
+class User(db.Model, UserMixin):
+    # ... (Keep existing fields: id, full_name, etc.) ...
+    
+    # Existing relationship links
+    subscription_email = db.Column(db.String(150), db.ForeignKey('subscription.email'))
+    # ...
+
+
+# --- ROUTES ---
+
+@app.route('/pricing')
+def pricing():
+    # Pass the Publishable key to the frontend so the "Pay" button works
+    return render_template('pricing.html', key=STRIPE_PUBLISHABLE_KEY)
+
+# 1. CREATE CHECKOUT SESSION (User clicks "Pay")
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    data = request.json
+    plan_type = data.get('plan_type')
+    email = data.get('email')
+
+    # UPDATED: Use USD for US Stripe Account
+    # Amounts are in CENTS (100 cents = $1)
+    if plan_type == 'Individual':
+        amount = 1500  # $15.00
+        product_name = 'Individual Plan (1 Doctor)'
+        max_seats = 1
+    else:
+        amount = 25000 # $250.00
+        product_name = 'Enterprise Plan (50 Doctors)'
+        max_seats = 50
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            customer_email=email, # Pre-fills the email field
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd', # Changed to USD
+                    'product_data': {
+                        'name': product_name,
+                    },
+                    'unit_amount': amount,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            # Redirects user back to your site after payment
+            success_url=url_for('register', _external=True),
+            cancel_url=url_for('pricing', _external=True),
+            
+            # CRITICAL: Metadata passes info to the Webhook
+            metadata={
+                'plan_type': plan_type, 
+                'max_seats': max_seats,
+                'customer_email': email
+            }
+        )
+        return jsonify({'id': session.id})
+    except Exception as e:
+        return jsonify(error=str(e)), 403
+
+# 2. STRIPE WEBHOOK (The "Listener")
+@app.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        return 'Invalid signature', 400
+
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        
+        # Retrieve data from Metadata
+        customer_email = session['metadata']['customer_email']
+        plan_type = session['metadata']['plan_type']
+        max_seats = session['metadata']['max_seats']
+        customer_id = session['customer']
+
+        # Update or Create Subscription in Database
+        new_sub = Subscription(
+            email=customer_email,
+            stripe_customer_id=customer_id,
+            plan_type=plan_type,
+            max_seats=int(max_seats),
+            is_active=True
+        )
+        
+        # Merge handles "Insert if new, Update if exists"
+        db.session.merge(new_sub)
+        db.session.commit()
+        print(f"✅ Subscription Activated: {customer_email}")
+
+    return jsonify(success=True)
+
+
 # =======================================================
 # 1. APP CONFIGURATION & SETUP
 # =======================================================
