@@ -26,7 +26,10 @@ from weasyprint import HTML
 # --- SUPABASE IMPORT ---
 from supabase import create_client, Client
 
-# --- APP CONFIGURATION ---
+# =======================================================
+# 1. APP CONFIGURATION & SETUP
+# =======================================================
+
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
@@ -64,31 +67,6 @@ if SUPABASE_URL and SUPABASE_KEY:
 def inject_user():
     return dict(current_user=current_user)
 
-# --- ERROR HANDLERS ---
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
-
-# --- AUTO-CREATE TABLES ---
-@app.before_request
-def check_maintenance_and_db():
-    if os.environ.get('MAINTENANCE_MODE') == 'true':
-        if request.endpoint and request.endpoint != 'static':
-            return render_template('maintenance.html'), 503
-
-    try:
-        inspector = inspect(db.engine)
-        existing_tables = inspector.get_table_names()
-        if "user" not in existing_tables:
-            with app.app_context():
-                db.create_all()
-    except Exception as e:
-        print(f"--- ❌ DB Check Error: {e} ---")
-
 # --- LOGIN MANAGER ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -100,7 +78,9 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- DATABASE MODELS ---
+# =======================================================
+# 2. DATABASE MODELS
+# =======================================================
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -108,8 +88,6 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
-    
-    # NOTE: OTP fields removed because Supabase handles verification state now
     
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
@@ -122,12 +100,25 @@ class User(db.Model, UserMixin):
 
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    
+    # --- Basic Identity ---
     full_name = db.Column(db.String(150), nullable=False)
     dob = db.Column(db.String(10)) 
     gender = db.Column(db.String(10))
-    aadhar = db.Column(db.String(12), unique=True)
+    aadhar = db.Column(db.String(14), index=True) # Storing format XXXX XXXX XXXX or raw
+    
+    # --- Contact ---
     country = db.Column(db.String(50))
     address = db.Column(db.String(200))
+    phone = db.Column(db.String(20))
+    emergency_contact = db.Column(db.String(100))
+    
+    # --- Clinical Profile ---
+    blood_group = db.Column(db.String(5))
+    allergies = db.Column(db.Text)
+    medical_history = db.Column(db.Text)
+    current_medications = db.Column(db.Text)
+    
     doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     reports = db.relationship('Report', backref='patient', lazy=True, cascade="all, delete-orphan")
@@ -152,6 +143,35 @@ class Note(db.Model):
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
     doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# =======================================================
+# 3. HELPER FUNCTIONS & ML
+# =======================================================
+
+# --- AUTO-DB CHECK ---
+@app.before_request
+def check_maintenance_and_db():
+    if os.environ.get('MAINTENANCE_MODE') == 'true':
+        if request.endpoint and request.endpoint != 'static':
+            return render_template('maintenance.html'), 503
+
+    try:
+        inspector = inspect(db.engine)
+        existing_tables = inspector.get_table_names()
+        if "user" not in existing_tables or "patient" not in existing_tables:
+            with app.app_context():
+                db.create_all()
+    except Exception as e:
+        print(f"--- ❌ DB Check Error: {e} ---")
+
+# --- ERROR HANDLERS ---
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
 # --- LOAD AI MODELS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
@@ -169,8 +189,6 @@ try:
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
     pass 
-
-# --- HELPER FUNCTIONS ---
 
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
@@ -322,7 +340,6 @@ def process_prediction_data(form_data):
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     
-    # Append Safety Warnings
     if form_data.get('is_pregnant'):
         suggestions.append("<strong>CONTRAINDICATION:</strong> Patient marked Pregnant. Warfarin contraindicated.")
     if form_data.get('active_bleeding'):
@@ -346,7 +363,9 @@ def process_prediction_data(form_data):
     
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
-# --- ROUTES ---
+# =======================================================
+# 4. ROUTES
+# =======================================================
 
 @app.route('/')
 def home(): 
@@ -364,7 +383,7 @@ def dataset():
         headers, rows, row_count = [], [], 0
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
 
-# --- SUPABASE OTP LOGIN FLOW ---
+# --- DOCTOR AUTHENTICATION (SUPABASE OTP) ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -375,30 +394,24 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         
-        # 1. Check Local DB first (Does this user exist?)
+        # 1. Local Check
         local_user = User.query.filter_by(email=email).first()
         if not local_user:
             flash('No account found with this email.', 'danger')
             return redirect(url_for('login'))
             
-        # 2. Check Password (The first Factor)
+        # 2. Password Check
         if not local_user.check_password(password):
             flash('Incorrect password.', 'danger')
             return redirect(url_for('login'))
 
-        # 3. Trigger Supabase OTP (The Second Factor)
+        # 3. Supabase OTP
         try:
-            if not supabase:
-                raise Exception("Supabase Client not configured.")
-                
-            # Request OTP from Supabase
+            if not supabase: raise Exception("Supabase not configured")
             res = supabase.auth.sign_in_with_otp({"email": email})
-            
-            # Store email in session to verify next step
             session['auth_email'] = email
-            flash('Two-Factor Code sent to your email by Supabase.', 'info')
+            flash('Verification code sent to your email.', 'info')
             return redirect(url_for('verify_otp'))
-            
         except Exception as e:
             print(f"--- ❌ Supabase Auth Error: {e} ---")
             flash('Error sending OTP. Please try again.', 'danger')
@@ -408,41 +421,33 @@ def login():
 
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
-    # Security Check: Must have started login flow
-    if 'auth_email' not in session:
-        return redirect(url_for('login'))
+    if 'auth_email' not in session: return redirect(url_for('login'))
     
     if request.method == 'POST':
         otp = request.form.get('otp')
         email = session.get('auth_email')
         
         try:
-            # 1. Verify Token with Supabase API
             res = supabase.auth.verify_otp({
                 "email": email,
                 "token": otp,
                 "type": "email"
             })
-            
-            # 2. If no error thrown, OTP is valid. Log in via Flask-Login
             local_user = User.query.filter_by(email=email).first()
             if local_user:
                 login_user(local_user)
-                session.pop('auth_email', None) # Clear session
+                session.pop('auth_email', None)
                 return redirect(url_for('dashboard'))
             else:
-                flash("Login verified, but user record missing in DB.", "danger")
-                
+                flash("Login verified, but user record missing.", "danger")
         except Exception as e:
-            print(f"--- ❌ OTP Verification Failed: {e} ---")
-            flash("Invalid or expired code. Please try again.", "danger")
+            flash("Invalid or expired code.", "danger")
 
     return render_template('verify_otp.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+    if current_user.is_authenticated: return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
         email = request.form.get('email')
@@ -459,21 +464,13 @@ def register():
             flash('Email already registered.', 'danger')
             return redirect(url_for('register'))
         
-        if User.query.filter_by(medical_reg_id=reg_id).first():
-            flash('Medical ID already registered.', 'danger')
-            return redirect(url_for('register'))
-
         new_doctor = User(full_name=name, email=email, medical_reg_id=reg_id)
         new_doctor.set_password(password)
         
         try:
             db.session.add(new_doctor)
             db.session.commit()
-            
-            # NOTE: We do NOT need to create the user in Supabase manually.
-            # Supabase auto-creates "Auth Users" the first time we request an OTP for them.
-            
-            flash('Account created successfully! Please log in.', 'success')
+            flash('Account created! Please log in.', 'success')
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating account: {e}', 'danger')
@@ -487,9 +484,95 @@ def register():
 @login_required
 def logout():
     logout_user()
-    session.clear() # Clear any leftover auth data
+    session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
+
+@app.route('/account', methods=['GET', 'POST'])
+@login_required
+def account():
+    action = request.form.get('action')
+    if request.method == 'POST':
+        if action == 'update_details':
+            current_user.full_name = request.form.get('full_name')
+            current_user.email = request.form.get('email')
+            db.session.commit()
+            flash('Details updated.', 'success')
+            return redirect(url_for('account'))
+        elif action == 'delete_account':
+            if not current_user.check_password(request.form.get('password')):
+                flash("Incorrect password.", "danger")
+                return redirect(url_for('account'))
+            db.session.delete(current_user)
+            db.session.commit()
+            logout_user()
+            flash("Account deleted.", "success")
+            return redirect(url_for('home'))
+    return render_template('account.html')
+
+# --- PATIENT PORTAL ROUTES ---
+
+@app.route('/patient/login', methods=['GET', 'POST'])
+def patient_login():
+    if request.method == 'POST':
+        aadhar = request.form.get('aadhar')
+        dob = request.form.get('dob')
+        
+        # Remove formatting spaces if present
+        clean_aadhar = aadhar.replace(' ', '')
+        
+        patient = Patient.query.filter_by(aadhar=clean_aadhar, dob=dob).first()
+        
+        if patient:
+            session['patient_aadhar'] = clean_aadhar
+            session['patient_name'] = patient.full_name
+            return redirect(url_for('patient_dashboard'))
+        else:
+            flash("Invalid Aadhar ID or Date of Birth combination.", "danger")
+            
+    return render_template('patient_login.html')
+
+@app.route('/patient/dashboard')
+def patient_dashboard():
+    if 'patient_aadhar' not in session: return redirect(url_for('patient_login'))
+    
+    aadhar = session['patient_aadhar']
+    
+    # Get ALL records for this patient (across all doctors)
+    patient_records = Patient.query.filter_by(aadhar=aadhar).all()
+    patient_ids = [p.id for p in patient_records]
+    
+    # Get ALL reports
+    all_reports = Report.query.filter(Report.patient_id.in_(patient_ids)).order_by(Report.generated_at.desc()).all()
+    
+    return render_template('patient_dashboard.html', 
+                           reports=all_reports, 
+                           patient_name=session['patient_name'],
+                           aadhar_display=f"{aadhar[:4]} {aadhar[4:8]} {aadhar[8:]}")
+
+@app.route('/patient/logout')
+def patient_logout():
+    session.pop('patient_aadhar', None)
+    session.pop('patient_name', None)
+    flash("Patient logged out.", "success")
+    return redirect(url_for('home'))
+
+@app.route('/patient/download/<int:report_id>')
+def download_archived_report_patient(report_id):
+    if 'patient_aadhar' not in session: return redirect(url_for('patient_login'))
+    
+    report = Report.query.get_or_404(report_id)
+    if report.patient.aadhar != session['patient_aadhar']:
+        abort(403)
+        
+    if not report.pdf_storage_path or not supabase:
+        flash("File unavailable.", "warning")
+        return redirect(url_for('patient_dashboard'))
+
+    res = supabase.storage.from_("medical_reports").create_signed_url(report.pdf_storage_path, 60)
+    return redirect(res['signedURL'])
+
+# --- DOCTOR DASHBOARD ROUTES ---
 
 @app.route('/dashboard')
 @login_required
@@ -502,23 +585,36 @@ def dashboard():
 @login_required
 def add_patient():
     if request.method == 'POST':
-        aadhar = request.form.get('aadhar')
-        if Patient.query.filter_by(aadhar=aadhar).first():
-            flash('Aadhar number already registered.', 'danger')
+        raw_aadhar = request.form.get('aadhar')
+        clean_aadhar = raw_aadhar.replace(' ', '')
+        
+        # Backend Validation
+        if len(clean_aadhar) != 12 or not clean_aadhar.isdigit():
+            flash('Invalid Aadhar: Must be 12 digits.', 'danger')
+            return render_template('add_patient.html')
+
+        if Patient.query.filter_by(aadhar=clean_aadhar).first():
+            flash('This Aadhar ID is already registered.', 'warning')
             return render_template('add_patient.html')
         
         new_patient = Patient(
             full_name=request.form.get('full_name'),
-            aadhar=aadhar,
+            aadhar=clean_aadhar,
             dob=request.form.get('dob'),
             gender=request.form.get('gender'),
+            blood_group=request.form.get('blood_group'),
             country=request.form.get('country'),
             address=request.form.get('address'),
+            phone=request.form.get('phone'),
+            emergency_contact=request.form.get('emergency_contact'),
+            allergies=request.form.get('allergies'),
+            medical_history=request.form.get('medical_history'),
+            current_medications=request.form.get('current_medications'),
             doctor_id=current_user.id
         )
         db.session.add(new_patient)
         db.session.commit()
-        flash(f'Patient {new_patient.full_name} added.', 'success')
+        flash(f'Patient {new_patient.full_name} added successfully.', 'success')
         return redirect(url_for('dashboard'))
     return render_template('add_patient.html')
 
@@ -527,19 +623,50 @@ def add_patient():
 def view_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
+        flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
     reports = Report.query.filter_by(patient_id=patient.id).order_by(Report.generated_at.desc()).all()
     notes = Note.query.filter_by(patient_id=patient.id).order_by(Note.created_at.desc()).all()
     return render_template('view_patient.html', patient=patient, reports=reports, notes=notes)
 
+@app.route('/patient/<int:patient_id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id:
+        flash("Unauthorized.", "danger")
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        patient.full_name = request.form.get('full_name')
+        patient.dob = request.form.get('dob')
+        patient.gender = request.form.get('gender')
+        patient.country = request.form.get('country')
+        patient.address = request.form.get('address')
+        db.session.commit()
+        flash('Details updated.', 'success')
+        return redirect(url_for('view_patient', patient_id=patient.id))
+    return render_template('edit_patient.html', patient=patient)
+
+@app.route('/patient/<int:patient_id>/delete', methods=['POST'])
+@login_required
+def delete_patient(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id:
+        flash("Unauthorized.", "danger")
+        return redirect(url_for('dashboard'))
+    db.session.delete(patient)
+    db.session.commit()
+    flash(f"Patient deleted.", "success")
+    return redirect(url_for('dashboard'))
+
+# --- WARFARIN & REPORTS ---
+
 @app.route('/patient/<int:patient_id>/select_drug', methods=['GET'])
 @login_required
 def select_drug(patient_id):
     patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized access.", "danger")
-        return redirect(url_for('dashboard'))
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
     return render_template('select_drug.html', patient=patient)
 
 @app.route('/patient/<int:patient_id>/redirect_form', methods=['POST'])
@@ -554,9 +681,7 @@ def redirect_to_drug_form(patient_id):
 @login_required
 def warfarin_form(patient_id):
     patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
     
     calculated_age = 0
     try:
@@ -570,9 +695,7 @@ def warfarin_form(patient_id):
 @login_required
 def generate_warfarin_report(patient_id):
     patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
 
     patient_info, clinical_info, safety_info, results = process_prediction_data(request.form)
     
@@ -581,9 +704,6 @@ def generate_warfarin_report(patient_id):
     interaction_warnings = get_interaction_warnings(interacting_drugs)
 
     timestamp_str = datetime.now().strftime('%Y%m%d%H%M%S')
-    report_id_display = f"GM-{datetime.now().strftime('%Y%m%d')}-{patient.id}"
-    results['report_id'] = report_id_display
-    
     full_report_data = {
         "patient_info": patient_info,
         "clinical_info": clinical_info,
@@ -593,7 +713,7 @@ def generate_warfarin_report(patient_id):
         "interacting_drugs": interacting_drugs
     }
 
-    # Generate PDF
+    # PDF Generation
     html_string = render_template(
         'display_report.html',
         patient_info=patient_info,
@@ -606,22 +726,19 @@ def generate_warfarin_report(patient_id):
     )
     pdf_bytes = HTML(string=html_string).write_pdf()
 
-    # Upload to Supabase Storage
+    # Upload to Supabase
     pdf_path = None
     if supabase:
         try:
             filename = f"report_{patient.id}_{timestamp_str}.pdf"
             supabase.storage.from_("medical_reports").upload(
-                path=filename,
-                file=pdf_bytes,
-                file_options={"content-type": "application/pdf"}
+                path=filename, file=pdf_bytes, file_options={"content-type": "application/pdf"}
             )
-            print(f"--- ✅ PDF Uploaded: {filename} ---")
             pdf_path = filename 
         except Exception as e:
             print(f"--- ❌ Supabase Upload Failed: {e} ---")
 
-    # Save to Database
+    # DB Save
     new_report = Report(
         drug_name="Warfarin",
         predicted_dose=f"{results['predicted_dose_mg_per_week']} mg/week",
@@ -635,7 +752,6 @@ def generate_warfarin_report(patient_id):
     db.session.add(new_report)
     db.session.commit()
 
-    # Render Response
     response = make_response(render_template(
         'display_report.html',
         patient_info=patient_info,
@@ -646,52 +762,20 @@ def generate_warfarin_report(patient_id):
         request=request, 
         interaction_warnings=interaction_warnings
     ))
-    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     return response
-
-@app.route('/download_archived_report/<int:report_id>')
-@login_required
-def download_archived_report(report_id):
-    report = Report.query.get_or_404(report_id)
-    if report.patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
-    
-    if not report.pdf_storage_path or not supabase:
-        flash("No archived PDF found.", "warning")
-        return redirect(url_for('view_report', report_id=report_id))
-
-    try:
-        res = supabase.storage.from_("medical_reports").create_signed_url(
-            report.pdf_storage_path, 60
-        )
-        if res and 'signedURL' in res:
-            return redirect(res['signedURL'])
-        else:
-            flash("Could not generate link.", "danger")
-            return redirect(url_for('view_report', report_id=report_id))
-    except Exception:
-        flash("Error retrieving file.", "danger")
-        return redirect(url_for('view_report', report_id=report_id))
 
 @app.route('/report/<int:report_id>')
 @login_required
 def view_report(report_id):
     report = Report.query.get_or_404(report_id)
-    if report.patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
+    if report.patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
 
-    try:
-        report_data = json.loads(report.report_data_json)
-    except:
-        flash("Error: Report corrupted.", "danger")
-        return redirect(url_for('view_patient', patient_id=report.patient_id))
+    try: report_data = json.loads(report.report_data_json)
+    except: return redirect(url_for('view_patient', patient_id=report.patient_id))
     
-    saved_interacting_drugs = report_data.get('interacting_drugs', [])
-    interaction_warnings = get_interaction_warnings(saved_interacting_drugs)
+    saved_drugs = report_data.get('interacting_drugs', [])
     
-    response = make_response(render_template(
+    return make_response(render_template(
         'display_report.html',
         patient_info=report_data.get('patient_info'),
         clinical_info=report_data.get('clinical_info'),
@@ -699,10 +783,26 @@ def view_report(report_id):
         results=report_data.get('results'),
         doctor_name=report_data.get('doctor_name'),
         request=None,
-        interaction_warnings=interaction_warnings,
+        interaction_warnings=get_interaction_warnings(saved_drugs),
         report_obj=report 
     ))
-    return response
+
+@app.route('/download_archived_report/<int:report_id>')
+@login_required
+def download_archived_report(report_id):
+    report = Report.query.get_or_404(report_id)
+    if report.patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+    
+    if not report.pdf_storage_path or not supabase:
+        flash("No archived PDF found.", "warning")
+        return redirect(url_for('view_report', report_id=report_id))
+
+    try:
+        res = supabase.storage.from_("medical_reports").create_signed_url(report.pdf_storage_path, 60)
+        return redirect(res['signedURL'])
+    except:
+        flash("Error retrieving file.", "danger")
+        return redirect(url_for('view_report', report_id=report_id))
 
 @app.route('/download_report', methods=['POST'])
 @login_required
@@ -727,97 +827,29 @@ def download_report():
 @login_required
 def delete_report(report_id):
     report = Report.query.get_or_404(report_id)
-    patient_id = report.patient.id 
-    if report.patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
-        
+    pid = report.patient.id
+    if report.patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
     if report.pdf_storage_path and supabase:
-        try:
-            supabase.storage.from_("medical_reports").remove([report.pdf_storage_path])
-        except Exception: pass
-            
+        try: supabase.storage.from_("medical_reports").remove([report.pdf_storage_path])
+        except: pass
     db.session.delete(report)
     db.session.commit()
     flash("Report deleted.", "success")
-    return redirect(url_for('view_patient', patient_id=patient_id))
-
-@app.route('/patient/<int:patient_id>/delete', methods=['POST'])
-@login_required
-def delete_patient(patient_id):
-    patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
-    
-    db.session.delete(patient)
-    db.session.commit()
-    flash(f"Patient deleted.", "success")
-    return redirect(url_for('dashboard'))
-
-@app.route('/patient/<int:patient_id>/edit', methods=['GET', 'POST'])
-@login_required
-def edit_patient(patient_id):
-    patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
-        
-    if request.method == 'POST':
-        patient.full_name = request.form.get('full_name')
-        patient.dob = request.form.get('dob')
-        patient.gender = request.form.get('gender')
-        patient.country = request.form.get('country')
-        patient.address = request.form.get('address')
-        db.session.commit()
-        flash('Details updated.', 'success')
-        return redirect(url_for('view_patient', patient_id=patient.id))
-    
-    return render_template('edit_patient.html', patient=patient)
+    return redirect(url_for('view_patient', patient_id=pid))
 
 @app.route('/patient/<int:patient_id>/add_note', methods=['POST'])
 @login_required
 def add_note(patient_id):
     patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
-        
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+    
     note_text = request.form.get('note_text')
-    if not note_text:
-        flash("Note cannot be empty.", "danger")
-        return redirect(url_for('view_patient', patient_id=patient_id))
-        
-    new_note = Note(note_text=note_text, patient_id=patient.id, doctor_id=current_user.id)
-    db.session.add(new_note)
-    db.session.commit()
-    flash("Note added.", "success")
+    if note_text:
+        new_note = Note(note_text=note_text, patient_id=patient.id, doctor_id=current_user.id)
+        db.session.add(new_note)
+        db.session.commit()
+        flash("Note added.", "success")
     return redirect(url_for('view_patient', patient_id=patient_id, _anchor='notes-tab'))
-
-@app.route('/account', methods=['GET', 'POST'])
-@login_required
-def account():
-    action = request.form.get('action')
-    if request.method == 'POST':
-        if action == 'update_details':
-            current_user.full_name = request.form.get('full_name')
-            current_user.email = request.form.get('email')
-            db.session.commit()
-            flash('Details updated.', 'success')
-            return redirect(url_for('account'))
-
-        elif action == 'delete_account':
-            if not current_user.check_password(request.form.get('password')):
-                flash("Incorrect password.", "danger")
-                return redirect(url_for('account'))
-                
-            db.session.delete(current_user)
-            db.session.commit()
-            logout_user()
-            flash("Account deleted.", "success")
-            return redirect(url_for('home'))
-
-    return render_template('account.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

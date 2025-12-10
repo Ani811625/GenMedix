@@ -1,104 +1,127 @@
 {% extends "base.html" %}
-{% block title %}Add Patient - GenMedix{% endblock %}
+{% block title %}Register New Patient - GenMedix{% endblock %}
 
 {% block content %}
-<style>
-    body { background-color: #f4f5f7 !important; }
-    
-    .central-wrapper {
-        display: flex;
-        justify-content: center;
-        padding-top: 60px;
-        padding-bottom: 60px;
-    }
-    
-    .central-card {
-        background: white;
-        width: 100%;
-        max-width: 800px;
-        padding: 40px 50px;
-        border-radius: 8px;
-        border: 1px solid #dfe1e6;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-
-    .form-section-title {
-        color: #0052cc;
-        font-size: 0.8rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 15px;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 5px;
-    }
-
-    .form-control, .form-select { background-color: #FAFBFC; border: 1px solid #dfe1e6; padding: 10px; }
-    .btn-primary { background-color: #0052cc; padding: 10px 30px; font-weight: 600; border: none; }
-</style>
-
-<div class="central-wrapper">
+<div class="central-layout-wrapper">
     <div class="central-card">
         
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom" style="padding-top: 50px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
             <div>
-                <h4 class="mb-1 text-secondary fw-bold">New Patient Registration</h4>
-                <p class="text-muted small mb-0">Create a digital health record.</p>
+                <h4 class="mb-1 text-secondary fw-bold">Comprehensive Registration</h4>
+                <p class="text-muted small mb-0">Create a detailed digital health record.</p>
             </div>
             <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-sm">Cancel</a>
         </div>
 
         <form method="POST" action="{{ url_for('add_patient') }}">
             
-            <div class="mb-4">
-                <div class="form-section-title">Identity & Demographics</div>
+            <div class="clinical-panel">
+                <div class="clinical-panel-header"><i class="fas fa-id-card me-2"></i> Identity</div>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted fw-bold">Full Name</label>
+                        <label class="form-label">Full Legal Name</label>
                         <input type="text" class="form-control" name="full_name" required>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small text-muted fw-bold">Aadhar ID (UIDAI)</label>
-                        <input type="text" class="form-control" name="aadhar" required>
+                        <label class="form-label text-primary">Aadhar ID (UIDAI)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fas fa-fingerprint text-primary"></i></span>
+                            <input type="text" class="form-control fw-bold" id="aadharInput" name="aadhar" 
+                                   placeholder="0000 0000 0000" maxlength="14" required>
+                        </div>
+                        <div class="form-text small">Enter 12-digit UID. Spaces added automatically.</div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small text-muted fw-bold">Date of Birth</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Date of Birth</label>
                         <input type="date" class="form-control" name="dob" required>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label small text-muted fw-bold">Gender</label>
+                    <div class="col-md-4">
+                        <label class="form-label">Gender</label>
                         <select class="form-select" name="gender" required>
-                            <option value="" selected disabled>Select...</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
                         </select>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Blood Group</label>
+                        <select class="form-select" name="blood_group">
+                            <option value="">Unknown</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
-            <div class="mb-4">
-                <div class="form-section-title">Location Details</div>
+            <div class="clinical-panel border-warning">
+                <div class="clinical-panel-header text-warning"><i class="fas fa-notes-medical me-2"></i> Clinical History</div>
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label class="form-label">Known Allergies</label>
+                        <input type="text" class="form-control" name="allergies" placeholder="e.g. Penicillin, Peanuts, Latex (Leave blank if none)">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Current Medications</label>
+                        <textarea class="form-control" name="current_medications" rows="3" placeholder="List existing prescriptions..."></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Past Medical History</label>
+                        <textarea class="form-control" name="medical_history" rows="3" placeholder="Surgeries, chronic conditions..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="clinical-panel">
+                <div class="clinical-panel-header"><i class="fas fa-address-book me-2"></i> Contact Details</div>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label small text-muted fw-bold">Country</label>
+                        <label class="form-label">Patient Phone</label>
+                        <input type="tel" class="form-control" name="phone" placeholder="+91 99999 99999">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Emergency Contact (Kin)</label>
+                        <input type="tel" class="form-control" name="emergency_contact" placeholder="Name & Phone">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Residential Address</label>
+                        <input type="text" class="form-control" name="address" placeholder="Full address">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Country</label>
                         <select class="form-select" name="country" required>
                             <option value="India">India</option>
                             <option value="USA">USA</option>
                             <option value="UK">UK</option>
                         </select>
                     </div>
-                    <div class="col-md-12">
-                        <label class="form-label small text-muted fw-bold">Address</label>
-                        <textarea class="form-control" name="address" rows="2"></textarea>
-                    </div>
                 </div>
             </div>
 
-            <div class="text-end pt-3 border-top">
-                <button type="submit" class="btn btn-primary">Save Record</button>
+            <div class="text-end pt-3">
+                <button type="submit" class="btn btn-primary px-5 fw-bold shadow-sm">
+                    <i class="fas fa-save me-2"></i> Create Secure Record
+                </button>
             </div>
         </form>
     </div>
 </div>
+
+<script>
+    // Aadhar Formatting Logic (XXXX XXXX XXXX)
+    document.getElementById('aadharInput').addEventListener('input', function (e) {
+        var target = e.target;
+        var input = target.value.replace(/\D/g, '').substring(0,12); // Remove non-digits, limit to 12
+        var zip = input.substring(0,4);
+        if(input.length > 4){zip = zip + ' ' + input.substring(4,8);}
+        if(input.length > 8){zip = zip + ' ' + input.substring(8,12);}
+        target.value = zip;
+    });
+</script>
 {% endblock %}
