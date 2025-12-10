@@ -5,6 +5,8 @@ import string
 from datetime import datetime, timedelta
 from threading import Thread
 
+# --- THIRD PARTY IMPORTS ---
+import stripe
 from flask import (
     Flask, request, jsonify, render_template, make_response, 
     Response, redirect, url_for, session, flash, abort
@@ -25,135 +27,6 @@ from weasyprint import HTML
 
 # --- SUPABASE IMPORT ---
 from supabase import create_client, Client
-
-
-# =======================================================
-# PAYMENT SETUP
-# =======================================================
-
-
-import os
-import stripe
-from flask import request, jsonify, render_template, url_for
-
-# --- STRIPE CONFIGURATION ---
-# 1. READ KEYS FROM ENVIRONMENT (Secure)
-stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
-STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
-STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
-
-# --- UPDATE DATABASE MODELS ---
-class Subscription(db.Model):
-    email = db.Column(db.String(150), primary_key=True)
-    stripe_customer_id = db.Column(db.String(100))
-    plan_type = db.Column(db.String(50))
-    max_seats = db.Column(db.Integer)
-    is_active = db.Column(db.Boolean, default=True)
-
-class User(db.Model, UserMixin):
-    # ... (Keep existing fields: id, full_name, etc.) ...
-    
-    # Existing relationship links
-    subscription_email = db.Column(db.String(150), db.ForeignKey('subscription.email'))
-    # ...
-
-
-# --- ROUTES ---
-
-@app.route('/pricing')
-def pricing():
-    # Pass the Publishable key to the frontend so the "Pay" button works
-    return render_template('pricing.html', key=STRIPE_PUBLISHABLE_KEY)
-
-# 1. CREATE CHECKOUT SESSION (User clicks "Pay")
-@app.route('/create-checkout-session', methods=['POST'])
-def create_checkout_session():
-    data = request.json
-    plan_type = data.get('plan_type')
-    email = data.get('email')
-
-    # UPDATED: Use USD for US Stripe Account
-    # Amounts are in CENTS (100 cents = $1)
-    if plan_type == 'Individual':
-        amount = 1500  # $15.00
-        product_name = 'Individual Plan (1 Doctor)'
-        max_seats = 1
-    else:
-        amount = 25000 # $250.00
-        product_name = 'Enterprise Plan (50 Doctors)'
-        max_seats = 50
-
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            customer_email=email, # Pre-fills the email field
-            line_items=[{
-                'price_data': {
-                    'currency': 'usd', # Changed to USD
-                    'product_data': {
-                        'name': product_name,
-                    },
-                    'unit_amount': amount,
-                },
-                'quantity': 1,
-            }],
-            mode='payment',
-            # Redirects user back to your site after payment
-            success_url=url_for('register', _external=True),
-            cancel_url=url_for('pricing', _external=True),
-            
-            # CRITICAL: Metadata passes info to the Webhook
-            metadata={
-                'plan_type': plan_type, 
-                'max_seats': max_seats,
-                'customer_email': email
-            }
-        )
-        return jsonify({'id': session.id})
-    except Exception as e:
-        return jsonify(error=str(e)), 403
-
-# 2. STRIPE WEBHOOK (The "Listener")
-@app.route('/webhook', methods=['POST'])
-def stripe_webhook():
-    payload = request.get_data(as_text=True)
-    sig_header = request.headers.get('Stripe-Signature')
-
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, STRIPE_WEBHOOK_SECRET
-        )
-    except ValueError as e:
-        return 'Invalid payload', 400
-    except stripe.error.SignatureVerificationError as e:
-        return 'Invalid signature', 400
-
-    # Handle the event
-    if event['type'] == 'checkout.session.completed':
-        session = event['data']['object']
-        
-        # Retrieve data from Metadata
-        customer_email = session['metadata']['customer_email']
-        plan_type = session['metadata']['plan_type']
-        max_seats = session['metadata']['max_seats']
-        customer_id = session['customer']
-
-        # Update or Create Subscription in Database
-        new_sub = Subscription(
-            email=customer_email,
-            stripe_customer_id=customer_id,
-            plan_type=plan_type,
-            max_seats=int(max_seats),
-            is_active=True
-        )
-        
-        # Merge handles "Insert if new, Update if exists"
-        db.session.merge(new_sub)
-        db.session.commit()
-        print(f"✅ Subscription Activated: {customer_email}")
-
-    return jsonify(success=True)
-
 
 # =======================================================
 # 1. APP CONFIGURATION & SETUP
@@ -177,7 +50,13 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# --- CRITICAL: INITIALIZE DB BEFORE MODELS ---
 db = SQLAlchemy(app)
+
+# --- STRIPE CONFIGURATION ---
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # --- SUPABASE CLIENT SETUP (Auth & Storage) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -191,11 +70,6 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print(f"--- ❌ ERROR CONNECTING TO SUPABASE: {e} ---")
 
-# --- CONTEXT PROCESSOR ---
-@app.context_processor
-def inject_user():
-    return dict(current_user=current_user)
-
 # --- LOGIN MANAGER ---
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -207,9 +81,21 @@ login_manager.login_message_category = "info"
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+@app.context_processor
+def inject_user():
+    return dict(current_user=current_user)
+
 # =======================================================
 # 2. DATABASE MODELS
 # =======================================================
+
+class Subscription(db.Model):
+    email = db.Column(db.String(150), primary_key=True)
+    stripe_customer_id = db.Column(db.String(100))
+    plan_type = db.Column(db.String(50))
+    max_seats = db.Column(db.Integer)
+    current_users = db.Column(db.Integer, default=0)
+    is_active = db.Column(db.Boolean, default=True)
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -217,6 +103,9 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
+    
+    # Subscription Link
+    subscription_email = db.Column(db.String(150), db.ForeignKey('subscription.email'))
     
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
@@ -234,8 +123,7 @@ class Patient(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     dob = db.Column(db.String(10)) 
     gender = db.Column(db.String(10))
-    # UPDATED: Removed unique=True so multiple doctors can add same Aadhar
-    aadhar = db.Column(db.String(14), index=True) 
+    aadhar = db.Column(db.String(14), index=True) # Not unique globally anymore
     
     # --- Contact ---
     country = db.Column(db.String(50))
@@ -277,7 +165,6 @@ class Note(db.Model):
 # 3. HELPER FUNCTIONS & ML
 # =======================================================
 
-# --- AUTO-DB CHECK ---
 @app.before_request
 def check_maintenance_and_db():
     if os.environ.get('MAINTENANCE_MODE') == 'true':
@@ -285,22 +172,19 @@ def check_maintenance_and_db():
             return render_template('maintenance.html'), 503
 
     try:
+        # Create tables if they don't exist
         inspector = inspect(db.engine)
-        existing_tables = inspector.get_table_names()
-        if "user" not in existing_tables or "patient" not in existing_tables:
-            with app.app_context():
+        if not inspector.has_table("user"):
+             with app.app_context():
                 db.create_all()
     except Exception as e:
         print(f"--- ❌ DB Check Error: {e} ---")
 
-# --- ERROR HANDLERS ---
 @app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
+def page_not_found(e): return render_template('404.html'), 404
 
 @app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
+def internal_server_error(e): return render_template('500.html'), 500
 
 # --- LOAD AI MODELS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -323,16 +207,11 @@ except Exception as e:
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
     if not checked_drugs_list: return warnings
-    if "Amiodarone" in checked_drugs_list:
-        warnings.append("<strong>Severe Interaction: Amiodarone.</strong> Potentiates Warfarin effect. Reduce dose by 30-50%.")
-    if "Fluconazole" in checked_drugs_list:
-        warnings.append("<strong>Severe Interaction: Fluconazole.</strong> Strong CYP2C9 inhibitor. Significant dose reduction likely required.")
-    if "Bactrim" in checked_drugs_list:
-        warnings.append("<strong>Severe Interaction: TMP/SMX (Bactrim).</strong> Potentiates Warfarin effect. Monitor INR closely.")
-    if "Rifampin" in checked_drugs_list:
-        warnings.append("<strong>Severe Interaction: Rifampin.</strong> Reduces Warfarin effect. Dose increase may be required.")
-    if "Carbamazepine" in checked_drugs_list:
-        warnings.append("<strong>Interaction: Carbamazepine.</strong> Reduces Warfarin effect.")
+    if "Amiodarone" in checked_drugs_list: warnings.append("<strong>Severe Interaction: Amiodarone.</strong> Potentiates Warfarin effect. Reduce dose by 30-50%.")
+    if "Fluconazole" in checked_drugs_list: warnings.append("<strong>Severe Interaction: Fluconazole.</strong> Strong CYP2C9 inhibitor. Significant dose reduction likely required.")
+    if "Bactrim" in checked_drugs_list: warnings.append("<strong>Severe Interaction: TMP/SMX (Bactrim).</strong> Potentiates Warfarin effect. Monitor INR closely.")
+    if "Rifampin" in checked_drugs_list: warnings.append("<strong>Severe Interaction: Rifampin.</strong> Reduces Warfarin effect. Dose increase may be required.")
+    if "Carbamazepine" in checked_drugs_list: warnings.append("<strong>Interaction: Carbamazepine.</strong> Reduces Warfarin effect.")
     return warnings
 
 def run_model_prediction(patient_data_dict):
@@ -365,7 +244,6 @@ def run_model_prediction(patient_data_dict):
     shap_values = explainer_to_use.shap_values(patient_df)
     feature_names = patient_df.columns
     shap_values_for_instance = shap_values[0]
-    
     abs_shap_values = np.abs(shap_values_for_instance)
     top_indices = np.argsort(abs_shap_values)[-5:] 
     
@@ -373,27 +251,14 @@ def run_model_prediction(patient_data_dict):
     for i in reversed(top_indices): 
         if abs_shap_values[i] > 0:
             feature_name = feature_names[i]
-            shap_value = round(shap_values_for_instance[i], 2)
-            shap_explanation[feature_name] = shap_value
+            shap_explanation[feature_name] = round(shap_values_for_instance[i], 2)
 
-    return {
-        "prediction": predicted_dose,
-        "model_name": model_name,
-        "shap_explanation": shap_explanation,
-        "std_dev": std_dev
-    }
+    return {"prediction": predicted_dose, "model_name": model_name, "shap_explanation": shap_explanation, "std_dev": std_dev}
 
 def get_confidence_score(std_dev):
-    if std_dev < 0.5:
-        score = "High"
-        explanation = "Model estimators are in strong agreement."
-    elif std_dev < 1.0:
-        score = "Medium"
-        explanation = "Model estimators show variance. Use with caution."
-    else:
-        score = "Low"
-        explanation = "Significant disagreement in estimators. Proceed with caution."
-    return score, explanation
+    if std_dev < 0.5: return "High", "Model estimators are in strong agreement."
+    elif std_dev < 1.0: return "Medium", "Model estimators show variance. Use with caution."
+    else: return "Low", "Significant disagreement in estimators. Proceed with caution."
 
 def get_human_explanation(shap_dict):
     explanations = []
@@ -403,7 +268,6 @@ def get_human_explanation(shap_dict):
         elif feature.startswith("CYP2C9"): display_name = "CYP2C9 Genotype"
         elif feature.startswith("VKORC1"): display_name = "VKORC1 Genotype"
         else: display_name = feature.replace("Race_", "")
-
         direction = "<strong>increased</strong>" if value > 0 else "<strong>decreased</strong>"
         explanations.append(f"<strong>{display_name}</strong> {direction} the dose recommendation.")
     return explanations
@@ -411,19 +275,11 @@ def get_human_explanation(shap_dict):
 def get_clinical_suggestions(shap_dict, confidence):
     suggestions = []
     for feature in shap_dict.keys():
-        if "VKORC1" in feature and shap_dict[feature] < -0.5:
-            suggestions.append("<strong>High Sensitivity:</strong> VKORC1 genotype suggests lower dose requirement.")
-        if "CYP2C9" in feature and shap_dict[feature] < -0.5:
-            suggestions.append("<strong>Slow Metabolizer:</strong> CYP2C9 genotype suggests slower clearance.")
-
-    if "Weight__kg_" in shap_dict and shap_dict["Weight__kg_"] > 1.0:
-         suggestions.append("High body weight is a major factor increasing the dose.")
-    
-    if confidence == "Low":
-        suggestions.append("<strong>Low Confidence:</strong> Review all data carefully.")
-
-    if not suggestions:
-        suggestions.append("Standard dosing protocol advised. Monitor INR as per guidelines.")
+        if "VKORC1" in feature and shap_dict[feature] < -0.5: suggestions.append("<strong>High Sensitivity:</strong> VKORC1 genotype suggests lower dose requirement.")
+        if "CYP2C9" in feature and shap_dict[feature] < -0.5: suggestions.append("<strong>Slow Metabolizer:</strong> CYP2C9 genotype suggests slower clearance.")
+    if "Weight__kg_" in shap_dict and shap_dict["Weight__kg_"] > 1.0: suggestions.append("High body weight is a major factor increasing the dose.")
+    if confidence == "Low": suggestions.append("<strong>Low Confidence:</strong> Review all data carefully.")
+    if not suggestions: suggestions.append("Standard dosing protocol advised. Monitor INR as per guidelines.")
     return suggestions
 
 def process_prediction_data(form_data):
@@ -470,14 +326,11 @@ def process_prediction_data(form_data):
     human_expl = get_human_explanation(pred_data['shap_explanation'])
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     
-    if form_data.get('is_pregnant'):
-        suggestions.append("<strong>CONTRAINDICATION:</strong> Patient marked Pregnant. Warfarin contraindicated.")
-    if form_data.get('active_bleeding'):
-        suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected.")
+    if form_data.get('is_pregnant'): suggestions.append("<strong>CONTRAINDICATION:</strong> Patient marked Pregnant. Warfarin contraindicated.")
+    if form_data.get('active_bleeding'): suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected.")
     if form_data.get('platelet_count'):
         try:
-            if int(form_data.get('platelet_count')) < 50000:
-                suggestions.append("<strong>SAFETY ALERT:</strong> Severe Thrombocytopenia (<50k).")
+            if int(form_data.get('platelet_count')) < 50000: suggestions.append("<strong>SAFETY ALERT:</strong> Severe Thrombocytopenia (<50k).")
         except: pass
 
     results_dict = {
@@ -490,7 +343,6 @@ def process_prediction_data(form_data):
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
-    
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
 # =======================================================
@@ -498,14 +350,12 @@ def process_prediction_data(form_data):
 # =======================================================
 
 @app.route('/')
-def home(): 
-    return render_template('index.html')
+def home(): return render_template('index.html')
 
 @app.route('/dataset')
 def dataset():
-    DATA_FILE_PATH = 'data/warfarin.csv'
     try:
-        df = pd.read_csv(DATA_FILE_PATH)
+        df = pd.read_csv('data/warfarin.csv')
         headers = df.columns.tolist()
         rows = df.head(200).to_dict('records')
         row_count = len(df)
@@ -513,66 +363,126 @@ def dataset():
         headers, rows, row_count = [], [], 0
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
 
-# --- DOCTOR AUTHENTICATION (SUPABASE OTP) ---
+# --- STRIPE ROUTES ---
+
+@app.route('/pricing')
+def pricing():
+    return render_template('pricing.html', key=STRIPE_PUBLISHABLE_KEY)
+
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    data = request.json
+    plan_type = data.get('plan_type')
+    email = data.get('email')
+
+    if plan_type == 'Individual':
+        amount = 1500  # $15.00
+        product_name = 'Individual Plan (1 Doctor)'
+        max_seats = 1
+    else:
+        amount = 25000 # $250.00
+        product_name = 'Enterprise Plan (50 Doctors)'
+        max_seats = 50
+
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            customer_email=email,
+            line_items=[{
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {'name': product_name},
+                    'unit_amount': amount,
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url=url_for('register', _external=True),
+            cancel_url=url_for('pricing', _external=True),
+            metadata={
+                'plan_type': plan_type, 
+                'max_seats': max_seats,
+                'customer_email': email
+            }
+        )
+        return jsonify({'id': session.id})
+    except Exception as e:
+        return jsonify(error=str(e)), 403
+
+@app.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+    except ValueError as e: return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e: return 'Invalid signature', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        customer_email = session['metadata']['customer_email']
+        plan_type = session['metadata']['plan_type']
+        max_seats = session['metadata']['max_seats']
+        customer_id = session['customer']
+
+        new_sub = Subscription(
+            email=customer_email,
+            stripe_customer_id=customer_id,
+            plan_type=plan_type,
+            max_seats=int(max_seats),
+            is_active=True
+        )
+        db.session.merge(new_sub)
+        db.session.commit()
+        print(f"✅ Subscription Activated: {customer_email}")
+
+    return jsonify(success=True)
+
+# --- AUTH ROUTES ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-
+    if current_user.is_authenticated: return redirect(url_for('dashboard'))
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         
-        # 1. Local Check
         local_user = User.query.filter_by(email=email).first()
         if not local_user:
             flash('No account found with this email.', 'danger')
             return redirect(url_for('login'))
             
-        # 2. Password Check
         if not local_user.check_password(password):
             flash('Incorrect password.', 'danger')
             return redirect(url_for('login'))
 
-        # 3. Supabase OTP
         try:
             if not supabase: raise Exception("Supabase not configured")
-            res = supabase.auth.sign_in_with_otp({"email": email})
+            supabase.auth.sign_in_with_otp({"email": email})
             session['auth_email'] = email
             flash('Verification code sent to your email.', 'info')
             return redirect(url_for('verify_otp'))
         except Exception as e:
-            print(f"--- ❌ Supabase Auth Error: {e} ---")
-            flash('Error sending OTP. Please try again.', 'danger')
+            flash('Error sending OTP.', 'danger')
             return redirect(url_for('login'))
-
     return render_template('login.html')
 
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
     if 'auth_email' not in session: return redirect(url_for('login'))
-    
     if request.method == 'POST':
         otp = request.form.get('otp')
         email = session.get('auth_email')
-        
         try:
-            res = supabase.auth.verify_otp({
-                "email": email,
-                "token": otp,
-                "type": "email"
-            })
+            supabase.auth.verify_otp({"email": email, "token": otp, "type": "email"})
             local_user = User.query.filter_by(email=email).first()
             if local_user:
                 login_user(local_user)
                 session.pop('auth_email', None)
                 return redirect(url_for('dashboard'))
-            else:
-                flash("Login verified, but user record missing.", "danger")
-        except Exception as e:
+        except Exception:
             flash("Invalid or expired code.", "danger")
-
     return render_template('verify_otp.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -581,6 +491,7 @@ def register():
 
     if request.method == 'POST':
         email = request.form.get('email')
+        license_email = request.form.get('license_email')
         name = request.form.get('full_name')
         reg_id = request.form.get('medical_reg_id')
         password = request.form.get('password')
@@ -593,20 +504,33 @@ def register():
         if User.query.filter_by(email=email).first():
             flash('Email already registered.', 'danger')
             return redirect(url_for('register'))
-        
-        new_doctor = User(full_name=name, email=email, medical_reg_id=reg_id)
+
+        # Check Subscription
+        sub = Subscription.query.filter_by(email=license_email).first()
+        if not sub or not sub.is_active:
+            flash('No active subscription found for this License Email.', 'danger')
+            return redirect(url_for('register'))
+            
+        if sub.current_users >= sub.max_seats:
+            flash(f'License limit reached for this plan.', 'danger')
+            return redirect(url_for('register'))
+
+        if sub.plan_type == 'Individual' and license_email != email:
+            flash('Individual Plan violation: Register with the subscribed email.', 'danger')
+            return redirect(url_for('register'))
+
+        new_doctor = User(full_name=name, email=email, medical_reg_id=reg_id, subscription_email=license_email)
         new_doctor.set_password(password)
         
         try:
+            sub.current_users += 1
             db.session.add(new_doctor)
             db.session.commit()
             flash('Account created! Please log in.', 'success')
+            return redirect(url_for('login'))
         except Exception as e:
             db.session.rollback()
-            flash(f'Error creating account: {e}', 'danger')
-            return redirect(url_for('register'))
-
-        return redirect(url_for('login'))
+            flash(f'Error: {e}', 'danger')
 
     return render_template('register.html')
 
@@ -633,6 +557,12 @@ def account():
             if not current_user.check_password(request.form.get('password')):
                 flash("Incorrect password.", "danger")
                 return redirect(url_for('account'))
+            
+            # Decrease subscription count
+            if current_user.subscription_email:
+                sub = Subscription.query.filter_by(email=current_user.subscription_email).first()
+                if sub and sub.current_users > 0: sub.current_users -= 1
+            
             db.session.delete(current_user)
             db.session.commit()
             logout_user()
@@ -640,45 +570,33 @@ def account():
             return redirect(url_for('home'))
     return render_template('account.html')
 
-# --- PATIENT PORTAL ROUTES ---
+# --- PATIENT PORTAL ---
 
 @app.route('/patient/login', methods=['GET', 'POST'])
 def patient_login():
     if request.method == 'POST':
-        aadhar = request.form.get('aadhar')
+        aadhar = request.form.get('aadhar').replace(' ', '')
         dob = request.form.get('dob')
         
-        # Remove formatting spaces if present
-        clean_aadhar = aadhar.replace(' ', '')
-        
-        patient = Patient.query.filter_by(aadhar=clean_aadhar, dob=dob).first()
-        
+        patient = Patient.query.filter_by(aadhar=aadhar, dob=dob).first()
         if patient:
-            session['patient_aadhar'] = clean_aadhar
+            session['patient_aadhar'] = aadhar
             session['patient_name'] = patient.full_name
             return redirect(url_for('patient_dashboard'))
         else:
-            flash("Invalid Aadhar ID or Date of Birth combination.", "danger")
-            
+            flash("Invalid Aadhar ID or Date of Birth.", "danger")
     return render_template('patient_login.html')
 
 @app.route('/patient/dashboard')
 def patient_dashboard():
     if 'patient_aadhar' not in session: return redirect(url_for('patient_login'))
-    
     aadhar = session['patient_aadhar']
     
-    # Get ALL records for this patient (across all doctors)
     patient_records = Patient.query.filter_by(aadhar=aadhar).all()
     patient_ids = [p.id for p in patient_records]
-    
-    # Get ALL reports
     all_reports = Report.query.filter(Report.patient_id.in_(patient_ids)).order_by(Report.generated_at.desc()).all()
     
-    return render_template('patient_dashboard.html', 
-                           reports=all_reports, 
-                           patient_name=session['patient_name'],
-                           aadhar_display=f"{aadhar[:4]} {aadhar[4:8]} {aadhar[8:]}")
+    return render_template('patient_dashboard.html', reports=all_reports, patient_name=session['patient_name'], aadhar_display=f"{aadhar[:4]} {aadhar[4:8]} {aadhar[8:]}")
 
 @app.route('/patient/logout')
 def patient_logout():
@@ -690,12 +608,9 @@ def patient_logout():
 @app.route('/patient/download/<int:report_id>')
 def download_archived_report_patient(report_id):
     if 'patient_aadhar' not in session: return redirect(url_for('patient_login'))
-    
     report = Report.query.get_or_404(report_id)
-    # Check if this report belongs to the logged-in Aadhar (even if doctor is different)
-    if report.patient.aadhar != session['patient_aadhar']:
-        abort(403)
-        
+    
+    if report.patient.aadhar != session['patient_aadhar']: abort(403)
     if not report.pdf_storage_path or not supabase:
         flash("File unavailable.", "warning")
         return redirect(url_for('patient_dashboard'))
@@ -703,7 +618,7 @@ def download_archived_report_patient(report_id):
     res = supabase.storage.from_("medical_reports").create_signed_url(report.pdf_storage_path, 60)
     return redirect(res['signedURL'])
 
-# --- DOCTOR DASHBOARD ROUTES ---
+# --- DOCTOR DASHBOARD ---
 
 @app.route('/dashboard')
 @login_required
@@ -716,38 +631,23 @@ def dashboard():
 @login_required
 def add_patient():
     if request.method == 'POST':
-        raw_aadhar = request.form.get('aadhar')
-        clean_aadhar = raw_aadhar.replace(' ', '')
-        
-        # Backend Validation
+        clean_aadhar = request.form.get('aadhar').replace(' ', '')
         if len(clean_aadhar) != 12 or not clean_aadhar.isdigit():
             flash('Invalid Aadhar: Must be 12 digits.', 'danger')
             return render_template('add_patient.html')
 
-        # NEW CHECK: Only prevent duplicate patients FOR THIS DOCTOR
-        existing_patient = Patient.query.filter_by(
-            aadhar=clean_aadhar, 
-            doctor_id=current_user.id
-        ).first()
-
+        existing_patient = Patient.query.filter_by(aadhar=clean_aadhar, doctor_id=current_user.id).first()
         if existing_patient:
             flash('You have already registered this patient.', 'warning')
             return render_template('add_patient.html')
         
         new_patient = Patient(
-            full_name=request.form.get('full_name'),
-            aadhar=clean_aadhar,
-            dob=request.form.get('dob'),
-            gender=request.form.get('gender'),
-            blood_group=request.form.get('blood_group'),
-            country=request.form.get('country'),
-            address=request.form.get('address'),
-            phone=request.form.get('phone'),
-            emergency_contact=request.form.get('emergency_contact'),
-            allergies=request.form.get('allergies'),
-            medical_history=request.form.get('medical_history'),
-            current_medications=request.form.get('current_medications'),
-            doctor_id=current_user.id
+            full_name=request.form.get('full_name'), aadhar=clean_aadhar, dob=request.form.get('dob'),
+            gender=request.form.get('gender'), blood_group=request.form.get('blood_group'),
+            country=request.form.get('country'), address=request.form.get('address'),
+            phone=request.form.get('phone'), emergency_contact=request.form.get('emergency_contact'),
+            allergies=request.form.get('allergies'), medical_history=request.form.get('medical_history'),
+            current_medications=request.form.get('current_medications'), doctor_id=current_user.id
         )
         db.session.add(new_patient)
         db.session.commit()
@@ -773,7 +673,6 @@ def edit_patient(patient_id):
     if patient.doctor_id != current_user.id:
         flash("Unauthorized.", "danger")
         return redirect(url_for('dashboard'))
-        
     if request.method == 'POST':
         patient.full_name = request.form.get('full_name')
         patient.dob = request.form.get('dob')
@@ -789,15 +688,13 @@ def edit_patient(patient_id):
 @login_required
 def delete_patient(patient_id):
     patient = Patient.query.get_or_404(patient_id)
-    if patient.doctor_id != current_user.id:
-        flash("Unauthorized.", "danger")
-        return redirect(url_for('dashboard'))
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
     db.session.delete(patient)
     db.session.commit()
     flash(f"Patient deleted.", "success")
     return redirect(url_for('dashboard'))
 
-# --- WARFARIN & REPORTS ---
+# --- WARFARIN LOGIC ---
 
 @app.route('/patient/<int:patient_id>/select_drug', methods=['GET'])
 @login_required
@@ -809,8 +706,7 @@ def select_drug(patient_id):
 @app.route('/patient/<int:patient_id>/redirect_form', methods=['POST'])
 @login_required
 def redirect_to_drug_form(patient_id):
-    if request.form.get('drug_name') == 'warfarin':
-        return redirect(url_for('warfarin_form', patient_id=patient_id))
+    if request.form.get('drug_name') == 'warfarin': return redirect(url_for('warfarin_form', patient_id=patient_id))
     flash("Invalid drug selected.", "danger")
     return redirect(url_for('dashboard'))
 
@@ -819,7 +715,6 @@ def redirect_to_drug_form(patient_id):
 def warfarin_form(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
-    
     calculated_age = 0
     try:
         dob = datetime.strptime(patient.dob, '%Y-%m-%d')
@@ -835,96 +730,48 @@ def generate_warfarin_report(patient_id):
     if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
 
     patient_info, clinical_info, safety_info, results = process_prediction_data(request.form)
-    
     doctor_name = request.form.get('doctor_name')
     interacting_drugs = request.form.getlist('interacting_drugs')
     interaction_warnings = get_interaction_warnings(interacting_drugs)
 
-    timestamp_str = datetime.now().strftime('%Y%m%d%H%M%S')
     full_report_data = {
-        "patient_info": patient_info,
-        "clinical_info": clinical_info,
-        "safety_info": safety_info,
-        "results": results,
-        "doctor_name": doctor_name,
-        "interacting_drugs": interacting_drugs
+        "patient_info": patient_info, "clinical_info": clinical_info,
+        "safety_info": safety_info, "results": results,
+        "doctor_name": doctor_name, "interacting_drugs": interacting_drugs
     }
 
-    # PDF Generation
-    html_string = render_template(
-        'display_report.html',
-        patient_info=patient_info,
-        clinical_info=clinical_info,
-        safety_info=safety_info,
-        results=results,
-        doctor_name=doctor_name,
-        request=None,
-        interaction_warnings=interaction_warnings
-    )
+    html_string = render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=None, interaction_warnings=interaction_warnings)
     pdf_bytes = HTML(string=html_string).write_pdf()
 
-    # Upload to Supabase
     pdf_path = None
     if supabase:
         try:
-            filename = f"report_{patient.id}_{timestamp_str}.pdf"
-            supabase.storage.from_("medical_reports").upload(
-                path=filename, file=pdf_bytes, file_options={"content-type": "application/pdf"}
-            )
+            filename = f"report_{patient.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+            supabase.storage.from_("medical_reports").upload(path=filename, file=pdf_bytes, file_options={"content-type": "application/pdf"})
             pdf_path = filename 
-        except Exception as e:
-            print(f"--- ❌ Supabase Upload Failed: {e} ---")
+        except Exception as e: print(f"--- ❌ Supabase Upload Failed: {e} ---")
 
-    # DB Save
     new_report = Report(
-        drug_name="Warfarin",
-        predicted_dose=f"{results['predicted_dose_mg_per_week']} mg/week",
-        model_used=results['model_used'],
-        confidence=results['confidence_score'],
-        doctor_name=doctor_name, 
-        report_data_json=json.dumps(full_report_data),
-        patient_id=patient.id,
-        pdf_storage_path=pdf_path 
+        drug_name="Warfarin", predicted_dose=f"{results['predicted_dose_mg_per_week']} mg/week",
+        model_used=results['model_used'], confidence=results['confidence_score'],
+        doctor_name=doctor_name, report_data_json=json.dumps(full_report_data),
+        patient_id=patient.id, pdf_storage_path=pdf_path 
     )
     db.session.add(new_report)
     db.session.commit()
 
-    response = make_response(render_template(
-        'display_report.html',
-        patient_info=patient_info,
-        clinical_info=clinical_info,
-        safety_info=safety_info,
-        results=results,
-        doctor_name=doctor_name,
-        request=request, 
-        interaction_warnings=interaction_warnings
-    ))
-    return response
+    return make_response(render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, interaction_warnings=interaction_warnings))
 
 @app.route('/report/<int:report_id>')
 @login_required
 def view_report(report_id):
     report = Report.query.get_or_404(report_id)
     if report.patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
-
     try: report_data = json.loads(report.report_data_json)
     except: return redirect(url_for('view_patient', patient_id=report.patient_id))
     
-    saved_drugs = report_data.get('interacting_drugs', [])
-    
-    return make_response(render_template(
-        'display_report.html',
-        patient_info=report_data.get('patient_info'),
-        clinical_info=report_data.get('clinical_info'),
-        safety_info=report_data.get('safety_info', {}),
-        results=report_data.get('results'),
-        doctor_name=report_data.get('doctor_name'),
-        request=None,
-        interaction_warnings=get_interaction_warnings(saved_drugs),
-        report_obj=report 
-    ))
+    return make_response(render_template('display_report.html', patient_info=report_data.get('patient_info'), clinical_info=report_data.get('clinical_info'), safety_info=report_data.get('safety_info', {}), results=report_data.get('results'), doctor_name=report_data.get('doctor_name'), request=None, interaction_warnings=get_interaction_warnings(report_data.get('interacting_drugs', [])), report_obj=report))
 
-# --- DOCTOR: DOWNLOAD FILE (Attachment) ---
 @app.route('/download_archived_report/<int:report_id>')
 @login_required
 def download_archived_report(report_id):
@@ -938,18 +785,10 @@ def download_archived_report(report_id):
         return redirect(url_for('view_report', report_id=report_id))
 
     try:
-        # Download bytes from Supabase and serve as attachment
         file_bytes = supabase.storage.from_("medical_reports").download(report.pdf_storage_path)
-        return Response(
-            file_bytes,
-            mimetype='application/pdf',
-            headers={
-                'Content-Disposition': f'attachment;filename=Report_{report.patient.full_name}_{report.generated_at.strftime("%Y%m%d")}.pdf'
-            }
-        )
+        return Response(file_bytes, mimetype='application/pdf', headers={'Content-Disposition': f'attachment;filename=Report_{report.patient.full_name}.pdf'})
     except Exception as e:
-        print(f"Download Error: {e}")
-        flash("Error retrieving file. It may have been deleted.", "danger")
+        flash("Error retrieving file.", "danger")
         return redirect(url_for('view_report', report_id=report_id))
 
 @app.route('/download_report', methods=['POST'])
@@ -958,16 +797,7 @@ def download_report():
     form_data = request.form
     patient_info, clinical_info, safety_info, results = process_prediction_data(form_data)
     doctor_name = form_data.get('doctor_name', current_user.full_name)
-
-    html_string = render_template(
-        'display_report.html', 
-        patient_info=patient_info, 
-        clinical_info=clinical_info, 
-        safety_info=safety_info,
-        results=results,
-        doctor_name=doctor_name,
-        request=None
-    )
+    html_string = render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=None)
     pdf_file = HTML(string=html_string).write_pdf()
     return Response(pdf_file, mimetype='application/pdf', headers={'Content-Disposition': 'attachment;filename=DosageReport.pdf'})
 
@@ -990,13 +820,10 @@ def delete_report(report_id):
 def add_note(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
-    
-    note_text = request.form.get('note_text')
-    if note_text:
-        new_note = Note(note_text=note_text, patient_id=patient.id, doctor_id=current_user.id)
-        db.session.add(new_note)
-        db.session.commit()
-        flash("Note added.", "success")
+    new_note = Note(note_text=request.form.get('note_text'), patient_id=patient.id, doctor_id=current_user.id)
+    db.session.add(new_note)
+    db.session.commit()
+    flash("Note added.", "success")
     return redirect(url_for('view_patient', patient_id=patient_id, _anchor='notes-tab'))
 
 if __name__ == '__main__':
