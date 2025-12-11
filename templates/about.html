@@ -1,25 +1,109 @@
 {% extends "base.html" %}
+{% block title %}About Us - GenMedix{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="text-center mb-5" data-aos="fade-down">
-        <h2>How Our Technology Works</h2>
-        <p class="lead">Understanding the science behind DoseRight AI.</p>
+<div class="bg-primary text-white py-5 mb-5 position-relative overflow-hidden">
+    <div class="container position-relative z-2 text-center">
+        <h1 class="fw-bold display-4 mb-3">Our Mission</h1>
+        <p class="lead text-white-50 mx-auto" style="max-width: 700px;">
+            To democratize precision medicine by making advanced pharmacogenomic dosing accessible, safe, and efficient for every clinician worldwide.
+        </p>
+    </div>
+    <div style="position: absolute; top: -50%; left: -10%; width: 600px; height: 600px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+</div>
+
+<div class="container pb-5">
+    
+    <div class="row align-items-center mb-5 pb-5">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <h6 class="text-uppercase text-primary fw-bold mb-2 ls-1">Who We Are</h6>
+            <h2 class="fw-bold mb-4 text-dark">Bridging the Gap Between <br>Genomics and Clinical Care.</h2>
+            <p class="text-muted mb-4">
+                GenMedix started as a research initiative to solve a critical problem: <strong>Adverse Drug Events (ADEs)</strong> caused by improper Warfarin dosing. 
+                Traditional "trial-and-error" methods put patients at risk of bleeding or clotting.
+            </p>
+            <p class="text-muted">
+                By integrating <strong>Machine Learning</strong> with <strong>Pharmacogenomics (PGx)</strong>, we created a system that predicts the optimal dose instantly, factoring in genetic markers like <em>CYP2C9</em> and <em>VKORC1</em> alongside clinical data.
+            </p>
+        </div>
+        <div class="col-lg-6">
+            <div class="p-4 bg-light rounded-3 shadow-sm border">
+                <div class="d-flex align-items-start mb-3">
+                    <div class="fs-1 text-primary me-3"><i class="fas fa-bullseye"></i></div>
+                    <div>
+                        <h5 class="fw-bold">Precision</h5>
+                        <p class="text-muted small">Moving beyond "one size fits all" to "one dose per patient."</p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start mb-3">
+                    <div class="fs-1 text-success me-3"><i class="fas fa-shield-alt"></i></div>
+                    <div>
+                        <h5 class="fw-bold">Safety</h5>
+                        <p class="text-muted small">Real-time checks for drug interactions and contraindications.</p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start">
+                    <div class="fs-1 text-warning me-3"><i class="fas fa-lightbulb"></i></div>
+                    <div>
+                        <h5 class="fw-bold">Innovation</h5>
+                        <p class="text-muted small">Continuous learning algorithms that improve with new data.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="accordion" id="aboutAccordion" data-aos="fade-up">
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingOne"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">The Challenge with Warfarin</button></h2>
-            <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#aboutAccordion"><div class="accordion-body">Warfarin is a highly effective anticoagulant, but its optimal dose varies dramatically between individuals. A dose that is therapeutic for one patient can be dangerous for another. This variability is largely influenced by a person's clinical factors (like age and weight) and their unique genetic makeup.</div></div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingTwo"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">Our AI-Powered Solution</button></h2>
-            <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#aboutAccordion"><div class="accordion-body">Our system uses a powerful machine learning model called a <strong>Random Forest Regressor</strong>. It has been trained on thousands of patient records to learn the complex, non-linear relationships between patient characteristics and the correct Warfarin dose. It operates in two modes: a <strong>Base Model</strong> for when only clinical data is available, and an <strong>Enhanced Model</strong> that incorporates genetic information from the CYP2C9 and VKORC1 genes for superior accuracy.</div></div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header" id="headingThree"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree">The Importance of Explainability (XAI)</button></h2>
-            <div id="collapseThree" class="accordion-collapse collapse" data-bs-parent="#aboutAccordion"><div class="accordion-body">For a clinician to trust an AI's recommendation, they need to understand its reasoning. Our tool integrates a state-of-the-art technique called <strong>SHAP (SHapley Additive exPlanations)</strong>. For every prediction, SHAP calculates the exact impact of each patient feature—quantifying how much factors like age, weight, or a specific genetic variant pushed the dosage recommendation up or down. This transparency transforms our model from a "black box" into a trustworthy decision-support tool.</div></div>
+    <hr class="my-5 text-muted">
+
+    <div class="row justify-content-center" id="contact">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <h2 class="fw-bold">Get in Touch</h2>
+                <p class="text-muted">Have questions about our enterprise plans or clinical data? We'd love to hear from you.</p>
+            </div>
+
+            <div class="card shadow-lg border-0 rounded-3">
+                <div class="card-body p-5">
+                    <form action="{{ url_for('contact') }}" method="POST">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Your Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
+                                    <input type="text" class="form-control border-start-0 bg-light" name="name" placeholder="Dr. Smith" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-envelope text-muted"></i></span>
+                                    <input type="email" class="form-control border-start-0 bg-light" name="email" placeholder="name@hospital.com" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Subject</label>
+                                <select class="form-select bg-light" name="subject">
+                                    <option value="General Inquiry">General Inquiry</option>
+                                    <option value="Support">Technical Support</option>
+                                    <option value="Sales">Enterprise / Sales</option>
+                                    <option value="Partnership">Partnership</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold small text-muted">Message</label>
+                                <textarea class="form-control bg-light" name="message" rows="5" placeholder="How can we help you?" required></textarea>
+                            </div>
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+                                    <i class="fas fa-paper-plane me-2"></i> Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
+
 </div>
 {% endblock %}

@@ -4,64 +4,56 @@
 {% block content %}
 <style>
     body { background-color: #f4f5f7 !important; }
-    
-    .auth-wrapper {
-        min-height: calc(100vh - 64px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        padding: 40px 20px;
-    }
-    
-    .auth-card {
-        background: white;
-        width: 100%;
-        max-width: 500px; /* Slightly wider for registration */
-        padding: 40px;
-        border-radius: 8px;
-        border: 1px solid #dfe1e6;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-
-    .form-control {
-        background-color: #FAFBFC;
-        border: 1px solid #dfe1e6;
-        padding: 10px;
-    }
-    .form-label { font-size: 0.75rem; font-weight: 700; color: #5e6c84; text-transform: uppercase; }
-    .btn-primary { background-color: #0052cc; border: none; padding: 10px; font-weight: 600; }
+    .auth-wrapper { min-height: calc(100vh - 64px); display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
+    .auth-card { background: white; width: 100%; max-width: 550px; padding: 40px; border-radius: 8px; border: 1px solid #dfe1e6; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .form-control { background-color: #FAFBFC; border: 1px solid #dfe1e6; padding: 10px; }
+    .btn-primary { background-color: #0052cc; border: none; padding: 10px; font-weight: 600; width: 100%; }
 </style>
 
 <div class="auth-wrapper">
-    <div class="auth-card" style="padding-top: 120px;">
-        <div class="text-center mb-4" >
+    <div class="auth-card">
+        <div class="text-center mb-4">
             <h4 class="fw-bold text-secondary">Clinician Registration</h4>
-            <p class="text-muted small">Join the precision medicine network</p>
+            <p class="text-muted small">Create your account to access the dashboard.</p>
         </div>
 
         <form method="POST" action="{{ url_for('register') }}">
+            
+            <div class="mb-4 p-3 rounded-2 border border-primary-subtle bg-primary-subtle bg-opacity-10">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="fas fa-crown text-primary me-2"></i>
+                    <h6 class="fw-bold text-primary mb-0 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Subscription Verification</h6>
+                </div>
+                <label class="form-label small fw-bold text-dark">License / Payer Email</label>
+                <input type="email" class="form-control border-primary-subtle" name="license_email" placeholder="e.g. payer@hospital.com" required>
+                <div class="form-text small text-muted">
+                    Enter the email address used to purchase the subscription.
+                </div>
+            </div>
+
             <div class="row g-3">
                 <div class="col-12">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" class="form-control" name="full_name" placeholder="Dr. Name" required>
+                    <label class="form-label small fw-bold text-muted">Full Name</label>
+                    <input type="text" class="form-control" name="full_name" placeholder="Dr. Jane Doe" required>
                 </div>
                 
                 <div class="col-12">
-                    <label class="form-label">Medical Registration ID</label>
-                    <input type="text" class="form-control" name="medical_reg_id" required>
+                    <label class="form-label small fw-bold text-muted">Medical Registration ID</label>
+                    <input type="text" class="form-control" name="medical_reg_id" placeholder="License #" required>
                 </div>
 
                 <div class="col-12">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" name="email" required>
+                    <label class="form-label small fw-bold text-muted">Your Login Email</label>
+                    <input type="email" class="form-control" name="email" placeholder="doctor@clinic.com" required>
+                    <div class="form-text small" style="font-size: 11px;">For Individual plans, this must match the Payer Email.</div>
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Password</label>
+                    <label class="form-label small fw-bold text-muted">Password</label>
                     <input type="password" class="form-control" name="password" required>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Confirm</label>
+                    <label class="form-label small fw-bold text-muted">Confirm</label>
                     <input type="password" class="form-control" name="password_confirm" required>
                 </div>
             </div>
@@ -73,9 +65,9 @@
                 </label>
             </div>
 
-            <button type="submit" class="btn btn-primary w-100 mb-3">Create Account</button>
+            <button type="submit" class="btn btn-primary">Complete Registration</button>
             
-            <div class="text-center">
+            <div class="text-center mt-3">
                 <a href="{{ url_for('login') }}" class="small fw-bold text-decoration-none">Already have an account?</a>
             </div>
         </form>

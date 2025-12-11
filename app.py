@@ -2,8 +2,12 @@ import json
 import os
 import random
 import string
+import smtplib
+import ssl
 from datetime import datetime, timedelta
 from threading import Thread
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # --- THIRD PARTY IMPORTS ---
 import stripe
@@ -35,7 +39,7 @@ from supabase import create_client, Client
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-app.config['SECRET_KEY'] = 'a-very-secret-key-that-you-should-change'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key')
 
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -57,6 +61,13 @@ db = SQLAlchemy(app)
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# --- MAIL CONFIGURATION ---
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+MAIL_USERNAME = os.environ.get("MAIL_USERNAME") # Your Gmail
+MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD") # Your App Password
+ADMIN_RECEIVER_EMAIL = os.environ.get("MAIL_USERNAME") # Send alerts to yourself
 
 # --- SUPABASE CLIENT SETUP (Auth & Storage) ---
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -123,7 +134,8 @@ class Patient(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     dob = db.Column(db.String(10)) 
     gender = db.Column(db.String(10))
-    aadhar = db.Column(db.String(14), index=True) # Not unique globally anymore
+    # Note: Aadhar is NOT unique globally (allows multiple doctors to add same patient)
+    aadhar = db.Column(db.String(14), index=True)
     
     # --- Contact ---
     country = db.Column(db.String(50))
@@ -362,6 +374,54 @@ def dataset():
     except:
         headers, rows, row_count = [], [], 0
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
+
+# --- NEW: ABOUT & CONTACT ---
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+@app.route('/contact', methods=['POST'])
+def contact():
+    name = request.form.get('name')
+    email = request.form.get('email')
+    subject = request.form.get('subject')
+    message_body = request.form.get('message')
+
+    # Send Real-Time Email
+    if MAIL_USERNAME and MAIL_PASSWORD:
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = MAIL_USERNAME
+            msg['To'] = ADMIN_RECEIVER_EMAIL
+            msg['Subject'] = f"GenMedix Support: {subject}"
+
+            body = f"""
+            <h3>New Contact Request</h3>
+            <p><strong>Name:</strong> {name}</p>
+            <p><strong>Email:</strong> {email}</p>
+            <hr>
+            <p><strong>Message:</strong></p>
+            <p>{message_body}</p>
+            """
+            msg.attach(MIMEText(body, 'html'))
+
+            context = ssl.create_default_context()
+            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                server.starttls(context=context)
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                server.sendmail(MAIL_USERNAME, ADMIN_RECEIVER_EMAIL, msg.as_string())
+            
+            flash('Message sent! We will contact you shortly.', 'success')
+        except Exception as e:
+            print(f"Email Error: {e}")
+            flash('Error sending message. Please try again later.', 'danger')
+    else:
+        # Fallback if no email config
+        print(f"--- FAKE EMAIL SENT ---\nFrom: {email}\nMsg: {message_body}")
+        flash('Message received (Demo Mode).', 'success')
+
+    return redirect(url_for('about'))
 
 # --- STRIPE ROUTES ---
 
