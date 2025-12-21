@@ -22,6 +22,7 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import inspect
 
+
 # --- ML & PDF IMPORTS ---
 import joblib
 import pandas as pd
@@ -501,49 +502,49 @@ def stripe_webhook():
 
 # --- AUTH ROUTES ---
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if current_user.is_authenticated: return redirect(url_for('dashboard'))
+    # 1. If user is already logged in, skip everything
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
         
-        local_user = User.query.filter_by(email=email).first()
-        if not local_user:
-            flash('No account found with this email.', 'danger')
-            return redirect(url_for('login'))
+        # 2. Check if user exists in Database
+        user = User.query.filter_by(email=email).first()
+        
+        # 3. Verify Password
+        if user and check_password_hash(user.password_hash, password):
+            # --- DIRECT LOGIN BLOCK ---
+            login_user(user, remember=True)  # This creates the session
+            flash('Login Successful!', 'success')
+            return redirect(url_for('dashboard')) # Go straight to dashboard
+            # --------------------------
             
-        if not local_user.check_password(password):
-            flash('Incorrect password.', 'danger')
-            return redirect(url_for('login'))
-
-        try:
-            if not supabase: raise Exception("Supabase not configured")
-            supabase.auth.sign_in_with_otp({"email": email})
-            session['auth_email'] = email
-            flash('Verification code sent to your email.', 'info')
-            return redirect(url_for('verify_otp'))
-        except Exception as e:
-            flash('Error sending OTP.', 'danger')
-            return redirect(url_for('login'))
+        else:
+            flash('Invalid Email or Password. Please try again.', 'danger')
+            
     return render_template('login.html')
 
-@app.route('/verify_otp', methods=['GET', 'POST'])
-def verify_otp():
-    if 'auth_email' not in session: return redirect(url_for('login'))
-    if request.method == 'POST':
-        otp = request.form.get('otp')
-        email = session.get('auth_email')
-        try:
-            supabase.auth.verify_otp({"email": email, "token": otp, "type": "email"})
-            local_user = User.query.filter_by(email=email).first()
-            if local_user:
-                login_user(local_user)
-                session.pop('auth_email', None)
-                return redirect(url_for('dashboard'))
-        except Exception:
-            flash("Invalid or expired code.", "danger")
-    return render_template('verify_otp.html')
+# @app.route('/verify_otp', methods=['GET', 'POST'])
+# def verify_otp():
+#     if 'auth_email' not in session: return redirect(url_for('login'))
+#     if request.method == 'POST':
+#         otp = request.form.get('otp')
+#         email = session.get('auth_email')
+#         try:
+#             supabase.auth.verify_otp({"email": email, "token": otp, "type": "email"})
+#             local_user = User.query.filter_by(email=email).first()
+#             if local_user:
+#                 login_user(local_user)
+#                 session.pop('auth_email', None)
+#                 return redirect(url_for('dashboard'))
+#         except Exception:
+#             flash("Invalid or expired code.", "danger")
+#     return render_template('verify_otp.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
