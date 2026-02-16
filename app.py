@@ -193,6 +193,18 @@ def check_maintenance_and_db():
     except Exception as e:
         print(f"--- ❌ DB Check Error: {e} ---")
 
+# --- CYBER SECURITY FIX: BLOCK BROWSER CACHING OF SECURE PAGES ---
+@app.after_request
+def add_header(response):
+    """
+    Ensure responses aren't cached so users can't click 'Back' after logging out
+    and view sensitive patient data from the browser cache.
+    """
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
+
 @app.errorhandler(404)
 def page_not_found(e): return render_template('404.html'), 404
 
@@ -529,23 +541,6 @@ def login():
             
     return render_template('login.html')
 
-# @app.route('/verify_otp', methods=['GET', 'POST'])
-# def verify_otp():
-#     if 'auth_email' not in session: return redirect(url_for('login'))
-#     if request.method == 'POST':
-#         otp = request.form.get('otp')
-#         email = session.get('auth_email')
-#         try:
-#             supabase.auth.verify_otp({"email": email, "token": otp, "type": "email"})
-#             local_user = User.query.filter_by(email=email).first()
-#             if local_user:
-#                 login_user(local_user)
-#                 session.pop('auth_email', None)
-#                 return redirect(url_for('dashboard'))
-#         except Exception:
-#             flash("Invalid or expired code.", "danger")
-#     return render_template('verify_otp.html')
-
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated: return redirect(url_for('dashboard'))
@@ -595,13 +590,26 @@ def register():
 
     return render_template('register.html')
 
+# --- CYBER SECURITY FIX: DOCTOR LOGOUT ---
 @app.route('/logout')
 @login_required
 def logout():
+    # 1. Clear the Flask-Login session
     logout_user()
+    
+    # 2. Clear the general Flask session dictionary
     session.clear()
+    
     flash('You have been logged out.', 'success')
-    return redirect(url_for('home'))
+    
+    # 3. Create a response object
+    response = make_response(redirect(url_for('home')))
+    
+    # 4. Kill lingering cookies (adjust names if you use specific auth cookies later)
+    response.set_cookie('access_token', '', expires=0)
+    response.set_cookie('remember_token', '', expires=0)
+    
+    return response
 
 @app.route('/account', methods=['GET', 'POST'])
 @login_required
@@ -659,12 +667,18 @@ def patient_dashboard():
     
     return render_template('patient_dashboard.html', reports=all_reports, patient_name=session['patient_name'], aadhar_display=f"{aadhar[:4]} {aadhar[4:8]} {aadhar[8:]}")
 
+# --- CYBER SECURITY FIX: PATIENT LOGOUT ---
 @app.route('/patient/logout')
 def patient_logout():
+    # 1. Remove specific patient session variables
     session.pop('patient_aadhar', None)
     session.pop('patient_name', None)
+    
     flash("Patient logged out.", "success")
-    return redirect(url_for('home'))
+    
+    # 2. Create response and redirect to prevent caching
+    response = make_response(redirect(url_for('home')))
+    return response
 
 @app.route('/patient/download/<int:report_id>')
 def download_archived_report_patient(report_id):
