@@ -21,6 +21,7 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import inspect
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 
 
 # --- ML & PDF IMPORTS ---
@@ -41,6 +42,9 @@ app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default-dev-key')
+
+# --- TOKEN GENERATOR FOR SECURE PASSWORD RESET ---
+s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # --- DATABASE CONFIGURATION ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -514,7 +518,6 @@ def stripe_webhook():
 
 # --- AUTH ROUTES ---
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     # 1. If user is already logged in, skip everything
@@ -540,6 +543,94 @@ def login():
             flash('Invalid Email or Password. Please try again.', 'danger')
             
     return render_template('login.html')
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+
+        if user:
+            # 1. Generate a secure, time-sensitive token
+            token = s.dumps(email, salt='password-reset-salt')
+            
+            # 2. Create the absolute URL for the reset link
+            reset_url = url_for('reset_password', token=token, _external=True)
+
+            # 3. Send the email using your existing SMTP setup
+            if MAIL_USERNAME and MAIL_PASSWORD:
+                try:
+                    msg = MIMEMultipart()
+                    msg['From'] = MAIL_USERNAME
+                    msg['To'] = email
+                    msg['Subject'] = "GenMedix: Password Reset Request"
+
+                    body = f"""
+                    <h3>Password Reset Request</h3>
+                    <p>Hello Dr. {user.full_name},</p>
+                    <p>To reset your password, click the secure link below. This link will expire in 15 minutes.</p>
+                    <a href="{reset_url}">Reset My Password</a>
+                    <p>If you did not make this request, simply ignore this email and your password will remain unchanged.</p>
+                    """
+                    msg.attach(MIMEText(body, 'html'))
+
+                    context = ssl.create_default_context()
+                    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+                        server.starttls(context=context)
+                        server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                        server.sendmail(MAIL_USERNAME, email, msg.as_string())
+                except Exception as e:
+                    print(f"Password Reset Email Error: {e}")
+            else:
+                # Fallback for local testing if email isn't set up
+                print(f"--- DEMO MODE RESET LINK --- \n{reset_url}\n---------------------------")
+
+        # SECURITY BEST PRACTICE: Always show this message whether the email exists or not. 
+        # This prevents "Email Enumeration" attacks where hackers guess emails to see if they exist.
+        flash('If an account with that email exists, a password reset link has been sent.', 'info')
+        return redirect(url_for('login'))
+
+    return render_template('forgot_password.html')
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    try:
+        # Verify the token. max_age=900 means the token expires in 15 minutes (900 seconds)
+        email = s.loads(token, salt='password-reset-salt', max_age=900)
+    except SignatureExpired:
+        flash('The password reset link has expired. Please request a new one.', 'danger')
+        return redirect(url_for('forgot_password'))
+    except BadSignature:
+        flash('The password reset link is invalid or corrupted.', 'danger')
+        return redirect(url_for('forgot_password'))
+
+    # If the token is valid, show the form to create a new password
+    if request.method == 'POST':
+        new_password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        if new_password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return redirect(url_for('reset_password', token=token))
+
+        user = User.query.filter_by(email=email).first()
+        if user:
+            # Update the hash in the database
+            user.set_password(new_password)
+            db.session.commit()
+            flash('Your password has been successfully updated! You can now log in.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('User not found.', 'danger')
+            return redirect(url_for('register'))
+
+    return render_template('reset_password.html', token=token)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
