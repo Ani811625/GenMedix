@@ -70,6 +70,8 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 # --- MAIL CONFIGURATION ---
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
+
+
 MAIL_USERNAME = os.environ.get("MAIL_USERNAME") # Your Gmail
 MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD") # Your App Password
 ADMIN_RECEIVER_EMAIL = os.environ.get("MAIL_USERNAME") # Send alerts to yourself
@@ -212,8 +214,8 @@ def add_header(response):
 @app.errorhandler(404)
 def page_not_found(e): return render_template('404.html'), 404
 
-@app.errorhandler(500)
-def internal_server_error(e): return render_template('500.html'), 500
+# @app.errorhandler(500)
+# def internal_server_error(e): return render_template('500.html'), 500
 
 # --- LOAD AI MODELS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
