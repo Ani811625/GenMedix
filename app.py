@@ -799,7 +799,39 @@ def download_archived_report_patient(report_id):
 def dashboard():
     patients = Patient.query.filter_by(doctor_id=current_user.id).order_by(Patient.full_name).all()
     total_reports = db.session.query(Report).join(Patient).filter(Patient.doctor_id == current_user.id).count()
-    return render_template('dashboard.html', patients=patients, total_reports=total_reports, total_patients=len(patients))
+    
+    # --- NEW: ANALYTICS DATA AGGREGATION ---
+    
+    # 1. Gender Distribution
+    gender_data = {'Male': 0, 'Female': 0, 'Other': 0}
+    for p in patients:
+        if p.gender == 'Male': gender_data['Male'] += 1
+        elif p.gender == 'Female': gender_data['Female'] += 1
+        else: gender_data['Other'] += 1
+
+    # 2. Blood Group Distribution
+    blood_data = {}
+    for p in patients:
+        bg = p.blood_group if p.blood_group else 'Unknown'
+        blood_data[bg] = blood_data.get(bg, 0) + 1
+
+    # 3. AI Confidence Scores (from reports)
+    patient_ids = [p.id for p in patients]
+    reports = Report.query.filter(Report.patient_id.in_(patient_ids)).all()
+    confidence_data = {'High': 0, 'Medium': 0, 'Low': 0}
+    for r in reports:
+        if r.confidence in confidence_data:
+            confidence_data[r.confidence] += 1
+
+    return render_template(
+        'dashboard.html', 
+        patients=patients, 
+        total_reports=total_reports, 
+        total_patients=len(patients),
+        gender_data=gender_data,
+        blood_data=blood_data,
+        confidence_data=confidence_data
+    )
 
 @app.route('/add_patient', methods=['GET', 'POST'])
 @login_required
