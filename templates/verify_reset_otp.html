@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Verify OTP</h2>
+    <p>Please enter the 6-digit one-time password sent to <strong>{{ email }}</strong>.</p>
+    <form method="POST" action="{{ url_for('verify_reset_otp') }}">
+        <div class="mb-3">
+            <label for="otp" class="form-label">Enter OTP</label>
+            <input type="text" class="form-control" id="otp" name="otp" required autocomplete="off" maxlength="6">
+        </div>
+        <button type="submit" class="btn btn-primary">Verify OTP</button>
+    </form>
+</div>
+{% endblock %}
