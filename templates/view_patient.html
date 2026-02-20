@@ -1,115 +1,168 @@
 {% extends "base.html" %}
-{% block title %}{{ patient.full_name }} - GenMedix{% endblock %}
-
 {% block content %}
-<div class="container py-5">
+<div class="container mt-4 mb-5">
     
-    <div class="d-flex justify-content-between align-items-start mb-5">
-        <div class="d-flex align-items-center">
-            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow-sm" style="width: 64px; height: 64px; font-size: 1.5rem; font-weight: 700;">
-                {{ patient.full_name[0] }}
-            </div>
-            <div>
-                <h2 class="fw-bold text-dark mb-0">{{ patient.full_name }}</h2>
-                <div class="text-muted small mt-1">
-                    <i class="fas fa-id-card me-1"></i> {{ patient.aadhar }} &nbsp;|&nbsp; 
-                    <i class="fas fa-calendar-alt me-1"></i> {{ patient.dob }} &nbsp;|&nbsp; 
-                    {{ patient.gender }}
-                </div>
-            </div>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-injured text-primary"></i> Patient Record</h2>
         <div>
-            <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary btn-sm me-2">
-                <i class="fas fa-edit me-1"></i> Edit Profile
+            <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary fw-bold shadow-sm me-2">
+                <i class="fas fa-edit"></i> Edit Details
             </a>
-            <a href="{{ url_for('select_drug', patient_id=patient.id) }}" class="btn btn-primary btn-sm shadow-sm">
-                <i class="fas fa-plus me-1"></i> New Assessment
-            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary shadow-sm">← Back</a>
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-white border-bottom p-3">
-                    <ul class="nav nav-tabs card-header-tabs">
-                        <li class="nav-item"><a class="nav-link active" href="#">Assessments</a></li>
-                        <li class="nav-item"><a class="nav-link text-muted" href="#notes-section">Clinical Notes</a></li>
-                    </ul>
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 border-top border-primary border-4" style="position: sticky; top: 20px;">
+                <div class="card-body text-center mt-3">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex justify-content-center align-items-center shadow" style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ patient.full_name[0] | upper }}
+                    </div>
+                    <h4 class="mt-3 fw-bold">{{ patient.full_name }}</h4>
+                    <span class="badge bg-danger mb-3 px-3 py-2">Blood Group: {{ patient.blood_group or 'Unknown' }}</span>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">Date</th>
-                                <th>Drug</th>
-                                <th>Recommendation</th>
-                                <th>Confidence</th>
-                                <th class="text-end pe-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% if reports %}
-                                {% for r in reports %}
-                                <tr>
-                                    <td class="ps-4 text-muted small">{{ r.generated_at.strftime('%Y-%m-%d') }}</td>
-                                    <td><span class="badge bg-light text-dark border">{{ r.drug_name }}</span></td>
-                                    <td class="fw-bold">{{ r.predicted_dose }}</td>
-                                    <td>
-                                        {% if 'High' in r.confidence %}<span class="badge bg-success-subtle text-success"><i class="fas fa-check-circle me-1"></i>High</span>
-                                        {% elif 'Medium' in r.confidence %}<span class="badge bg-warning-subtle text-warning"><i class="fas fa-exclamation-circle me-1"></i>Med</span>
-                                        {% else %}<span class="badge bg-danger-subtle text-danger"><i class="fas fa-times-circle me-1"></i>Low</span>{% endif %}
-                                    </td>
-                                    <td class="text-end pe-4">
-                                        <a href="{{ url_for('view_report', report_id=r.id) }}" class="text-secondary me-3" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ url_for('download_archived_report', report_id=r.id) }}" class="text-primary me-3" title="Download PDF">
-    <i class="fas fa-download"></i> </a>
-                                        </a>
-                                        <form action="{{ url_for('delete_report', report_id=r.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this report?');">
-                                            <button type="submit" class="btn btn-link p-0 text-danger" title="Delete">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                                <tr><td colspan="5" class="text-center py-5 text-muted">No reports generated yet.</td></tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                
+                <ul class="list-group list-group-flush text-muted">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-id-card me-2"></i> Aadhar</strong> 
+                        <span>{{ patient.aadhar[:4] }} **** ****</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-calendar me-2"></i> DOB</strong> 
+                        <span>{{ patient.dob }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <strong><i class="fas fa-venus-mars me-2"></i> Gender</strong> 
+                        <span>{{ patient.gender }}</span>
+                    </li>
+                    <li class="list-group-item">
+                        <strong><i class="fas fa-phone me-2"></i> Contact</strong><br>
+                        {{ patient.phone or 'Not provided' }}
+                    </li>
+                    <li class="list-group-item bg-light">
+                        <strong><i class="fas fa-ambulance text-danger me-2"></i> Emergency</strong><br>
+                        {{ patient.emergency_contact or 'Not provided' }}
+                    </li>
+                </ul>
+                
+                <div class="card-body d-grid">
+                    <form method="POST" action="{{ url_for('delete_patient', patient_id=patient.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete this patient and all their reports?');">
+                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm"><i class="fas fa-trash"></i> Delete Patient</button>
+                    </form>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
-                <div class="card-body">
-                    <h6 class="text-uppercase text-muted fw-bold small mb-3">Patient Demographics</h6>
-                    <div class="row g-3 small">
-                        <div class="col-4 text-muted">Phone:</div>
-                        <div class="col-8 fw-500">{{ patient.phone or 'N/A' }}</div>
-                        <div class="col-4 text-muted">Emergency:</div>
-                        <div class="col-8 fw-500">{{ patient.emergency_contact or 'N/A' }}</div>
-                        <div class="col-4 text-muted">Blood Grp:</div>
-                        <div class="col-8 fw-500">{{ patient.blood_group or 'N/A' }}</div>
-                        <div class="col-4 text-muted">Address:</div>
-                        <div class="col-8 fw-500">{{ patient.address or 'N/A' }}, {{ patient.country }}</div>
-                    </div>
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white pt-3 pb-0 border-bottom-0">
+                    <ul class="nav nav-tabs fw-bold" id="patientTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active text-primary" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab"><i class="fas fa-file-medical"></i> AI Dosage Reports</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-secondary" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab"><i class="fas fa-clipboard-list"></i> Clinical Notes</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link text-secondary" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab"><i class="fas fa-history"></i> Medical History</button>
+                        </li>
+                    </ul>
                 </div>
-            </div>
+                
+                <div class="card-body p-4 tab-content" id="patientTabsContent">
+                    
+                    <div class="tab-pane fade show active" id="reports" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-secondary">Warfarin Dosing Reports</h5>
+                            <a href="{{ url_for('select_drug', patient_id=patient.id) }}" class="btn btn-success btn-sm fw-bold shadow-sm">
+                                <i class="fas fa-robot"></i> Run New Prediction
+                            </a>
+                        </div>
+                        
+                        {% if reports %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle border">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Date Generated</th>
+                                            <th>Predicted Dose</th>
+                                            <th>Confidence</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for report in reports %}
+                                        <tr>
+                                            <td>{{ report.generated_at.strftime('%Y-%m-%d') }}</td>
+                                            <td class="fw-bold text-primary">{{ report.predicted_dose }}</td>
+                                            <td>
+                                                {% if report.confidence == 'High' %} <span class="badge bg-success">High</span>
+                                                {% elif report.confidence == 'Medium' %} <span class="badge bg-warning text-dark">Medium</span>
+                                                {% else %} <span class="badge bg-danger">Low</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-secondary text-center p-4">
+                                <i class="fas fa-folder-open fs-2 text-muted mb-2"></i>
+                                <h6>No AI Reports Generated</h6>
+                                <p class="text-muted small">Run your first pharmacogenomic prediction to see it here.</p>
+                            </div>
+                        {% endif %}
+                    </div>
 
-            <div class="card border-danger-subtle shadow-sm rounded-3">
-                <div class="card-body">
-                    <h6 class="text-danger fw-bold small">Delete Patient Record</h6>
-                    <p class="text-muted small mb-3" style="font-size: 0.8rem;">
-                        Permanently remove this patient and all associated clinical data.
-                    </p>
-                    <form action="{{ url_for('delete_patient', patient_id=patient.id) }}" method="POST" onsubmit="return confirm('WARNING: This cannot be undone. Delete patient?');">
-                        <button type="submit" class="btn btn-outline-danger btn-sm w-100">Delete Patient</button>
-                    </form>
+                    <div class="tab-pane fade" id="notes" role="tabpanel">
+                        <form method="POST" action="{{ url_for('add_note', patient_id=patient.id) }}" class="mb-4">
+                            <div class="input-group shadow-sm">
+                                <textarea name="note_text" class="form-control bg-light" placeholder="Type a new clinical note..." required rows="2"></textarea>
+                                <button type="submit" class="btn btn-primary fw-bold px-4">Save</button>
+                            </div>
+                        </form>
+
+                        {% if notes %}
+                            <div class="timeline">
+                                {% for note in notes %}
+                                <div class="card mb-3 border-start border-4 border-info shadow-sm">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex justify-content-between text-muted small mb-1">
+                                            <span><i class="fas fa-clock"></i> {{ note.created_at.strftime('%b %d, %Y - %H:%M') }}</span>
+                                            <span>Dr. {{ current_user.full_name }}</span>
+                                        </div>
+                                        <p class="mb-0 text-dark">{{ note.note_text }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center italic mt-4">No clinical notes recorded.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="tab-pane fade" id="history" role="tabpanel">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6 class="fw-bold text-danger"><i class="fas fa-allergies"></i> Known Allergies</h6>
+                                <div class="p-3 bg-light rounded border">{{ patient.allergies or 'None reported' }}</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="fw-bold text-primary"><i class="fas fa-pills"></i> Current Medications</h6>
+                                <div class="p-3 bg-light rounded border">{{ patient.current_medications or 'None reported' }}</div>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <h6 class="fw-bold text-secondary"><i class="fas fa-file-medical-alt"></i> General Medical History</h6>
+                                <div class="p-3 bg-light rounded border" style="min-height: 100px;">{{ patient.medical_history or 'No significant history provided.' }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
             </div>
         </div>

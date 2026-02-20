@@ -57,8 +57,11 @@
     </div>
 
     <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white fw-bold">
-            <i class="fas fa-users"></i> Patient Directory
+        <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center p-3">
+            <div><i class="fas fa-users me-2"></i> Patient Directory</div>
+            <div style="max-width: 300px; width: 100%;">
+                <input type="text" id="patientSearchInput" class="form-control form-control-sm" placeholder="🔍 Search by Name or Aadhar...">
+            </div>
         </div>
         <div class="card-body p-0">
             {% if patients %}
@@ -145,6 +148,25 @@
             }]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // --- FEATURE 5: Real-Time Patient Search ---
+    document.getElementById('patientSearchInput').addEventListener('keyup', function() {
+        let searchQuery = this.value.toLowerCase();
+        let tableRows = document.querySelectorAll('tbody tr'); // Gets all patient rows
+
+        tableRows.forEach(row => {
+            // Get the text from the Name column and Aadhar column
+            let patientName = row.cells[0].textContent.toLowerCase();
+            let aadhar = row.cells[1].textContent.toLowerCase();
+
+            // If the search matches the name or Aadhar, show it. Otherwise, hide it.
+            if (patientName.includes(searchQuery) || aadhar.includes(searchQuery)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
     });
 </script>
 {% endblock %}
