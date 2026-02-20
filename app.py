@@ -69,7 +69,7 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
 # --- MAIL CONFIGURATION ---
 SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
+SMTP_PORT = 465
 
 
 MAIL_USERNAME = os.environ.get("MAIL_USERNAME") # Your Gmail
@@ -426,8 +426,7 @@ def contact():
             msg.attach(MIMEText(body, 'html'))
 
             context = ssl.create_default_context()
-            with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                server.starttls(context=context)
+            with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
                 server.login(MAIL_USERNAME, MAIL_PASSWORD)
                 server.sendmail(MAIL_USERNAME, ADMIN_RECEIVER_EMAIL, msg.as_string())
             
@@ -580,8 +579,8 @@ def forgot_password():
                     msg.attach(MIMEText(body, 'html'))
 
                     context = ssl.create_default_context()
-                    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-                        server.starttls(context=context)
+                    # Use SMTP_SSL instead of SMTP, and remove the starttls() line
+                    with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
                         server.login(MAIL_USERNAME, MAIL_PASSWORD)
                         server.sendmail(MAIL_USERNAME, email, msg.as_string())
                 except Exception as e:
