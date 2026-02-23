@@ -966,7 +966,7 @@ def generate_warfarin_report(patient_id):
     db.session.add(new_report)
     db.session.commit()
 
-    return make_response(render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, interaction_warnings=interaction_warnings))
+    return make_response(render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, interaction_warnings=interaction_warnings, report_obj=new_report))
 
 @app.route('/report/<int:report_id>')
 @login_required
