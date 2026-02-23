@@ -1,38 +1,46 @@
-{% if request %}
-    {% extends "base.html" %}
-    {% block content %}
-{% else %}
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Dosage Report</title>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <style>
-            body { background-color: #ffffff; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
-            .report-container { max-width: 900px; margin: 0 auto; padding: 20px; }
-            .page-break { page-break-after: always; }
-        </style>
-    </head>
-    <body>
-{% endif %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GenMedix Dosage Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f7f6; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        .report-container { max-width: 900px; margin: 40px auto; padding: 0 15px; }
+        .pdf-card { background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        .page-break { page-break-after: always; }
+        /* When generating PDF, remove margins and shadows */
+        @media print {
+            body { background-color: #ffffff; }
+            .report-container { margin: 0; padding: 0; max-width: 100%; }
+            .pdf-card { box-shadow: none; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
 
-<div class="report-container mt-4 mb-5">
+<div class="report-container">
     
-    {% if request and report_obj %}
-    <div class="d-flex justify-content-end mb-3">
+    {% if request %}
+    <div class="d-flex justify-content-between mb-3">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary shadow-sm fw-bold">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        {% if report_obj %}
         <a href="{{ url_for('download_archived_report', report_id=report_obj.id) }}" class="btn btn-dark shadow-sm fw-bold">
             <i class="fas fa-file-pdf text-danger me-2"></i> Download PDF
         </a>
+        {% endif %}
     </div>
     {% endif %}
 
-    <div class="card shadow-sm border-0 border-top border-primary border-4" style="border-radius: 12px;">
+    <div class="pdf-card border border-primary border-top-0 border-bottom-0 border-end-0 border-start border-5">
         
-        <div class="card-header bg-white p-4 border-bottom">
+        <div class="bg-white p-4 border-bottom">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h2 class="fw-bold text-primary mb-0">GenMedix CDSS</h2>
+                    <h2 class="fw-bold text-primary mb-0"><i class="fas fa-laptop-medical"></i> GenMedix CDSS</h2>
                     <p class="text-muted mb-0">Pharmacogenomic Dosage Recommendation</p>
                 </div>
                 <div class="text-end">
@@ -43,21 +51,21 @@
             </div>
         </div>
 
-        <div class="card-body p-4 p-md-5">
+        <div class="p-4 p-md-5">
             
-            <div class="row mb-5">
-                <div class="col-md-6 mb-3 mb-md-0">
+            <div class="row mb-4">
+                <div class="col-md-6">
                     <h5 class="fw-bold border-bottom pb-2 text-secondary">Patient Demographics</h5>
-                    <table class="table table-sm table-borderless mt-3">
+                    <table class="table table-sm table-borderless mt-2">
                         <tr><th style="width: 120px;">Name:</th><td>{{ patient_info.patient_name }}</td></tr>
                         <tr><th>DOB:</th><td>{{ patient_info.patient_dob }}</td></tr>
                         <tr><th>Gender:</th><td>{{ patient_info.patient_gender }}</td></tr>
                     </table>
                 </div>
                 <div class="col-md-6">
-                    <h5 class="fw-bold border-bottom pb-2 text-secondary">Clinical & Genomic Input</h5>
-                    <table class="table table-sm table-borderless mt-3">
-                        <tr><th style="width: 120px;">Weight / Height:</th><td>{{ clinical_info.Weight__kg_ }} kg / {{ clinical_info.Height__cm_ }} cm</td></tr>
+                    <h5 class="fw-bold border-bottom pb-2 text-secondary">Clinical Input</h5>
+                    <table class="table table-sm table-borderless mt-2">
+                        <tr><th style="width: 120px;">Weight/Height:</th><td>{{ clinical_info.Weight__kg_ }} kg / {{ clinical_info.Height__cm_ }} cm</td></tr>
                         <tr><th>CYP2C9:</th><td><span class="badge bg-info text-dark">{{ clinical_info.CYP2C9_Display }}</span></td></tr>
                         <tr><th>VKORC1:</th><td><span class="badge bg-warning text-dark">{{ clinical_info.VKORC1_Display }}</span></td></tr>
                     </table>
@@ -65,7 +73,7 @@
             </div>
 
             <div class="p-4 bg-light rounded text-center mb-5 border shadow-sm">
-                <h6 class="text-uppercase text-muted fw-bold tracking-wide">Recommended Warfarin Dose</h6>
+                <h6 class="text-uppercase text-muted fw-bold">Recommended Warfarin Dose</h6>
                 <h1 class="display-4 fw-bold text-primary my-2">{{ results.predicted_dose_mg_per_week }}</h1>
                 <h6 class="text-secondary fw-bold">mg / week</h6>
                 <div class="mt-3">
@@ -77,8 +85,8 @@
             </div>
 
             {% if interaction_warnings or safety_info.is_pregnant == 'Yes' or safety_info.active_bleeding == 'Yes' %}
-            <div class="alert alert-danger border-danger border-2 mb-5">
-                <h5 class="fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Clinical Contraindications & Warnings</h5>
+            <div class="alert alert-danger border-danger border-2 mb-5 shadow-sm">
+                <h5 class="fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Clinical Warnings</h5>
                 <ul class="mb-0 mt-2">
                     {% if safety_info.is_pregnant == 'Yes' %}<li><strong>Pregnancy Alert:</strong> Warfarin is strictly contraindicated.</li>{% endif %}
                     {% if safety_info.active_bleeding == 'Yes' %}<li><strong>Bleeding Alert:</strong> Active bleeding detected.</li>{% endif %}
@@ -90,10 +98,10 @@
             {% endif %}
 
             <h5 class="fw-bold border-bottom pb-2 text-secondary mb-4"><i class="fas fa-project-diagram me-2"></i> Explainable AI (Model Insight)</h5>
-            <p class="text-muted small mb-4">The chart below visualizes exactly how the Random Forest model arrived at the suggested dose. Red bars increase the dosage requirement, while green bars decrease it.</p>
+            <p class="text-muted small mb-4">The chart below visualizes how the model arrived at the suggested dose. Red bars indicate factors that increased the dose, green bars decreased it.</p>
 
-            <div class="shap-chart-container mb-5 p-4 border rounded shadow-sm bg-white">
-                <div class="d-flex justify-content-between text-muted small mb-2 px-2 fw-bold text-uppercase" style="letter-spacing: 1px;">
+            <div class="mb-5 p-4 border rounded shadow-sm bg-white">
+                <div class="d-flex justify-content-between text-muted small mb-3 px-2 fw-bold text-uppercase">
                     <span class="text-success"><i class="fas fa-arrow-left"></i> Decreases Dose</span>
                     <span class="text-danger">Increases Dose <i class="fas fa-arrow-right"></i></span>
                 </div>
@@ -108,25 +116,24 @@
 
                     {% for feat, val in results.shap_explanation.items() %}
                         {% set abs_val = val|abs %}
-                        {% set width_pct = (abs_val / ns.max_val) * 45 %} {% set display_name = feat.replace('Weight__kg_', 'Weight').replace('Height__cm_', 'Height').replace('Race_', 'Race: ').replace('CYP2C9_genotypes__', 'CYP2C9 *').replace('VKORC1_genotype_', 'VKORC1 ').replace('__', '/').replace('_', ' ') %}
+                        {% set width_pct = (abs_val / ns.max_val) * 45 %}
+                        {% set display_name = feat.replace('Weight__kg_', 'Weight').replace('Height__cm_', 'Height').replace('Race_', 'Race: ').replace('CYP2C9_genotypes__', 'CYP2C9 *').replace('VKORC1_genotype_', 'VKORC1 ').replace('__', '/').replace('_', ' ') %}
 
-                        <div class="row align-items-center mb-3 position-relative" style="z-index: 2; margin: 0;">
-                            
+                        <div class="row align-items-center mb-2 position-relative" style="z-index: 2; margin: 0;">
                             <div class="col-6 pe-2 d-flex justify-content-end align-items-center">
                                 {% if val < 0 %}
                                     <span class="text-muted small fw-bold me-2">-{{ abs_val|round(2) }}</span>
-                                    <div class="bg-success shadow-sm" style="height: 24px; width: {{ width_pct }}%; border-radius: 4px 0 0 4px;"></div>
+                                    <div class="bg-success shadow-sm" style="height: 20px; width: {{ width_pct }}%; border-radius: 4px 0 0 4px;"></div>
                                 {% else %}
-                                    <span class="fw-bold text-dark small">{{ display_name }}</span>
+                                    <span class="fw-bold text-dark small" style="font-size: 0.85rem;">{{ display_name }}</span>
                                 {% endif %}
                             </div>
-                            
                             <div class="col-6 ps-2 d-flex justify-content-start align-items-center">
                                 {% if val > 0 %}
-                                    <div class="bg-danger shadow-sm" style="height: 24px; width: {{ width_pct }}%; border-radius: 0 4px 4px 0;"></div>
+                                    <div class="bg-danger shadow-sm" style="height: 20px; width: {{ width_pct }}%; border-radius: 0 4px 4px 0;"></div>
                                     <span class="text-muted small fw-bold ms-2">+{{ abs_val|round(2) }}</span>
                                 {% else %}
-                                    <span class="fw-bold text-dark small">{{ display_name }}</span>
+                                    <span class="fw-bold text-dark small" style="font-size: 0.85rem;">{{ display_name }}</span>
                                 {% endif %}
                             </div>
                         </div>
@@ -136,24 +143,19 @@
 
             <div class="bg-light p-4 rounded border">
                 <h6 class="fw-bold text-secondary mb-3"><i class="fas fa-stethoscope me-2"></i> Clinical Action Plan</h6>
-                <ul class="mb-0 text-dark" style="line-height: 1.8;">
+                <ul class="mb-0 text-dark">
                     {% for suggestion in results.clinical_suggestions %}
                         <li>{{ suggestion | safe }}</li>
                     {% endfor %}
                 </ul>
             </div>
-
         </div>
         
-        <div class="card-footer bg-dark text-white text-center p-3">
-            <small>This report is generated by an AI CDSS prototype and does not replace professional medical judgment. Always verify with standard clinical protocols.</small>
+        <div class="bg-dark text-white text-center p-3">
+            <small>This report is generated by an AI CDSS prototype and does not replace professional medical judgment.</small>
         </div>
     </div>
 </div>
 
-{% if request %}
-    {% endblock %}
-{% else %}
-    </body>
-    </html>
-{% endif %}
+</body>
+</html>
