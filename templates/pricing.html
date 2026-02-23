@@ -1,153 +1,181 @@
 {% extends "base.html" %}
-{% block title %}Pricing Plans - GenMedix{% endblock %}
+{% block title %}Pricing - GenMedix{% endblock %}
 
 {% block content %}
+<style>
+    .pricing-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e2e8f0 100%);
+        padding: 80px 0 60px;
+        text-align: center;
+        border-bottom: 1px solid #dee2e6;
+    }
+    .pricing-card {
+        border-radius: 16px;
+        border: 1px solid #e2e8f0;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        background: #ffffff;
+        position: relative;
+    }
+    .pricing-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important;
+    }
+    .popular-badge {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(90deg, #0056b3, #00a8ff);
+        color: white;
+        padding: 5px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 10px rgba(0, 86, 179, 0.3);
+    }
+    .price-amount { font-size: 3.5rem; font-weight: 800; color: #1e293b; line-height: 1; }
+    .price-currency { font-size: 1.5rem; vertical-align: top; margin-top: 10px; display: inline-block; color: #64748b; }
+    .price-duration { color: #64748b; font-weight: 500; }
+    .feature-list { list-style: none; padding-left: 0; margin-top: 30px; text-align: left; }
+    .feature-list li { margin-bottom: 15px; color: #475569; font-weight: 500; display: flex; align-items: center;}
+    .feature-list li i { color: #10b981; margin-right: 12px; font-size: 1.1rem; }
+    .feature-list li.disabled { opacity: 0.5; }
+    .feature-list li.disabled i { color: #cbd5e1; }
+</style>
+
 <script src="https://js.stripe.com/v3/"></script>
 
-<div class="bg-dark text-white py-5 text-center">
+<div class="pricing-header">
     <div class="container">
-        <h1 class="fw-bold display-5">Simple, Transparent Pricing</h1>
-        <p class="lead text-white-50 mx-auto" style="max-width: 600px;">
-            Choose the plan that fits your practice. Whether you are a solo practitioner or a large hospital network, we have you covered.
+        <h1 class="display-4 fw-bolder text-dark mb-3">Simple, transparent pricing</h1>
+        <p class="lead text-muted mx-auto" style="max-width: 600px;">
+            Choose the clinical intelligence plan that fits your practice. Secure, reliable, and compliant.
         </p>
     </div>
 </div>
 
-<div class="container py-5" style="margin-top: -50px;">
-    <div class="row justify-content-center g-4 mb-5">
+<div class="container py-5 mb-5">
+    <div class="row justify-content-center g-4 max-w-900 mx-auto" style="max-width: 950px;">
         
-        <div class="col-md-5 col-lg-4">
-            <div class="card shadow border-0 h-100 position-relative overflow-hidden">
-                <div class="position-absolute top-0 start-50 translate-middle-x bg-success text-white px-3 py-1 rounded-bottom small fw-bold shadow-sm">
-                    MOST POPULAR
+        <div class="col-md-6">
+            <div class="card pricing-card p-5 h-100 shadow-sm">
+                <h4 class="fw-bold text-secondary mb-1">Individual</h4>
+                <p class="text-muted small mb-4">Perfect for independent practitioners.</p>
+                <div class="mb-4">
+                    <span class="price-currency">$</span><span class="price-amount">15</span>
+                    <span class="price-duration">/month</span>
                 </div>
-                <div class="card-body p-4 text-center d-flex flex-column">
-                    <h5 class="text-uppercase text-muted fw-bold mb-3 mt-2">Individual</h5>
-                    <h2 class="display-4 fw-bold text-primary mb-0">$15<small class="fs-5 text-muted fw-normal">/mo</small></h2>
-                    <p class="text-muted small mb-4">For independent clinicians</p>
-                    
-                    <ul class="list-unstyled text-start mb-4 mx-auto" style="max-width: 280px;">
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> 1 Doctor Account</li>
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Unlimited Patient Records</li>
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> AI Dosage Predictions</li>
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Standard PDF Reports</li>
-                    </ul>
-                    
-                    <div class="mt-auto">
-                        <button class="btn btn-primary w-100 py-2 fw-bold" onclick="checkout('Individual')">Start Trial</button>
-                    </div>
-                </div>
+                <button class="btn btn-outline-primary btn-lg fw-bold w-100 mb-2 checkout-btn" data-plan="Individual">
+                    Get Started
+                </button>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check-circle"></i> 1 Physician License</li>
+                    <li><i class="fas fa-check-circle"></i> Unlimited AI Dosage Reports</li>
+                    <li><i class="fas fa-check-circle"></i> Patient Directory & Notes</li>
+                    <li><i class="fas fa-check-circle"></i> SHAP Visual Explanations</li>
+                    <li class="disabled"><i class="fas fa-times-circle"></i> CSV Data Export</li>
+                    <li class="disabled"><i class="fas fa-times-circle"></i> Priority 24/7 Support</li>
+                </ul>
             </div>
         </div>
 
-        <div class="col-md-5 col-lg-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-body p-4 text-center d-flex flex-column">
-                    <h5 class="text-uppercase text-muted fw-bold mb-3 mt-3">Enterprise</h5>
-                    <h2 class="display-4 fw-bold text-dark mb-0">$250<small class="fs-5 text-muted fw-normal">/mo</small></h2>
-                    <p class="text-muted small mb-4">For hospitals & clinics</p>
-                    
-                    <ul class="list-unstyled text-start mb-4 mx-auto" style="max-width: 280px;">
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>50 Doctor Accounts</strong></li>
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Centralized Billing</li>
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Priority Support (24/7)</li>
-                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Advanced Analytics Dashboard</li>
-                    </ul>
-                    
-                    <div class="mt-auto">
-                        <button class="btn btn-outline-dark w-100 py-2 fw-bold" onclick="checkout('Enterprise')">Purchase License</button>
-                    </div>
+        <div class="col-md-6">
+            <div class="card pricing-card border-primary p-5 h-100 shadow">
+                <div class="popular-badge">HOSPITAL CHOICE</div>
+                <h4 class="fw-bold text-primary mb-1">Enterprise</h4>
+                <p class="text-muted small mb-4">For clinics and hospital departments.</p>
+                <div class="mb-4">
+                    <span class="price-currency">$</span><span class="price-amount">250</span>
+                    <span class="price-duration">/month</span>
                 </div>
+                <button class="btn btn-primary btn-lg fw-bold w-100 mb-2 shadow-sm checkout-btn" data-plan="Enterprise">
+                    Upgrade to Enterprise
+                </button>
+                <ul class="feature-list">
+                    <li><i class="fas fa-check-circle"></i> Up to 50 Physician Licenses</li>
+                    <li><i class="fas fa-check-circle"></i> Unlimited AI Dosage Reports</li>
+                    <li><i class="fas fa-check-circle"></i> Advanced Drug Interaction Alerts</li>
+                    <li><i class="fas fa-check-circle"></i> SHAP Visual Explanations</li>
+                    <li><i class="fas fa-check-circle"></i> One-Click CSV Data Export</li>
+                    <li><i class="fas fa-check-circle"></i> Priority 24/7 Support</li>
+                </ul>
             </div>
         </div>
+
     </div>
+</div>
 
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            <h4 class="fw-bold text-center mb-4">Compare Features</h4>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle text-center border">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="text-start ps-4 py-3" style="width: 40%;">Feature</th>
-                            <th class="py-3" style="width: 30%;">Individual</th>
-                            <th class="py-3" style="width: 30%;">Enterprise</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="text-start ps-4">User Seats</td>
-                            <td>1</td>
-                            <td class="fw-bold text-primary">Up to 50</td>
-                        </tr>
-                        <tr>
-                            <td class="text-start ps-4">Patient Profiles</td>
-                            <td>Unlimited</td>
-                            <td>Unlimited</td>
-                        </tr>
-                        <tr>
-                            <td class="text-start ps-4">AI Prediction Engine (v2.1)</td>
-                            <td><i class="fas fa-check-circle text-success"></i></td>
-                            <td><i class="fas fa-check-circle text-success"></i></td>
-                        </tr>
-                        <tr>
-                            <td class="text-start ps-4">Drug Interaction Checks</td>
-                            <td>Standard</td>
-                            <td>Advanced + Alerts</td>
-                        </tr>
-                        <tr>
-                            <td class="text-start ps-4">Genomic Data Integration</td>
-                            <td><i class="fas fa-check-circle text-success"></i></td>
-                            <td><i class="fas fa-check-circle text-success"></i></td>
-                        </tr>
-                        <tr>
-                            <td class="text-start ps-4">Admin Control Panel</td>
-                            <td class="text-muted">&mdash;</td>
-                            <td><i class="fas fa-check-circle text-success"></i></td>
-                        </tr>
-                        <tr>
-                            <td class="text-start ps-4">Technical Support</td>
-                            <td>Email</td>
-                            <td><strong>Dedicated Account Mgr</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
+<div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+            <div class="modal-header bg-light border-bottom-0 pt-4 pb-0 px-4">
+                <h5 class="modal-title fw-bold text-dark" id="modalPlanTitle">Complete Your Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-4">Please enter the email address you will use for this clinical license. This will be your primary billing and registry email.</p>
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control bg-light" id="userEmail" placeholder="doctor@clinic.com" required>
+                    <label for="userEmail"><i class="fas fa-envelope me-2"></i>License Email Address</label>
+                </div>
+                <input type="hidden" id="selectedPlan">
+                <button type="button" id="proceedToStripe" class="btn btn-dark btn-lg w-100 fw-bold">
+                    <i class="fas fa-lock me-2 text-success"></i> Proceed to Secure Checkout
+                </button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    var stripe = Stripe('{{ key }}'); // Passed from Flask
+    const stripe = Stripe('{{ key }}'); // Passes your public key from Flask
+    let selectedPlan = '';
 
-    function checkout(plan) {
-        const email = prompt("Please enter the email address to associate with this " + plan + " subscription:");
-        
-        if(!email || !email.includes('@')) {
-            if(email !== null) alert("Please enter a valid email address.");
+    // 1. Show modal when a plan is clicked
+    document.querySelectorAll('.checkout-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            selectedPlan = this.getAttribute('data-plan');
+            document.getElementById('modalPlanTitle').innerText = `Subscribe to ${selectedPlan} Plan`;
+            var emailModal = new bootstrap.Modal(document.getElementById('emailModal'));
+            emailModal.show();
+        });
+    });
+
+    // 2. Handle the redirect to Stripe
+    document.getElementById('proceedToStripe').addEventListener('click', function() {
+        const email = document.getElementById('userEmail').value;
+        const btn = this;
+
+        if (!email || !email.includes('@')) {
+            alert("Please enter a valid email address.");
             return;
         }
 
-        // Show loading state (optional polish)
-        document.body.style.cursor = 'wait';
+        // Show loading state
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Connecting to Stripe...';
+        btn.disabled = true;
 
-        fetch('/create-checkout-session', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ plan_type: plan, email: email })
+        fetch("{{ url_for('create_checkout_session') }}", {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ plan_type: selectedPlan, email: email })
         })
         .then(response => response.json())
         .then(session => {
-            return stripe.redirectToCheckout({ sessionId: session.id });
-        })
-        .then(result => {
-            if (result.error) alert(result.error.message);
-            document.body.style.cursor = 'default';
+            if (session.error) {
+                alert("Error: " + session.error);
+                btn.innerHTML = 'Proceed to Secure Checkout';
+                btn.disabled = false;
+            } else {
+                return stripe.redirectToCheckout({ sessionId: session.id });
+            }
         })
         .catch(error => {
-            console.error('Error:', error);
-            document.body.style.cursor = 'default';
+            console.error("Error:", error);
+            btn.innerHTML = 'Proceed to Secure Checkout';
+            btn.disabled = false;
         });
-    }
+    });
 </script>
 {% endblock %}

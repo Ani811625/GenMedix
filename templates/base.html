@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,17 +9,19 @@
     
     <style>
         body { 
-            background-color: #f8f9fa; 
+            background-color: var(--bs-body-bg); 
+            color: var(--bs-body-color);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         main { flex: 1; }
         
-        /* Premium Navbar Styling */
+        /* Premium Navbar Styling - Adapts to Dark Mode */
         .navbar {
-            background-color: rgba(255, 255, 255, 0.95) !important;
+            background-color: var(--bs-body-bg) !important;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
@@ -29,20 +31,42 @@
             color: #0056b3 !important;
             font-size: 1.4rem;
         }
+        /* Fix brand color in dark mode */
+        [data-bs-theme="dark"] .navbar-brand { color: #6ea8fe !important; }
+        
         .nav-link {
             font-weight: 600;
-            color: #555 !important;
+            color: var(--bs-body-color) !important;
             margin: 0 8px;
             transition: color 0.2s ease-in-out;
         }
         .nav-link:hover { color: #0056b3 !important; }
+        [data-bs-theme="dark"] .nav-link:hover { color: #6ea8fe !important; }
+
         .btn-nav {
             font-weight: 600;
             border-radius: 8px;
             padding: 8px 20px;
             letter-spacing: 0.3px;
         }
+
+        /* Dark Mode Toggle Button */
+        #themeToggle {
+            background: none;
+            border: none;
+            color: var(--bs-body-color);
+            font-size: 1.2rem;
+            margin-right: 15px;
+            transition: transform 0.3s ease;
+        }
+        #themeToggle:hover { transform: scale(1.1); color: #0056b3; }
+        [data-bs-theme="dark"] #themeToggle:hover { color: #ffc107; }
     </style>
+
+    <script>
+        const storedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', storedTheme);
+    </script>
 </head>
 <body>
 
@@ -65,7 +89,12 @@
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About & Security</a></li>
                 </ul>
                 
-                <div class="d-flex flex-column flex-lg-row gap-2">
+                <div class="d-flex align-items-center flex-column flex-lg-row gap-2">
+                    
+                    <button id="themeToggle" title="Toggle Dark/Light Mode">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-nav"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
                         <a href="{{ url_for('account') }}" class="btn btn-light btn-nav border"><i class="fas fa-user me-1"></i> Account</a>
@@ -120,6 +149,36 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // --- Dark Mode Logic ---
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Set initial icon based on stored theme
+        if (storedTheme === 'dark') {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+            themeIcon.style.color = '#ffc107'; // Sun color
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            if (newTheme === 'dark') {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                themeIcon.style.color = '#ffc107';
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                themeIcon.style.color = ''; // Reset color
+            }
+        });
+
+        // --- Toasts Logic ---
         document.addEventListener("DOMContentLoaded", function() {
             var toastElList = [].slice.call(document.querySelectorAll('.toast'));
             var toastList = toastElList.map(function(toastEl) { return new bootstrap.Toast(toastEl); });
