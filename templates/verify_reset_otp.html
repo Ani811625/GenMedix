@@ -1,33 +1,30 @@
 {% extends "base.html" %}
+{% block title %}Verify OTP - GenMedix{% endblock %}
+
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 75vh;">
-    <div class="card shadow border-0" style="width: 100%; max-width: 450px; border-radius: 12px;">
-        <div class="card-body p-5">
-            <div class="text-center mb-4">
-                <h2 class="fw-bold text-primary">GenMedix</h2>
-                <h5 class="text-muted">Security Check</h5>
-            </div>
-            
-            <div class="alert alert-info text-center mb-4" role="alert" style="font-size: 0.9rem;">
-                We've sent a 6-digit secure code to <br><strong>{{ email }}</strong>
+<style>
+    .sec-wrapper { min-height: calc(100vh - 76px); display: flex; align-items: center; justify-content: center; background-color: #f8fafc; padding: 20px; }
+    .sec-card { max-width: 420px; width: 100%; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; background: #fff; padding: 40px; }
+    /* Stylize OTP input */
+    .otp-input { letter-spacing: 8px; font-size: 1.5rem; text-align: center; font-weight: bold; }
+</style>
+
+<div class="sec-wrapper">
+    <div class="sec-card text-center">
+        <div class="mb-4">
+            <i class="fas fa-envelope-open-text text-success fs-1 mb-3"></i>
+            <h4 class="fw-bold text-dark">Verify Identity</h4>
+            <p class="text-muted small">We sent a 6-digit verification code to <strong>{{ email }}</strong>.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('verify_reset_otp') }}">
+            <div class="mb-4 text-start">
+                <input type="text" class="form-control otp-input py-3" id="otp" name="otp" placeholder="••••••" maxlength="6" required autocomplete="off">
             </div>
 
-            <form method="POST" action="{{ url_for('verify_reset_otp') }}">
-                <div class="mb-4 text-center">
-                    <label for="otp" class="form-label fw-bold text-secondary">Enter OTP</label>
-                    <input type="text" class="form-control form-control-lg text-center fw-bold text-primary shadow-sm" 
-                           id="otp" name="otp" required autocomplete="off" maxlength="6" 
-                           placeholder="· · · · · ·" style="font-size: 1.5rem; letter-spacing: 8px;">
-                </div>
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-primary btn-lg fw-bold">Verify Identity</button>
-                </div>
-            </form>
-            
-            <div class="text-center mt-4">
-                <a href="{{ url_for('forgot_password') }}" class="text-decoration-none text-muted">Use a different email</a>
-            </div>
-        </div>
+            <button type="submit" class="btn btn-success w-100 fw-bold py-2 shadow-sm mb-3">Verify & Proceed</button>
+            <p class="text-muted small mb-0">Didn't receive it? <a href="{{ url_for('forgot_password') }}" class="text-primary text-decoration-none fw-bold">Try again</a></p>
+        </form>
     </div>
 </div>
 {% endblock %}

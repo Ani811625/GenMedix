@@ -1,76 +1,79 @@
 {% extends "base.html" %}
-{% block title %}Register - GenMedix{% endblock %}
+{% block title %}Sign Up - GenMedix{% endblock %}
 
 {% block content %}
 <style>
-    body { background-color: #f4f5f7 !important; }
-    .auth-wrapper { min-height: calc(100vh - 64px); display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
-    .auth-card { background: white; width: 100%; max-width: 550px; padding: 40px; border-radius: 8px; border: 1px solid #dfe1e6; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-    .form-control { background-color: #FAFBFC; border: 1px solid #dfe1e6; padding: 10px; }
-    .btn-primary { background-color: #0052cc; border: none; padding: 10px; font-weight: 600; width: 100%; }
+    .reg-wrapper { min-height: calc(100vh - 76px); display: flex; align-items: center; justify-content: center; background-color: #f4f7f6; padding: 40px 15px; }
+    .reg-card { max-width: 900px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08); background: #fff; border: none; }
+    .reg-sidebar { background: linear-gradient(135deg, #0056b3 0%, #003d82 100%); color: white; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+    .form-floating > .form-control { border-radius: 8px; border-color: #e2e8f0; }
+    .form-floating > .form-control:focus { border-color: #0056b3; box-shadow: 0 0 0 0.2rem rgba(0, 86, 179, 0.1); }
 </style>
 
-<div class="auth-wrapper">
-    <div class="auth-card">
-        <div class="text-center mb-4">
-            <h4 class="fw-bold text-secondary">Clinician Registration</h4>
-            <p class="text-muted small">Create your account to access the dashboard.</p>
+<div class="reg-wrapper">
+    <div class="card reg-card">
+        <div class="row g-0">
+            <div class="col-md-5 reg-sidebar d-none d-md-flex">
+                <div class="mb-4">
+                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 60px; height: 60px;">
+                        <i class="fas fa-stethoscope fs-3"></i>
+                    </div>
+                    <h2 class="fw-bolder">Join the Future of Dosing.</h2>
+                    <p class="text-light mt-3" style="opacity: 0.85; line-height: 1.7;">Register your clinical account to access our Pharmacogenomic AI, generate secure PDF reports, and ensure maximum patient safety.</p>
+                </div>
+                <div class="mt-auto border-top border-light border-opacity-25 pt-4">
+                    <p class="small text-light mb-1"><i class="fas fa-check-circle me-2"></i> Evidence-Based Algorithms</p>
+                    <p class="small text-light mb-1"><i class="fas fa-check-circle me-2"></i> SHAP Explainability</p>
+                    <p class="small text-light mb-0"><i class="fas fa-check-circle me-2"></i> HIPAA-Aligned Security</p>
+                </div>
+            </div>
+
+            <div class="col-md-7 p-4 p-lg-5">
+                <h3 class="fw-bold text-dark mb-1">Create an Account</h3>
+                <p class="text-muted small mb-4">Please fill in your professional details to proceed.</p>
+
+                <form method="POST" action="{{ url_for('register') }}">
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6 form-floating">
+                            <input type="text" class="form-control bg-light" id="full_name" name="full_name" placeholder="Dr. John Doe" required>
+                            <label for="full_name" class="ms-2">Full Name (with Title)</label>
+                        </div>
+                        <div class="col-sm-6 form-floating">
+                            <input type="text" class="form-control bg-light" id="medical_reg_id" name="medical_reg_id" placeholder="Reg ID" required>
+                            <label for="medical_reg_id" class="ms-2">Medical Reg. ID</label>
+                        </div>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input type="email" class="form-control bg-light" id="email" name="email" placeholder="name@hospital.com" required>
+                        <label for="email">Personal Login Email</label>
+                    </div>
+
+                    <div class="form-floating mb-3 position-relative">
+                        <input type="email" class="form-control bg-light border-primary" id="license_email" name="license_email" placeholder="Subscribed Email" required>
+                        <label for="license_email" class="text-primary fw-bold"><i class="fas fa-key me-1"></i> Subscribed License Email</label>
+                        <small class="text-muted ms-1" style="font-size: 0.75rem;">The email used during Stripe checkout.</small>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6 form-floating">
+                            <input type="password" class="form-control bg-light" id="password" name="password" placeholder="Password" required>
+                            <label for="password" class="ms-2">Password</label>
+                        </div>
+                        <div class="col-sm-6 form-floating">
+                            <input type="password" class="form-control bg-light" id="password_confirm" name="password_confirm" placeholder="Confirm" required>
+                            <label for="password_confirm" class="ms-2">Confirm Password</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" style="border-radius: 8px;">Register Account</button>
+                    
+                    <p class="text-center text-muted small mt-4 mb-0">
+                        Already have an account? <a href="{{ url_for('login') }}" class="fw-bold text-primary text-decoration-none">Log in</a>
+                    </p>
+                </form>
+            </div>
         </div>
-
-        <form method="POST" action="{{ url_for('register') }}">
-            
-            <div class="mb-4 p-3 rounded-2 border border-primary-subtle bg-primary-subtle bg-opacity-10">
-                <div class="d-flex align-items-center mb-2">
-                    <i class="fas fa-crown text-primary me-2"></i>
-                    <h6 class="fw-bold text-primary mb-0 text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.5px;">Subscription Verification</h6>
-                </div>
-                <label class="form-label small fw-bold text-dark">License / Payer Email</label>
-                <input type="email" class="form-control border-primary-subtle" name="license_email" placeholder="e.g. payer@hospital.com" required>
-                <div class="form-text small text-muted">
-                    Enter the email address used to purchase the subscription.
-                </div>
-            </div>
-
-            <div class="row g-3">
-                <div class="col-12">
-                    <label class="form-label small fw-bold text-muted">Full Name</label>
-                    <input type="text" class="form-control" name="full_name" placeholder="Dr. Jane Doe" required>
-                </div>
-                
-                <div class="col-12">
-                    <label class="form-label small fw-bold text-muted">Medical Registration ID</label>
-                    <input type="text" class="form-control" name="medical_reg_id" placeholder="License #" required>
-                </div>
-
-                <div class="col-12">
-                    <label class="form-label small fw-bold text-muted">Your Login Email</label>
-                    <input type="email" class="form-control" name="email" placeholder="doctor@clinic.com" required>
-                    <div class="form-text small" style="font-size: 11px;">For Individual plans, this must match the Payer Email.</div>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label small fw-bold text-muted">Password</label>
-                    <input type="password" class="form-control" name="password" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label small fw-bold text-muted">Confirm</label>
-                    <input type="password" class="form-control" name="password_confirm" required>
-                </div>
-            </div>
-
-            <div class="form-check mt-3 mb-4">
-                <input class="form-check-input" type="checkbox" required>
-                <label class="form-check-label small text-muted">
-                    I verify I am a licensed medical professional.
-                </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary">Complete Registration</button>
-            
-            <div class="text-center mt-3">
-                <a href="{{ url_for('login') }}" class="small fw-bold text-decoration-none">Already have an account?</a>
-            </div>
-        </form>
     </div>
 </div>
 {% endblock %}
