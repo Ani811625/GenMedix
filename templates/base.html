@@ -3,220 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}GenMedix{% endblock %}</title>
+    <title>GenMedix - AI Clinical Decision Support</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=5) }}">
-
     <style>
-        /* === NOTIFICATION POPUP SYSTEM === */
-        .notification-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); /* Dim Background */
-            z-index: 10000; /* Highest priority */
+        body { 
+            background-color: #f8f9fa; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             display: flex;
-            align-items: center;
-            justify-content: center;
-            animation: fadeIn 0.2s ease-out;
+            flex-direction: column;
+            min-height: 100vh;
         }
-
-        .notification-box {
-            background: white;
-            padding: 30px;
-            width: 90%;
-            max-width: 400px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            text-align: center;
-            position: relative;
-            transform: scale(0.9);
-            animation: popIn 0.2s ease-out forwards;
+        main { flex: 1; }
+        
+        /* Premium Navbar Styling */
+        .navbar {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
         }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #aaa;
-            cursor: pointer;
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #0056b3 !important;
+            font-size: 1.4rem;
         }
-        .close-btn:hover { color: #333; }
-
-        .notif-icon { font-size: 3rem; margin-bottom: 15px; }
-        .text-success-custom { color: #00875a; }
-        .text-danger-custom { color: #de350b; }
-        .text-info-custom { color: #0052cc; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+        .nav-link {
+            font-weight: 600;
+            color: #555 !important;
+            margin: 0 8px;
+            transition: color 0.2s ease-in-out;
+        }
+        .nav-link:hover { color: #0056b3 !important; }
+        .btn-nav {
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 8px 20px;
+            letter-spacing: 0.3px;
+        }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg fixed-top bg-white border-bottom" style="height: 64px;">
+    <nav class="navbar navbar-expand-lg sticky-top shadow-sm border-bottom py-2">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
-                <img src="{{ url_for('static', filename='assets/images/image.png') }}" alt="Logo" height="32" class="me-2">
-                <!-- <span class="fw-bold" style="color: #253858;">GenMedix</span> -->
+                <i class="fas fa-laptop-medical text-primary me-2 fs-3"></i>
+                GenMedix<span class="text-secondary fw-light ms-1">CDSS</span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto align-items-center">
-                    
-                    {% if current_user.is_authenticated %}
-                        <li class="nav-item me-3">
-                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
-                                <i class="fas fa-user-md me-1"></i> Dr. {{ current_user.full_name.split()[0] }}
-                            </span>
-                        </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('account') }}">Account</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About Us</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('about', _anchor='contact') }}">Contact</a></li>
-                        <li class="nav-item ms-2">
-                            <a class="btn btn-outline-danger btn-sm" href="{{ url_for('logout') }}">Log Out</a>
-                        </li>
-                    
-                    {% elif session.get('patient_aadhar') %}
-                        <li class="nav-item me-3">
-                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
-                                <i class="fas fa-user-injured me-1"></i> Patient Portal
-                            </span>
-                        </li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About Us</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('about', _anchor='contact') }}">Contact</a></li>
-                        <li class="nav-item ms-2">
-                            <a class="btn btn-outline-danger btn-sm" href="{{ url_for('patient_logout') }}">Log Out</a>
-                        </li>
-                    
-                    {% else %}
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('dataset') }}">Dataset</a></li>
-                        
-                        <li class="nav-item"><a class="nav-link fw-bold text-dark" href="{{ url_for('pricing') }}">Pricing</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About Us</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('about', _anchor='contact') }}">Contact</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Clinician Login</a></li>
-                        
-                        <li class="nav-item ms-2">
-                            <a class="btn btn-primary btn-sm px-3 shadow-sm" href="{{ url_for('pricing') }}">Get Started</a>
-                        </li>
-                    {% endif %}
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 mt-2 mt-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('dataset') }}">AI Dataset</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('pricing') }}">Pricing</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('about') }}">About & Security</a></li>
                 </ul>
+                
+                <div class="d-flex flex-column flex-lg-row gap-2">
+                    {% if current_user.is_authenticated %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-nav"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
+                        <a href="{{ url_for('account') }}" class="btn btn-light btn-nav border"><i class="fas fa-user me-1"></i> Account</a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-danger btn-nav"><i class="fas fa-sign-out-alt me-1"></i> Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('patient_login') }}" class="btn btn-outline-secondary btn-nav border-0"><i class="fas fa-procedures me-1"></i> Patient Portal</a>
+                        <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-nav px-4">Doctor Login</a>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-nav px-4 shadow-sm">Sign Up</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="notification-overlay" id="notif-overlay">
-                {% for category, message in messages %}
-                <div class="notification-box">
-                    <button class="close-btn" onclick="closePopup()">&times;</button>
-                    
-                    <div class="notif-icon">
-                        {% if category == 'success' %}
-                            <i class="fas fa-check-circle text-success-custom"></i>
-                        {% elif category == 'danger' %}
-                            <i class="fas fa-times-circle text-danger-custom"></i>
-                        {% else %}
-                            <i class="fas fa-info-circle text-info-custom"></i>
-                        {% endif %}
-                    </div>
-                    
-                    <h4 class="fw-bold text-dark">
-                        {% if category == 'success' %}Success{% elif category == 'danger' %}Error{% else %}Notice{% endif %}
-                    </h4>
-                    <p class="text-muted mb-4">{{ message }}</p>
-                    
-                    <button onclick="closePopup()" class="btn btn-outline-secondary w-100">Dismiss</button>
-                </div>
-                {% endfor %}
-            </div>
-
-            <script>
-                function closePopup() {
-                    document.getElementById('notif-overlay').remove();
-                }
-                // Auto-close after 4 seconds
-                setTimeout(closePopup, 4000);
-            </script>
-        {% endif %}
-    {% endwith %}
-
-    <div style="padding-top: 64px;">
+    <main>
         {% block content %}{% endblock %}
-    </div>
-<footer class="bg-dark text-white pt-5 pb-3 mt-auto" style="border-top: 5px solid #0052cc;">
-        <div class="container">
-            <div class="row">
-                
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <h5 class="fw-bold text-white mb-3">
-                        <i class="fas fa-dna me-2 text-primary"></i> GenMedix
-                    </h5>
-                    <p class="text-white-50 small">
-                        A next-generation Clinical Decision Support System (CDSS) designed to assist clinicians in precise Warfarin dosing using Pharmacogenomics and Machine Learning.
-                    </p>
-                    <div class="d-flex gap-3 mt-3">
-                        <a href="#" class="text-white-50 hover-white"><i class="fab fa-twitter fa-lg"></i></a>
-                        <a href="#" class="text-white-50 hover-white"><i class="fab fa-linkedin fa-lg"></i></a>
-                        <a href="#" class="text-white-50 hover-white"><i class="fab fa-github fa-lg"></i></a>
-                    </div>
-                </div>
-                <div class="col-lg-2 col-md-6 mb-4">
-                    <h6 class="text-uppercase fw-bold text-primary mb-3 small">Developers</h6>
-                    <ul class="list-unstyled text-small">
-                        <li class="mb-2"><a href="https://www.linkedin.com/in/aniruddha-sarkar-90a34334b/" class="text-white-50 text-decoration-none">Aniruddha Sarkar</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Adrita Paul</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Kandarpa Saha</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Aniket Kumar</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-2 col-md-6 mb-4">
-                    <h6 class="text-uppercase fw-bold text-primary mb-3 small">Product</h6>
-                    <ul class="list-unstyled text-small">
-                        <li class="mb-2"><a href="{{ url_for('pricing') }}" class="text-white-50 text-decoration-none">Pricing</a></li>
-                        <li class="mb-2"><a href="#features" class="text-white-50 text-decoration-none">Features</a></li>
-                        <li class="mb-2"><a href="{{ url_for('dataset') }}" class="text-white-50 text-decoration-none">Clinical Data</a></li>
-                        <li class="mb-2"><a href="#" class="text-white-50 text-decoration-none">Integrations</a></li>
-                    </ul>
-                </div>
+    </main>
 
-                
+    <div aria-live="polite" aria-atomic="true" class="position-relative">
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        {% set bg_class = 'bg-success' %}
+                        {% set icon = 'fa-check-circle' %}
+                        {% if category == 'error' or category == 'danger' %}
+                            {% set bg_class = 'bg-danger' %}
+                            {% set icon = 'fa-exclamation-circle' %}
+                        {% elif category == 'warning' %}
+                            {% set bg_class = 'bg-warning text-dark' %}
+                            {% set icon = 'fa-exclamation-triangle' %}
+                        {% elif category == 'info' %}
+                            {% set bg_class = 'bg-info text-dark' %}
+                            {% set icon = 'fa-info-circle' %}
+                        {% endif %}
 
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <h6 class="text-uppercase fw-bold text-primary mb-3 small">Contact Us</h6>
-                    <ul class="list-unstyled text-small">
-                        <li class="mb-2 text-white-50"><i class="fas fa-map-marker-alt me-2"></i> Techno Main Salt Lake,Kolkata</li>
-                        <li class="mb-2 text-white-50"><i class="fas fa-envelope me-2"></i> aniruddhas387@gmail.com</li>
-                        <li class="mb-2 text-white-50"><i class="fas fa-phone me-2"></i> +91 81162 53439</li>
-                    </ul>
-                    <a href="{{ url_for('register') }}" class="btn btn-outline-light btn-sm mt-2">Request Demo</a>
-                </div>
-            </div>
-
-            <div class="d-flex flex-column flex-sm-row justify-content-between py-4 my-4 border-top border-secondary">
-                <p class="text-white-50 small mb-0">&copy; 2025 GenMedix Inc. All rights reserved. Academic Project.</p>
-                <ul class="list-unstyled d-flex mb-0">
-                    <!-- <li class="ms-3"><a class="text-white-50 text-decoration-none small" href="#">Status</a></li>
-                    <li class="ms-3"><a class="text-white-50 text-decoration-none small" href="#">API</a></li> -->
-                </ul>
-            </div>
+                        <div class="toast align-items-center text-white {{ bg_class }} border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
+                            <div class="d-flex">
+                                <div class="toast-body fw-bold" style="font-size: 0.95rem;">
+                                    <i class="fas {{ icon }} me-2 fs-5 align-middle"></i>
+                                    {{ message }}
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
         </div>
-    </footer>
-
-    
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var toastElList = [].slice.call(document.querySelectorAll('.toast'));
+            var toastList = toastElList.map(function(toastEl) { return new bootstrap.Toast(toastEl); });
+            toastList.forEach(toast => toast.show());
+        });
+    </script>
 </body>
 </html>
