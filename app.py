@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 from threading import Thread
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import csv
+import io
 
 # --- THIRD PARTY IMPORTS ---
 import stripe
@@ -136,7 +138,6 @@ class Patient(db.Model):
     full_name = db.Column(db.String(150), nullable=False)
     dob = db.Column(db.String(10)) 
     gender = db.Column(db.String(10))
-    # Note: Aadhar is NOT unique globally (allows multiple doctors to add same patient)
     aadhar = db.Column(db.String(14), index=True)
     
     # --- Contact ---
@@ -186,7 +187,6 @@ def check_maintenance_and_db():
             return render_template('maintenance.html'), 503
 
     try:
-        # Create tables if they don't exist
         inspector = inspect(db.engine)
         if not inspector.has_table("user"):
              with app.app_context():
@@ -194,13 +194,8 @@ def check_maintenance_and_db():
     except Exception as e:
         print(f"--- ❌ DB Check Error: {e} ---")
 
-# --- CYBER SECURITY FIX: BLOCK BROWSER CACHING OF SECURE PAGES ---
 @app.after_request
 def add_header(response):
-    """
-    Ensure responses aren't cached so users can't click 'Back' after logging out
-    and view sensitive patient data from the browser cache.
-    """
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
@@ -366,6 +361,7 @@ def process_prediction_data(form_data):
         "confidence_explanation": conf_expl,
         "human_explanation": human_expl,
         "clinical_suggestions": suggestions,
+        "shap_explanation": pred_data.get('shap_explanation', {}),  # <--- THIS IS THE FIX!
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
@@ -389,8 +385,6 @@ def dataset():
         headers, rows, row_count = [], [], 0
     return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
 
-# --- NEW: ABOUT & CONTACT ---
-
 @app.route('/about')
 def about():
     return render_template('about.html')
@@ -402,7 +396,6 @@ def contact():
     subject = request.form.get('subject')
     message_body = request.form.get('message')
 
-    # Send Real-Time Email
     if MAIL_USERNAME and MAIL_PASSWORD:
         try:
             msg = MIMEMultipart()
@@ -430,7 +423,6 @@ def contact():
             print(f"Email Error: {e}")
             flash('Error sending message. Please try again later.', 'danger')
     else:
-        # Fallback if no email config
         print(f"--- FAKE EMAIL SENT ---\nFrom: {email}\nMsg: {message_body}")
         flash('Message received (Demo Mode).', 'success')
 
@@ -449,11 +441,11 @@ def create_checkout_session():
     email = data.get('email')
 
     if plan_type == 'Individual':
-        amount = 1500  # $15.00
+        amount = 1500 
         product_name = 'Individual Plan (1 Doctor)'
         max_seats = 1
     else:
-        amount = 25000 # $250.00
+        amount = 25000 
         product_name = 'Enterprise Plan (50 Doctors)'
         max_seats = 50
 
@@ -516,7 +508,6 @@ def stripe_webhook():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    # 1. If user is already logged in, skip everything
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
 
@@ -524,24 +515,17 @@ def login():
         email = request.form.get('email')
         password = request.form.get('password')
         
-        # 2. Check if user exists in Database
         user = User.query.filter_by(email=email).first()
         
-        # 3. Verify Password
         if user and check_password_hash(user.password_hash, password):
-            # --- DIRECT LOGIN BLOCK ---
-            login_user(user, remember=True)  # This creates the session
+            login_user(user, remember=True)
             flash('Login Successful!', 'success')
-            return redirect(url_for('dashboard')) # Go straight to dashboard
-            # --------------------------
-            
+            return redirect(url_for('dashboard'))
         else:
             flash('Invalid Email or Password. Please try again.', 'danger')
             
     return render_template('login.html')
 
-
-# --- SECURE OTP PASSWORD RESET VIA SUPABASE ---
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
@@ -555,12 +539,8 @@ def forgot_password():
         if user:
             if supabase:
                 try:
-                    # 1. Ask Supabase to send an OTP to this email
                     supabase.auth.sign_in_with_otp({"email": email})
-                    
-                    # 2. Store the email in the Flask session temporarily
                     session['reset_email'] = email
-                    
                     flash('An OTP has been sent to your email address.', 'success')
                     return redirect(url_for('verify_reset_otp'))
                 except Exception as e:
@@ -569,7 +549,6 @@ def forgot_password():
             else:
                 flash('Supabase is not configured properly.', 'danger')
         else:
-            # Security Practice: Don't tell hackers if an email doesn't exist
             flash('If that email is registered, an OTP has been sent.', 'info')
             session['reset_email'] = email 
             return redirect(url_for('verify_reset_otp'))
@@ -589,10 +568,7 @@ def verify_reset_otp():
     if request.method == 'POST':
         otp = request.form.get('otp')
         try:
-            # 1. Ask Supabase to verify the OTP
             supabase.auth.verify_otp({"email": email, "token": otp, "type": "email"})
-            
-            # 2. If it succeeds without throwing an error, grant permission to reset
             session['can_reset_password'] = True
             flash("OTP Verified! Please enter your new password.", "success")
             return redirect(url_for('set_new_password'))
@@ -605,7 +581,6 @@ def verify_reset_otp():
 
 @app.route('/set_new_password', methods=['GET', 'POST'])
 def set_new_password():
-    # Security Check: Ensure they passed the OTP step
     if not session.get('can_reset_password') or not session.get('reset_email'):
         flash("Unauthorized access.", "danger")
         return redirect(url_for('login'))
@@ -618,16 +593,13 @@ def set_new_password():
             flash('Passwords do not match.', 'danger')
             return redirect(url_for('set_new_password'))
 
-        # Fetch the user using the email stored in the session
         email = session.get('reset_email')
         user = User.query.filter_by(email=email).first()
         
         if user:
-            # Update the hashed password in your database
             user.set_password(new_password)
             db.session.commit()
             
-            # Clear the security session variables so they can't reuse them
             session.pop('reset_email', None)
             session.pop('can_reset_password', None)
             
@@ -660,7 +632,6 @@ def register():
             flash('Email already registered.', 'danger')
             return redirect(url_for('register'))
 
-        # Check Subscription
         sub = Subscription.query.filter_by(email=license_email).first()
         if not sub or not sub.is_active:
             flash('No active subscription found for this License Email.', 'danger')
@@ -689,25 +660,15 @@ def register():
 
     return render_template('register.html')
 
-# --- CYBER SECURITY FIX: DOCTOR LOGOUT ---
 @app.route('/logout')
 @login_required
 def logout():
-    # 1. Clear the Flask-Login session
     logout_user()
-    
-    # 2. Clear the general Flask session dictionary
     session.clear()
-    
     flash('You have been logged out.', 'success')
-    
-    # 3. Create a response object
     response = make_response(redirect(url_for('home')))
-    
-    # 4. Kill lingering cookies (adjust names if you use specific auth cookies later)
     response.set_cookie('access_token', '', expires=0)
     response.set_cookie('remember_token', '', expires=0)
-    
     return response
 
 @app.route('/account', methods=['GET', 'POST'])
@@ -726,7 +687,6 @@ def account():
                 flash("Incorrect password.", "danger")
                 return redirect(url_for('account'))
             
-            # Decrease subscription count
             if current_user.subscription_email:
                 sub = Subscription.query.filter_by(email=current_user.subscription_email).first()
                 if sub and sub.current_users > 0: sub.current_users -= 1
@@ -766,16 +726,11 @@ def patient_dashboard():
     
     return render_template('patient_dashboard.html', reports=all_reports, patient_name=session['patient_name'], aadhar_display=f"{aadhar[:4]} {aadhar[4:8]} {aadhar[8:]}")
 
-# --- CYBER SECURITY FIX: PATIENT LOGOUT ---
 @app.route('/patient/logout')
 def patient_logout():
-    # 1. Remove specific patient session variables
     session.pop('patient_aadhar', None)
     session.pop('patient_name', None)
-    
     flash("Patient logged out.", "success")
-    
-    # 2. Create response and redirect to prevent caching
     response = make_response(redirect(url_for('home')))
     return response
 
@@ -800,22 +755,17 @@ def dashboard():
     patients = Patient.query.filter_by(doctor_id=current_user.id).order_by(Patient.full_name).all()
     total_reports = db.session.query(Report).join(Patient).filter(Patient.doctor_id == current_user.id).count()
     
-    # --- NEW: ANALYTICS DATA AGGREGATION ---
-    
-    # 1. Gender Distribution
     gender_data = {'Male': 0, 'Female': 0, 'Other': 0}
     for p in patients:
         if p.gender == 'Male': gender_data['Male'] += 1
         elif p.gender == 'Female': gender_data['Female'] += 1
         else: gender_data['Other'] += 1
 
-    # 2. Blood Group Distribution
     blood_data = {}
     for p in patients:
         bg = p.blood_group if p.blood_group else 'Unknown'
         blood_data[bg] = blood_data.get(bg, 0) + 1
 
-    # 3. AI Confidence Scores (from reports)
     patient_ids = [p.id for p in patients]
     reports = Report.query.filter(Report.patient_id.in_(patient_ids)).all()
     confidence_data = {'High': 0, 'Medium': 0, 'Low': 0}
@@ -832,6 +782,38 @@ def dashboard():
         blood_data=blood_data,
         confidence_data=confidence_data
     )
+
+@app.route('/export/patients')
+@login_required
+def export_patients_csv():
+    patients = Patient.query.filter_by(doctor_id=current_user.id).order_by(Patient.full_name).all()
+    si = io.StringIO()
+    cw = csv.writer(si)
+    
+    cw.writerow([
+        'Patient Name', 'Aadhar ID', 'Date of Birth', 'Gender', 
+        'Blood Group', 'Phone Number', 'Emergency Contact', 
+        'Allergies', 'Country'
+    ])
+    
+    for p in patients:
+        cw.writerow([
+            p.full_name,
+            p.aadhar,
+            p.dob,
+            p.gender,
+            p.blood_group if p.blood_group else 'N/A',
+            p.phone if p.phone else 'N/A',
+            p.emergency_contact if p.emergency_contact else 'N/A',
+            p.allergies if p.allergies else 'None',
+            p.country if p.country else 'N/A'
+        ])
+        
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=GenMedix_Patient_Export.csv"
+    output.headers["Content-type"] = "text/csv"
+    
+    return output
 
 @app.route('/add_patient', methods=['GET', 'POST'])
 @login_required
