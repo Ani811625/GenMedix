@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Disease Pathology - GenMedix{% endblock %}
+
+{% block content %}
+<div class="container mt-5 mb-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark"><i class="fas fa-heartbeat text-danger me-2"></i> Pathology & Disease Risk</h2>
+            <p class="text-muted mb-0">Select an algorithmic classification model for <strong>{{ patient.full_name }}</strong>.</p>
+        </div>
+        <a href="{{ url_for('new_assessment', patient_id=patient.id) }}" class="btn btn-outline-secondary fw-bold shadow-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Modules
+        </a>
+    </div>
+
+    <div class="row g-4 mt-2">
+        
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 border-top border-danger border-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded p-2">
+                            <i class="fas fa-tint fs-4"></i>
+                        </div>
+                        <span class="badge bg-success text-white align-self-start">v1.0 Live</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Type 2 Diabetes</h5>
+                    <p class="text-muted small mb-4">Evaluates clinical vitals, glucose/insulin thresholds, and the <em>TCF7L2</em> genomic variant using a Random Forest Classifier to predict pathology risk.</p>
+                    
+                    <a href="{{ url_for('diabetes_form', patient_id=patient.id) }}" class="btn btn-outline-danger w-100 fw-bold">
+                        Initialize Protocol <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 bg-light" style="opacity: 0.6;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="bg-secondary bg-opacity-10 text-secondary rounded p-2">
+                            <i class="fas fa-heart fs-4"></i>
+                        </div>
+                        <span class="badge bg-secondary text-white align-self-start">In Development</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Cardiovascular Risk</h5>
+                    <p class="text-muted small mb-4">Predicts 10-year stroke and myocardial infarction risk utilizing comprehensive lipid panels and genomic markers.</p>
+                    <button class="btn btn-secondary w-100 fw-bold disabled">Coming Soon</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

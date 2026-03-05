@@ -1,47 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Select Pathway - GenMedix{% endblock %}
+{% block title %}Pharmacology Models - GenMedix{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center" style="padding-top: 50px;">
-        <div class="col-lg-8 text-center mb-5">
-            <h2 class="fw-bold text-secondary">Clinical Pathway Selection</h2>
-            <p class="text-muted">Select a pharmacological agent to initiate the AI-driven dosage analysis.</p>
+<div class="container mt-5 mb-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark"><i class="fas fa-pills text-primary me-2"></i> Pharmacology Models</h2>
+            <p class="text-muted mb-0">Select a pharmacogenomic dosing model for <strong>{{ patient.full_name }}</strong>.</p>
         </div>
+        <a href="{{ url_for('new_assessment', patient_id=patient.id) }}" class="btn btn-outline-secondary fw-bold shadow-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Modules
+        </a>
     </div>
 
-    <div class="row justify-content-center g-4">
-        <div class="col-md-6 col-lg-5">
-            <div class="card h-100 border-0 shadow-sm hover-elevate transition-hover">
-                <div class="card-body p-5 text-center">
-                    <div class="bg-primary-subtle text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px; font-size: 2rem;">
-                        <i class="fas fa-tablets"></i>
+    <div class="row g-4 mt-2">
+        
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 border-top border-primary border-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded p-2">
+                            <i class="fas fa-prescription-bottle-alt fs-4"></i>
+                        </div>
+                        <span class="badge bg-success text-white align-self-start">v2.0 Live</span>
                     </div>
-                    <h4 class="fw-bold mb-3">Warfarin (Coumadin)</h4>
-                    <p class="text-muted mb-4 small">
-                        Anticoagulant therapy for AFib, DVT, and PE. <br>
-                        Algorithm: IWPC-Based Pharmacogenomic Model.
-                    </p>
+                    <h5 class="fw-bold text-dark">Warfarin (Coumadin)</h5>
+                    <p class="text-muted small mb-4">Calculates weekly dosage based on clinical demographics and <em>CYP2C9/VKORC1</em> genomic sensitivities using a Hybrid Random Forest Regressor.</p>
                     
                     <form action="{{ url_for('redirect_to_drug_form', patient_id=patient.id) }}" method="POST">
                         <input type="hidden" name="drug_name" value="warfarin">
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            Initialize Protocol <i class="fas fa-arrow-right ms-2"></i>
+                        <button type="submit" class="btn btn-outline-primary w-100 fw-bold">
+                            Initialize Protocol <i class="fas fa-arrow-right ms-1"></i>
                         </button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6 col-lg-5">
-            <div class="card h-100 border border-dashed shadow-none bg-light">
-                <div class="card-body p-5 text-center d-flex flex-column align-items-center justify-content-center opacity-50">
-                    <i class="fas fa-flask fa-3x mb-3 text-secondary"></i>
-                    <h5 class="fw-bold text-secondary">Future Agents</h5>
-                    <p class="small mb-0">Modules for Heparin and DOACs are currently under development.</p>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 bg-light" style="opacity: 0.6;">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="bg-secondary bg-opacity-10 text-secondary rounded p-2">
+                            <i class="fas fa-vial fs-4"></i>
+                        </div>
+                        <span class="badge bg-secondary text-white align-self-start">In Development</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Clopidogrel (Plavix)</h5>
+                    <p class="text-muted small mb-4">Antiplatelet therapy dosing adjustments based on <em>CYP2C19</em> loss-of-function alleles and metabolic pathways.</p>
+                    <button class="btn btn-secondary w-100 fw-bold disabled">Coming Soon</button>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 {% endblock %}
