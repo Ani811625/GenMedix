@@ -1008,6 +1008,14 @@ def select_drug(patient_id):
     if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
     return render_template('select_drug.html', patient=patient)
 
+@app.route('/patient/<int:patient_id>/redirect_form', methods=['POST'])
+@login_required
+def redirect_to_drug_form(patient_id):
+    if request.form.get('drug_name') == 'warfarin': 
+        return redirect(url_for('warfarin_form', patient_id=patient_id))
+    flash("Invalid drug selected.", "danger")
+    return redirect(url_for('dashboard'))
+
 @app.route('/patient/<int:patient_id>/warfarin_form', methods=['GET'])
 @login_required
 def warfarin_form(patient_id):
