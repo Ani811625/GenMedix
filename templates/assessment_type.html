@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Select Assessment Type - GenMedix{% endblock %}
+
+{% block content %}
+<style>
+    .module-card {
+        border-radius: 16px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+        background: #ffffff;
+        cursor: pointer;
+        text-decoration: none !important;
+        display: block;
+        color: inherit;
+    }
+    .module-card:hover {
+        transform: translateY(-5px);
+        border-color: #0056b3;
+        box-shadow: 0 15px 30px rgba(0, 86, 179, 0.1) !important;
+    }
+    .module-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark"><i class="fas fa-layer-group text-primary me-2"></i> Clinical Modules</h2>
+            <p class="text-muted mb-0">Select an AI assessment pathway for <strong>{{ patient.full_name }}</strong>.</p>
+        </div>
+        <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary fw-bold shadow-sm">
+            <i class="fas fa-arrow-left me-1"></i> Back to Profile
+        </a>
+    </div>
+
+    <div class="row g-4 mt-2">
+        
+        <div class="col-md-6">
+            <a href="{{ url_for('select_disease', patient_id=patient.id) }}" class="module-card p-5 h-100 shadow-sm">
+                <div class="module-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="fas fa-heartbeat"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-3">Disease Risk Detection</h3>
+                <p class="text-muted lead fs-6 mb-4">Run predictive classification models to assess the patient's risk profile for chronic diseases based on clinical and genomic markers.</p>
+                <div class="d-flex align-items-center text-danger fw-bold text-uppercase small" style="letter-spacing: 1px;">
+                    Proceed to Pathology <i class="fas fa-arrow-right ms-2"></i>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6">
+            <a href="{{ url_for('select_drug', patient_id=patient.id) }}" class="module-card p-5 h-100 shadow-sm">
+                <div class="module-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="fas fa-pills"></i>
+                </div>
+                <h3 class="fw-bold text-dark mb-3">Pharmacogenomic Dosing</h3>
+                <p class="text-muted lead fs-6 mb-4">Calculate safe, personalized drug dosages (Regression Modeling) to prevent adverse drug events and toxic over-dosing.</p>
+                <div class="d-flex align-items-center text-primary fw-bold text-uppercase small" style="letter-spacing: 1px;">
+                    Proceed to Pharmacology <i class="fas fa-arrow-right ms-2"></i>
+                </div>
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
