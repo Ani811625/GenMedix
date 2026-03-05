@@ -392,17 +392,34 @@ def run_diabetes_prediction(patient_data_dict):
         risk_level = "Low Risk"
         confidence_score = "High" if prob_positive < 20 else "Medium"
 
-    # 3. SHAP Explainability for Classifiers
+    # 3. SHAP Explainability for Classifiers (Version-Proof Fix)
     shap_values = diabetes_explainer.shap_values(patient_df)
-    # RF Classifiers return a list of arrays [Class 0, Class 1]. We want to explain Class 1.
+    
+    # Extract the raw array if SHAP returned an Explanation object
+    if hasattr(shap_values, 'values'):
+        shap_values = shap_values.values
+
+    # Handle the different ways SHAP returns classification arrays
     if isinstance(shap_values, list):
+        # Older SHAP: returns a list where index 1 is the positive class
         shap_values_for_instance = shap_values[1][0] 
     else:
-        shap_values_for_instance = shap_values[0]
+        # Newer SHAP: returns a 3D array (samples, features, classes)
+        shap_array = np.array(shap_values)
+        if len(shap_array.shape) == 3:
+            shap_values_for_instance = shap_array[0, :, 1] # Extract Class 1 (Diabetes) for Sample 0
+        else:
+            shap_values_for_instance = shap_array[0]
 
     feature_names = patient_df.columns
     top_indices = np.argsort(np.abs(shap_values_for_instance))[-5:]
-    shap_explanation = {feature_names[i]: round(shap_values_for_instance[i], 3) for i in reversed(top_indices) if np.abs(shap_values_for_instance[i]) > 0.01}
+    
+    # Use float() to guarantee JSON compatibility and prevent Numpy dimension errors
+    shap_explanation = {}
+    for i in reversed(top_indices):
+        val = float(shap_values_for_instance[i])
+        if abs(val) > 0.01:
+            shap_explanation[feature_names[i]] = round(val, 3)
 
     return {
         "prediction": risk_level, 
