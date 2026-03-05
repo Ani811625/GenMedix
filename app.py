@@ -177,7 +177,7 @@ class Note(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # =======================================================
-# 3. HELPER FUNCTIONS & ML
+# 3. LOAD AI MODELS (Warfarin & Diabetes)
 # =======================================================
 
 @app.before_request
@@ -201,18 +201,12 @@ def add_header(response):
     response.headers['Expires'] = '-1'
     return response
 
-# @app.errorhandler(404)
-# def page_not_found(e): return render_template('404.html'), 404
-
-# @app.errorhandler(500)
-# def internal_server_error(e): return render_template('500.html'), 500
-
-# --- LOAD AI MODELS ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
 print("--- Loading models... ---")
 try:
+    # 1. Warfarin Regression Models
     base_model = joblib.load(os.path.join(MODEL_DIR, 'random_forest_base_v1.pkl'))
     base_model_columns = joblib.load(os.path.join(MODEL_DIR, 'base_model_columns.pkl'))
     enhanced_model = joblib.load(os.path.join(MODEL_DIR, 'random_forest_enhanced_v1.pkl'))
@@ -220,10 +214,19 @@ try:
     
     enhanced_explainer = shap.TreeExplainer(enhanced_model)
     base_explainer = shap.TreeExplainer(base_model)
+    
+    # 2. NEW: Diabetes Classification Model
+    diabetes_model = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_v1.pkl'))
+    diabetes_model_columns = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_columns.pkl'))
+    diabetes_explainer = shap.TreeExplainer(diabetes_model)
     print("--- All models loaded. ---")
 except Exception as e:
     print(f"--- FATAL ERROR loading models: {e} ---")
     pass 
+
+# =======================================================
+# 4. WARFARIN ML LOGIC
+# =======================================================
 
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
@@ -361,14 +364,112 @@ def process_prediction_data(form_data):
         "confidence_explanation": conf_expl,
         "human_explanation": human_expl,
         "clinical_suggestions": suggestions,
-        "shap_explanation": pred_data.get('shap_explanation', {}),  # <--- THIS IS THE FIX!
+        "shap_explanation": pred_data.get('shap_explanation', {}),
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
 # =======================================================
-# 4. ROUTES
+# 5. NEW: DIABETES ML CLASSIFICATION LOGIC
+# =======================================================
+
+def run_diabetes_prediction(patient_data_dict):
+    patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=diabetes_model_columns, fill_value=0)
+    
+    # 1. Predict Probability
+    probabilities = diabetes_model.predict_proba(patient_df)[0]
+    prob_positive = round(probabilities[1] * 100, 1) # Probability of being Diabetic
+
+    # 2. Assign Risk Level based on thresholds
+    if prob_positive >= 60.0:
+        risk_level = "High Risk"
+        confidence_score = "High" if prob_positive > 80 else "Medium"
+    elif prob_positive >= 40.0:
+        risk_level = "Pre-Diabetic"
+        confidence_score = "Medium"
+    else:
+        risk_level = "Low Risk"
+        confidence_score = "High" if prob_positive < 20 else "Medium"
+
+    # 3. SHAP Explainability for Classifiers
+    shap_values = diabetes_explainer.shap_values(patient_df)
+    # RF Classifiers return a list of arrays [Class 0, Class 1]. We want to explain Class 1.
+    if isinstance(shap_values, list):
+        shap_values_for_instance = shap_values[1][0] 
+    else:
+        shap_values_for_instance = shap_values[0]
+
+    feature_names = patient_df.columns
+    top_indices = np.argsort(np.abs(shap_values_for_instance))[-5:]
+    shap_explanation = {feature_names[i]: round(shap_values_for_instance[i], 3) for i in reversed(top_indices) if np.abs(shap_values_for_instance[i]) > 0.01}
+
+    return {
+        "prediction": risk_level, 
+        "probability": prob_positive,
+        "model_name": "Diabetes Genomic Classifier (RF)",
+        "shap_explanation": shap_explanation,
+        "confidence_score": confidence_score
+    }
+
+def get_diabetes_clinical_suggestions(shap_dict, risk_level):
+    suggestions = []
+    if risk_level == "High Risk": suggestions.append("<strong>Action Required:</strong> Immediate HbA1c testing and endocrinology consult recommended.")
+    elif risk_level == "Pre-Diabetic": suggestions.append("<strong>Preventative Care:</strong> Recommend lifestyle intervention, dietary changes, and weight management.")
+
+    if shap_dict.get('Glucose', 0) > 0.05: suggestions.append("Elevated fasting glucose is a primary driver of this risk profile.")
+    if shap_dict.get('BMI', 0) > 0.05: suggestions.append("High BMI is significantly elevating diabetes risk. Target 5-10% body weight reduction.")
+    if shap_dict.get('TCF7L2_Risk_Variant', 0) > 0.05: suggestions.append("<strong>Genomic Risk:</strong> Patient carries the TCF7L2 high-risk allele, indicating a strong genetic predisposition.")
+
+    if not suggestions: suggestions.append("Continue routine annual screening and maintain a healthy lifestyle.")
+    return suggestions
+
+def process_diabetes_data(form_data):
+    patient_info_dict = {
+        "patient_name": form_data.get('patient_name'), 
+        "patient_dob": form_data.get('patient_dob'), 
+        "patient_gender": form_data.get('patient_gender')
+    }
+    safety_data_dict = { "is_pregnant": "Not Applicable", "active_bleeding": "Not Applicable" }
+
+    clinical_data_dict = {
+        "Pregnancies": float(form_data.get('Pregnancies', 0)),
+        "Glucose": float(form_data.get('Glucose', 90)),
+        "BloodPressure": float(form_data.get('BloodPressure', 80)),
+        "SkinThickness": float(form_data.get('SkinThickness', 20)),
+        "Insulin": float(form_data.get('Insulin', 80)),
+        "BMI": float(form_data.get('BMI', 25.0)),
+        "DiabetesPedigree": float(form_data.get('DiabetesPedigree', 0.5)),
+        "Age": float(form_data.get('Age', 30)),
+        "TCF7L2_Risk_Variant": float(form_data.get('TCF7L2_Risk_Variant', 0))
+    }
+
+    clinical_info_display = {
+        "Age": form_data.get('Age'), "BMI": form_data.get('BMI'),
+        "Fasting Glucose": f"{form_data.get('Glucose')} mg/dL",
+        "Blood Pressure": f"{form_data.get('BloodPressure')} mmHg",
+        "Family History Pedigree": form_data.get('DiabetesPedigree'),
+        "TCF7L2 Variant": "Detected (High Risk)" if clinical_data_dict['TCF7L2_Risk_Variant'] == 1 else "Not Detected"
+    }
+
+    pred_data = run_diabetes_prediction(clinical_data_dict)
+    suggestions = get_diabetes_clinical_suggestions(pred_data['shap_explanation'], pred_data['prediction'])
+
+    results_dict = {
+        "predicted_dose_mg_per_week": pred_data['prediction'], # Repurposed as Risk Level for the DB structure
+        "probability_score": pred_data['probability'],
+        "model_used": pred_data['model_name'],
+        "confidence_score": pred_data['confidence_score'],
+        "confidence_explanation": f"The AI model predicts a {pred_data['probability']}% probability of pathology.",
+        "clinical_suggestions": suggestions,
+        "shap_explanation": pred_data['shap_explanation'],
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "report_id": f"DIA-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
+    }
+    return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
+
+# =======================================================
+# 6. APP ROUTES
 # =======================================================
 
 @app.route('/')
@@ -882,7 +983,23 @@ def delete_patient(patient_id):
     flash(f"Patient deleted.", "success")
     return redirect(url_for('dashboard'))
 
-# --- WARFARIN LOGIC ---
+# =======================================================
+# 7. CLINICAL HUB & ML ROUTES (Warfarin & Diabetes)
+# =======================================================
+
+@app.route('/patient/<int:patient_id>/new_assessment', methods=['GET'])
+@login_required
+def new_assessment(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+    return render_template('assessment_type.html', patient=patient)
+
+@app.route('/patient/<int:patient_id>/select_disease', methods=['GET'])
+@login_required
+def select_disease(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+    return render_template('select_disease.html', patient=patient)
 
 @app.route('/patient/<int:patient_id>/select_drug', methods=['GET'])
 @login_required
@@ -890,13 +1007,6 @@ def select_drug(patient_id):
     patient = Patient.query.get_or_404(patient_id)
     if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
     return render_template('select_drug.html', patient=patient)
-
-@app.route('/patient/<int:patient_id>/redirect_form', methods=['POST'])
-@login_required
-def redirect_to_drug_form(patient_id):
-    if request.form.get('drug_name') == 'warfarin': return redirect(url_for('warfarin_form', patient_id=patient_id))
-    flash("Invalid drug selected.", "danger")
-    return redirect(url_for('dashboard'))
 
 @app.route('/patient/<int:patient_id>/warfarin_form', methods=['GET'])
 @login_required
@@ -950,6 +1060,54 @@ def generate_warfarin_report(patient_id):
 
     return make_response(render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, interaction_warnings=interaction_warnings, report_obj=new_report))
 
+# --- NEW: DIABETES FORM & REPORT ROUTING ---
+@app.route('/patient/<int:patient_id>/diabetes_form', methods=['GET'])
+@login_required
+def diabetes_form(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+    
+    calculated_age = 0
+    try:
+        dob = datetime.strptime(patient.dob, '%Y-%m-%d')
+        today = datetime.today()
+        calculated_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    except: pass
+    
+    return render_template('diabetes_form.html', patient=patient, calculated_age=calculated_age)
+
+@app.route('/patient/<int:patient_id>/generate_diabetes_report', methods=['POST'])
+@login_required
+def generate_diabetes_report(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+
+    patient_info, clinical_info, safety_info, results = process_diabetes_data(request.form)
+    doctor_name = request.form.get('doctor_name')
+
+    full_report_data = {
+        "patient_info": patient_info, "clinical_info": clinical_info,
+        "safety_info": safety_info, "results": results, "doctor_name": doctor_name
+    }
+
+    # We will build 'display_disease_report.html' in the next step
+    html_string = render_template('display_disease_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=None)
+    pdf_bytes = HTML(string=html_string).write_pdf()
+
+    # Save to database
+    new_report = Report(
+        drug_name="Type 2 Diabetes Assessment", # Saving the Disease name
+        predicted_dose=results['predicted_dose_mg_per_week'], # Saving the "Risk Level"
+        model_used=results['model_used'], confidence=results['confidence_score'],
+        doctor_name=doctor_name, report_data_json=json.dumps(full_report_data),
+        patient_id=patient.id, pdf_storage_path=None
+    )
+    db.session.add(new_report)
+    db.session.commit()
+
+    return make_response(render_template('display_disease_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, report_obj=new_report))
+
+# --- DYNAMIC REPORT VIEWER (Loads Drug vs Disease HTML based on DB) ---
 @app.route('/report/<int:report_id>')
 @login_required
 def view_report(report_id):
@@ -958,7 +1116,25 @@ def view_report(report_id):
     try: report_data = json.loads(report.report_data_json)
     except: return redirect(url_for('view_patient', patient_id=report.patient_id))
     
-    return make_response(render_template('display_report.html', patient_info=report_data.get('patient_info'), clinical_info=report_data.get('clinical_info'), safety_info=report_data.get('safety_info', {}), results=report_data.get('results'), doctor_name=report_data.get('doctor_name'), request=None, interaction_warnings=get_interaction_warnings(report_data.get('interacting_drugs', [])), report_obj=report))
+    # Check if it's a Disease Report or a Drug Report to load the correct HTML template
+    if report.drug_name == "Type 2 Diabetes Assessment":
+        template_name = 'display_disease_report.html'
+        interaction_warnings = []
+    else:
+        template_name = 'display_report.html'
+        interaction_warnings = get_interaction_warnings(report_data.get('interacting_drugs', []))
+    
+    return make_response(render_template(
+        template_name, 
+        patient_info=report_data.get('patient_info'), 
+        clinical_info=report_data.get('clinical_info'), 
+        safety_info=report_data.get('safety_info', {}), 
+        results=report_data.get('results'), 
+        doctor_name=report_data.get('doctor_name'), 
+        request=None, 
+        interaction_warnings=interaction_warnings, 
+        report_obj=report
+    ))
 
 @app.route('/download_archived_report/<int:report_id>')
 @login_required

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Diabetes Risk Assessment - GenMedix{% endblock %}
+
+{% block content %}
+<style>
+    .form-wrapper { background-color: #f8f9fa; padding: 40px 0; min-height: calc(100vh - 76px); }
+    .patient-header { background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: white; border-radius: 12px; padding: 25px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 30px; }
+    .section-card { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden; }
+    .section-header { background-color: #ffffff; border-bottom: 2px solid #e2e8f0; padding: 15px 25px; font-weight: 700; color: #334155; }
+    .form-floating > .form-control, .form-floating > .form-select { border-radius: 8px; border-color: #cbd5e1; }
+    .form-floating > .form-control:focus, .form-floating > .form-select:focus { border-color: #dc3545; box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.15); }
+    .form-label-custom { color: #64748b; font-weight: 500; font-size: 0.9rem; }
+</style>
+
+<div class="form-wrapper">
+    <div class="container" style="max-width: 1000px;">
+        
+        <div class="mb-3">
+            <a href="{{ url_for('select_disease', patient_id=patient.id) }}" class="text-decoration-none text-muted fw-bold">
+                <i class="fas fa-arrow-left me-1"></i> Back to Disease Models
+            </a>
+        </div>
+
+        <div class="patient-header d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-danger mb-2 px-3 py-2"><i class="fas fa-tint me-1"></i> T2 Diabetes Assessment</span>
+                <h2 class="fw-bolder mb-0">{{ patient.full_name }}</h2>
+                <p class="text-light mb-0" style="opacity: 0.8;">DOB: {{ patient.dob }} | Gender: {{ patient.gender }}</p>
+            </div>
+            <div class="text-end d-none d-md-block">
+                <i class="fas fa-heartbeat fs-1 text-white" style="opacity: 0.2;"></i>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('generate_diabetes_report', patient_id=patient.id) }}">
+            
+            <input type="hidden" name="patient_name" value="{{ patient.full_name }}">
+            <input type="hidden" name="patient_dob" value="{{ patient.dob }}">
+            <input type="hidden" name="patient_gender" value="{{ patient.gender }}">
+            <input type="hidden" name="doctor_name" value="{{ current_user.full_name }}">
+            <input type="hidden" name="Age" value="{{ calculated_age }}">
+
+            <div class="row">
+                <div class="col-lg-6">
+                    
+                    <div class="card section-card">
+                        <div class="section-header"><i class="fas fa-stethoscope text-danger me-2"></i> Clinical Vitals</div>
+                        <div class="card-body p-4 bg-white">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label-custom mb-1">Body Mass Index (BMI)</label>
+                                    <div class="input-group mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                        <input type="number" step="0.1" class="form-control" name="BMI" placeholder="e.g. 25.5" required>
+                                        <span class="input-group-text bg-light text-muted">kg/m²</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label-custom mb-1">Blood Pressure (Diastolic)</label>
+                                    <div class="input-group mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                        <input type="number" class="form-control" name="BloodPressure" placeholder="e.g. 80" required>
+                                        <span class="input-group-text bg-light text-muted">mmHg</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label-custom mb-1">Skin Thickness (Triceps)</label>
+                                    <div class="input-group mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                        <input type="number" class="form-control" name="SkinThickness" placeholder="e.g. 20">
+                                        <span class="input-group-text bg-light text-muted">mm</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label-custom mb-1">Pregnancies (If Applicable)</label>
+                                    <input type="number" class="form-control shadow-sm" name="Pregnancies" placeholder="0" value="0" style="border-radius: 8px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-lg-6">
+                    
+                    <div class="card section-card">
+                        <div class="section-header"><i class="fas fa-vials text-danger me-2"></i> Lab Panels & History</div>
+                        <div class="card-body p-4 bg-white">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label-custom mb-1">Fasting Glucose</label>
+                                    <div class="input-group mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                        <input type="number" class="form-control border-danger" name="Glucose" placeholder="e.g. 105" required>
+                                        <span class="input-group-text bg-light text-muted">mg/dL</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label-custom mb-1">2-Hour Serum Insulin</label>
+                                    <div class="input-group mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                                        <input type="number" class="form-control" name="Insulin" placeholder="e.g. 85">
+                                        <span class="input-group-text bg-light text-muted">mu U/ml</span>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label-custom mb-1">Diabetes Pedigree Function</label>
+                                    <input type="number" step="0.01" class="form-control shadow-sm" name="DiabetesPedigree" placeholder="Family history score (e.g. 0.627)" required style="border-radius: 8px;">
+                                    <small class="text-muted" style="font-size: 0.75rem;">Calculated likelihood based on family history.</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card section-card border-0" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);">
+                        <div class="section-header bg-transparent border-0 pb-0"><i class="fas fa-dna text-primary me-2"></i> Genomic Profile</div>
+                        <div class="card-body p-4">
+                            <label class="form-label-custom text-primary mb-2 fw-bold">TCF7L2 Gene Variant Detection</label>
+                            <select class="form-select shadow-sm border-primary" name="TCF7L2_Risk_Variant" required style="border-radius: 8px;">
+                                <option value="" selected disabled>Select sequence result...</option>
+                                <option value="0">Normal (Wild-Type) - Low Genetic Risk</option>
+                                <option value="1">Mutant Allele Detected - High Genetic Risk</option>
+                            </select>
+                            <p class="small text-muted mt-2 mb-0"><i class="fas fa-info-circle me-1"></i> The TCF7L2 variant is the strongest known genetic risk factor for Type 2 Diabetes.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="text-center mt-4 mb-5">
+                <button type="submit" class="btn btn-danger btn-lg px-5 py-3 fw-bold shadow" style="border-radius: 12px; font-size: 1.1rem;">
+                    <i class="fas fa-microchip me-2"></i> Generate Risk Assessment
+                </button>
+                <p class="text-muted small mt-3"><i class="fas fa-lock me-1"></i> Data is encrypted in transit and not stored persistently outside of standard reports.</p>
+            </div>
+
+        </form>
+    </div>
+</div>
+{% endblock %}
