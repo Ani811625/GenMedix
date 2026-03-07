@@ -113,6 +113,12 @@
     </nav>
 
     <main>
+        {% if global_broadcast %}
+        <div class="bg-warning text-dark text-center py-2 fw-bold shadow-sm border-bottom border-warning" style="font-size: 0.95rem; z-index: 1050; position: relative;">
+            <i class="fas fa-bullhorn me-2"></i> {{ global_broadcast }}
+        </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
 

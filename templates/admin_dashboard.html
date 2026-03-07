@@ -269,7 +269,47 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="nav-settings" role="tabpanel"><div class="text-center py-5"><h3>System Operations</h3><p>Deployed in Phase 4.</p></div></div>
+            <div class="tab-pane fade" id="nav-settings" role="tabpanel">
+                <div class="row g-4">
+                    
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-5 h-100 text-center {% if maintenance_active %}border-top border-4 border-danger{% else %}border-top border-4 border-success{% endif %}">
+                            {% if maintenance_active %}
+                                <i class="fas fa-lock fa-4x text-danger mb-3"></i>
+                                <h4 class="fw-bold text-danger">System is OFFLINE</h4>
+                                <p class="text-muted">The Kill Switch is engaged. All doctors and patients are locked out. Only the Master Admin can navigate the platform.</p>
+                            {% else %}
+                                <i class="fas fa-globe fa-4x text-success mb-3"></i>
+                                <h4 class="fw-bold text-success">System is ONLINE</h4>
+                                <p class="text-muted">The platform is running normally. All registered users have full access to clinical modules.</p>
+                            {% endif %}
+                            
+                            <form method="POST" action="{{ url_for('admin_toggle_maintenance') }}" class="mt-4" onsubmit="return confirm('WARNING: Are you sure you want to toggle the global system state?');">
+                                {% if maintenance_active %}
+                                    <button type="submit" class="btn btn-success btn-lg fw-bold w-100 shadow-sm"><i class="fas fa-power-off me-2"></i> Restore System Online</button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-danger btn-lg fw-bold w-100 shadow-sm"><i class="fas fa-skull-crossbones me-2"></i> ENGAGE KILL SWITCH</button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 p-5 h-100 border-top border-4 border-warning">
+                            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-bullhorn text-warning me-2"></i> Global Broadcast Antenna</h5>
+                            <p class="text-muted small mb-4">Set a global banner message that will appear at the top of every user's screen. Delete the text and submit to remove the banner.</p>
+                            
+                            <form method="POST" action="{{ url_for('admin_broadcast') }}">
+                                <div class="mb-4">
+                                    <textarea name="broadcast_message" class="form-control bg-light" rows="3" placeholder="e.g. System scheduled for updates at midnight IST...">{{ current_broadcast }}</textarea>
+                                </div>
+                                <button type="submit" class="btn btn-warning text-dark fw-bold w-100 shadow-sm"><i class="fas fa-satellite-dish me-2"></i> Transmit Broadcast</button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
 
         </div>
     </div>

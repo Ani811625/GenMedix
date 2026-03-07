@@ -111,8 +111,14 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 @app.context_processor
-def inject_user():
-    return dict(current_user=current_user)
+def inject_global_data():
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    broadcast_msg = None
+    broadcast_file = os.path.join(basedir, 'broadcast.txt')
+    if os.path.exists(broadcast_file):
+        with open(broadcast_file, 'r') as f:
+            broadcast_msg = f.read()
+    return dict(current_user=current_user, global_broadcast=broadcast_msg)
 
 # =======================================================
 # 2. DATABASE MODELS
@@ -196,17 +202,26 @@ class Note(db.Model):
 
 @app.before_request
 def check_maintenance_and_db():
-    if os.environ.get('MAINTENANCE_MODE') == 'true':
-        if request.endpoint and request.endpoint != 'static':
-            return render_template('maintenance.html'), 503
-
+    # 1. Database Check
     try:
         inspector = inspect(db.engine)
         if not inspector.has_table("user"):
              with app.app_context():
                 db.create_all()
     except Exception as e:
-        print(f"--- ❌ DB Check Error: {e} ---")
+        pass
+
+    # 2. Master Kill Switch Logic
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    maintenance_file = os.path.join(basedir, 'maintenance.flag')
+    
+    if request.endpoint and request.endpoint not in ['static', 'login', 'logout']:
+        if os.path.exists(maintenance_file):
+            # If Master Admin is logged in, grant full bypass
+            if current_user.is_authenticated and current_user.email == ADMIN_EMAIL:
+                pass
+            else:
+                return render_template('maintenance.html'), 503
 
 @app.after_request
 def add_header(response):
@@ -1237,31 +1252,32 @@ def add_note(patient_id):
 @login_required
 @admin_required
 def admin_dashboard():
-    # 1. Fetch Global Platform Metrics
     total_doctors = User.query.count()
     total_patients = Patient.query.count()
     total_reports = Report.query.count()
     total_subscriptions = Subscription.query.count()
-    
-    # 2. Fetch Doctors & Licenses
     recent_doctors = User.query.order_by(User.id.desc()).limit(5).all()
     all_doctors = User.query.order_by(User.id.desc()).all()
     all_subs = Subscription.query.order_by(Subscription.email).all()
-    
-    # 3. Calculate Platform Load
     warfarin_count = Report.query.filter_by(drug_name='Warfarin').count()
     diabetes_count = Report.query.filter_by(drug_name='Type 2 Diabetes Assessment').count()
     
+    # Check System States
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    maintenance_active = os.path.exists(os.path.join(basedir, 'maintenance.flag'))
+    current_broadcast = ""
+    broadcast_file = os.path.join(basedir, 'broadcast.txt')
+    if os.path.exists(broadcast_file):
+        with open(broadcast_file, 'r') as f:
+            current_broadcast = f.read()
+    
     return render_template('admin_dashboard.html', 
-                           total_doctors=total_doctors,
-                           total_patients=total_patients,
-                           total_reports=total_reports,
-                           total_subs=total_subscriptions,
-                           recent_doctors=recent_doctors,
-                           all_doctors=all_doctors,
-                           all_subs=all_subs,
-                           warfarin_count=warfarin_count,
-                           diabetes_count=diabetes_count)
+                           total_doctors=total_doctors, total_patients=total_patients,
+                           total_reports=total_reports, total_subs=total_subscriptions,
+                           recent_doctors=recent_doctors, all_doctors=all_doctors,
+                           all_subs=all_subs, warfarin_count=warfarin_count,
+                           diabetes_count=diabetes_count, maintenance_active=maintenance_active,
+                           current_broadcast=current_broadcast)
 
 @app.route('/admin/doctor/<int:doc_id>/delete', methods=['POST'])
 @login_required
@@ -1379,6 +1395,42 @@ def admin_edit_doctor(doc_id):
     
     db.session.commit()
     flash(f"Physician profile for Dr. {doctor.full_name} updated successfully.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+# --- NEW: SYSTEM CONTROLS (KILL SWITCH & BROADCAST) ---
+
+@app.route('/admin/system/toggle_maintenance', methods=['POST'])
+@login_required
+@admin_required
+def admin_toggle_maintenance():
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    maintenance_file = os.path.join(basedir, 'maintenance.flag')
+    
+    if os.path.exists(maintenance_file):
+        os.remove(maintenance_file)
+        flash("System is now ONLINE. All users have access.", "success")
+    else:
+        with open(maintenance_file, 'w') as f:
+            f.write("OFFLINE")
+        flash("KILL SWITCH ENGAGED. System is now locked down.", "danger")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/system/broadcast', methods=['POST'])
+@login_required
+@admin_required
+def admin_broadcast():
+    message = request.form.get('broadcast_message')
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    broadcast_file = os.path.join(basedir, 'broadcast.txt')
+    
+    if message and message.strip():
+        with open(broadcast_file, 'w') as f:
+            f.write(message.strip())
+        flash("Global broadcast transmitted.", "success")
+    else:
+        if os.path.exists(broadcast_file):
+            os.remove(broadcast_file)
+        flash("Global broadcast cleared.", "info")
     return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
