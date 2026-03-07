@@ -1243,10 +1243,11 @@ def admin_dashboard():
     total_reports = Report.query.count()
     total_subscriptions = Subscription.query.count()
     
-    # 2. Fetch Recent Activity (Last 5 registered doctors)
+    # 2. Fetch Doctors (Recent for dashboard, All for auditing)
     recent_doctors = User.query.order_by(User.id.desc()).limit(5).all()
+    all_doctors = User.query.order_by(User.id.desc()).all()
     
-    # 3. Calculate Platform Load (Drug vs Disease Reports)
+    # 3. Calculate Platform Load
     warfarin_count = Report.query.filter_by(drug_name='Warfarin').count()
     diabetes_count = Report.query.filter_by(drug_name='Type 2 Diabetes Assessment').count()
     
@@ -1256,8 +1257,32 @@ def admin_dashboard():
                            total_reports=total_reports,
                            total_subs=total_subscriptions,
                            recent_doctors=recent_doctors,
+                           all_doctors=all_doctors,
                            warfarin_count=warfarin_count,
                            diabetes_count=diabetes_count)
+
+@app.route('/admin/doctor/<int:doc_id>/delete', methods=['POST'])
+@login_required
+@admin_required
+def admin_delete_doctor(doc_id):
+    if current_user.id == doc_id:
+        flash("Action Blocked: You cannot delete the Master Admin account.", "danger")
+        return redirect(url_for('admin_dashboard'))
+        
+    doctor = User.query.get_or_404(doc_id)
+    doc_name = doctor.full_name
+    
+    # Free up the license seat before deleting
+    if doctor.subscription_email:
+        sub = Subscription.query.filter_by(email=doctor.subscription_email).first()
+        if sub and sub.current_users > 0: 
+            sub.current_users -= 1
+            
+    db.session.delete(doctor)
+    db.session.commit()
+    
+    flash(f"Physician {doc_name} and all their clinical data have been permanently wiped.", "success")
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)

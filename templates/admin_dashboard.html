@@ -3,107 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenMedix Command Center - Admin</title>
+    <title>GenMedix Command Center</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        body {
-            background-color: #f1f5f9;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            overflow-x: hidden;
-        }
+        body { background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, sans-serif; overflow-x: hidden; }
         
-        /* Dedicated Admin Sidebar */
-        .admin-sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            height: 100vh;
-            width: 260px;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            color: #fff;
-            z-index: 1000;
-            padding-top: 20px;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
-            transition: all 0.3s;
-        }
-        
-        .admin-brand {
-            font-size: 1.5rem;
-            font-weight: 800;
-            text-align: center;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 20px;
-            letter-spacing: 1px;
-            color: #38bdf8;
+        /* Glassmorphism Top Bar */
+        .top-bar {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.5);
+            display: flex; justify-content: space-between; align-items: center;
         }
 
+        /* Dedicated Admin Sidebar */
+        .admin-sidebar {
+            position: fixed; top: 0; left: 0; height: 100vh; width: 260px;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            color: #fff; z-index: 1000; padding-top: 20px;
+            box-shadow: 4px 0 25px rgba(0,0,0,0.15);
+        }
+        
+        .admin-brand { font-size: 1.5rem; font-weight: 800; text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; color: #38bdf8; }
+
         .nav-link-admin {
-            color: #cbd5e1;
-            padding: 12px 25px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            transition: all 0.2s;
-            text-decoration: none;
+            color: #94a3b8; padding: 14px 25px; font-weight: 600; font-size: 0.95rem;
+            display: flex; align-items: center; transition: all 0.3s;
+            text-decoration: none; background: transparent; border: none; width: 100%; text-align: left;
         }
 
         .nav-link-admin:hover, .nav-link-admin.active {
-            background-color: rgba(255,255,255,0.1);
-            color: #ffffff;
+            background-color: rgba(56, 189, 248, 0.1); color: #ffffff;
             border-left: 4px solid #38bdf8;
         }
 
-        .nav-link-admin i {
-            width: 25px;
-            font-size: 1.1rem;
-            margin-right: 10px;
-        }
+        .nav-link-admin i { width: 25px; font-size: 1.1rem; margin-right: 12px; }
 
-        /* Main Content Area */
-        .admin-content {
-            margin-left: 260px;
-            padding: 30px;
-            min-height: 100vh;
-        }
+        .admin-content { margin-left: 260px; padding: 30px; min-height: 100vh; }
 
         /* Metric Cards */
         .metric-card {
-            border: none;
-            border-radius: 12px;
-            background: #fff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            transition: transform 0.2s;
+            border: none; border-radius: 16px; background: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s;
         }
-        .metric-card:hover {
-            transform: translateY(-5px);
-        }
-        .metric-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
+        .metric-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .metric-icon { width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
 
-        /* Status Badges */
-        .badge-admin-live { background-color: #10b981; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem;}
+        /* Custom Table Styling */
+        .table-custom { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .table-custom thead { background-color: #f8fafc; color: #64748b; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .table-custom td { vertical-align: middle; padding: 15px; color: #334155; font-weight: 500; }
         
-        .top-bar {
-            background: #fff;
-            padding: 15px 30px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .badge-admin-live { background-color: #10b981; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
     </style>
 </head>
 <body>
@@ -114,125 +73,158 @@
         </div>
         
         <div class="px-4 mb-4 text-center">
-            <div class="badge-admin-live mb-2"><i class="fas fa-circle ms-1 me-1" style="font-size: 8px;"></i> System Live</div>
-            <p class="small text-muted mb-0">Logged in as:</p>
+            <div class="badge-admin-live mb-2 d-inline-block"><i class="fas fa-circle ms-1 me-1" style="font-size: 8px;"></i> System Live</div>
+            <p class="small text-muted mb-0 mt-2">Logged in as:</p>
             <p class="small fw-bold text-white text-break">{{ current_user.email }}</p>
         </div>
 
-        <nav class="nav flex-column mt-2">
-            <a class="nav-link-admin active" href="#"><i class="fas fa-tachometer-alt"></i> Platform Metrics</a>
-            <a class="nav-link-admin" href="#"><i class="fas fa-key"></i> License Manager</a>
-            <a class="nav-link-admin" href="#"><i class="fas fa-users-cog"></i> User Auditing</a>
-            <a class="nav-link-admin text-warning" href="#"><i class="fas fa-power-off"></i> Maintenance Switch</a>
-        </nav>
+        <div class="nav flex-column mt-2" id="adminTabs" role="tablist">
+            <button class="nav-link-admin active" id="nav-metrics-tab" data-bs-toggle="tab" data-bs-target="#nav-metrics" type="button" role="tab"><i class="fas fa-tachometer-alt"></i> Platform Metrics</button>
+            <button class="nav-link-admin" id="nav-users-tab" data-bs-toggle="tab" data-bs-target="#nav-users" type="button" role="tab"><i class="fas fa-users-cog"></i> User Auditing</button>
+            <button class="nav-link-admin" id="nav-licenses-tab" data-bs-toggle="tab" data-bs-target="#nav-licenses" type="button" role="tab"><i class="fas fa-key"></i> License Manager</button>
+            <button class="nav-link-admin text-warning" id="nav-settings-tab" data-bs-toggle="tab" data-bs-target="#nav-settings" type="button" role="tab"><i class="fas fa-power-off"></i> System Controls</button>
+        </div>
 
-        <div class="position-absolute bottom-0 w-100 p-3">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light w-100 btn-sm"><i class="fas fa-sign-out-alt me-2"></i> Exit God Mode</a>
+        <div class="position-absolute bottom-0 w-100 p-4">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary w-100 fw-bold border-secondary text-light"><i class="fas fa-sign-out-alt me-2"></i> Exit God Mode</a>
         </div>
     </div>
 
     <div class="admin-content">
         
         <div class="top-bar">
-            <h4 class="fw-bold text-slate-800 mb-0">Command Center</h4>
-            <div>
-                <span class="text-muted fw-bold me-3"><i class="fas fa-clock me-1"></i> Live Session</span>
+            <h4 class="fw-bold text-slate-800 mb-0"><i class="fas fa-satellite-dish text-primary me-2"></i> Command Center</h4>
+            <div class="d-flex align-items-center">
+                <span class="text-muted fw-bold me-3 bg-light px-3 py-1 rounded-pill border"><i class="fas fa-clock me-1 text-primary"></i> Server Time: <span id="clock"></span></span>
             </div>
         </div>
 
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show shadow-sm" role="alert">
-                        <i class="fas fa-info-circle me-2"></i> {{ message }}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show shadow-sm border-0 rounded-3" role="alert">
+                        <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-triangle' }} me-2"></i> {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small fw-bold mb-1 text-uppercase">Total Physicians</p>
-                            <h2 class="fw-bolder mb-0 text-dark">{{ total_doctors }}</h2>
-                        </div>
-                        <div class="metric-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-md"></i></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small fw-bold mb-1 text-uppercase">Total Patients</p>
-                            <h2 class="fw-bolder mb-0 text-dark">{{ total_patients }}</h2>
-                        </div>
-                        <div class="metric-icon bg-success bg-opacity-10 text-success"><i class="fas fa-procedures"></i></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small fw-bold mb-1 text-uppercase">AI Reports Generated</p>
-                            <h2 class="fw-bolder mb-0 text-dark">{{ total_reports }}</h2>
-                        </div>
-                        <div class="metric-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-file-medical-alt"></i></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="metric-card p-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="text-muted small fw-bold mb-1 text-uppercase">Active Enterprise Licenses</p>
-                            <h2 class="fw-bolder mb-0 text-dark">{{ total_subs }}</h2>
-                        </div>
-                        <div class="metric-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-id-badge"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4">
+        <div class="tab-content" id="nav-tabContent">
             
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm border-radius-12 h-100 p-4">
-                    <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-brain text-primary me-2"></i> AI Module Utilization</h5>
-                    <div style="position: relative; height:250px; width:100%">
-                        <canvas id="moduleChart"></canvas>
+            <div class="tab-pane fade show active" id="nav-metrics" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="metric-card p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div><p class="text-muted small fw-bold mb-1 text-uppercase">Total Physicians</p><h2 class="fw-bolder mb-0 text-dark">{{ total_doctors }}</h2></div>
+                                <div class="metric-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-md"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div><p class="text-muted small fw-bold mb-1 text-uppercase">Total Patients</p><h2 class="fw-bolder mb-0 text-dark">{{ total_patients }}</h2></div>
+                                <div class="metric-icon bg-success bg-opacity-10 text-success"><i class="fas fa-procedures"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div><p class="text-muted small fw-bold mb-1 text-uppercase">AI Reports</p><h2 class="fw-bolder mb-0 text-dark">{{ total_reports }}</h2></div>
+                                <div class="metric-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-file-medical-alt"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="metric-card p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div><p class="text-muted small fw-bold mb-1 text-uppercase">Active Licenses</p><h2 class="fw-bolder mb-0 text-dark">{{ total_subs }}</h2></div>
+                                <div class="metric-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-id-badge"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                            <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-brain text-primary me-2"></i> AI Module Utilization</h5>
+                            <div style="position: relative; height:250px; width:100%"><canvas id="moduleChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-user-plus text-success me-2"></i> Recent Onboarding</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-borderless align-middle">
+                                    <thead class="border-bottom"><tr><th class="text-muted small">Doctor Name</th><th class="text-muted small">Status</th></tr></thead>
+                                    <tbody>
+                                        {% for doc in recent_doctors %}
+                                        <tr>
+                                            <td class="fw-bold text-dark">Dr. {{ doc.full_name }}<br><span class="text-muted fw-normal small">{{ doc.email }}</span></td>
+                                            <td><span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">Active</span></td>
+                                        </tr>
+                                        {% else %}
+                                        <tr><td colspan="2" class="text-center text-muted">No doctors registered yet.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="card border-0 shadow-sm border-radius-12 h-100 p-4">
+            <div class="tab-pane fade" id="nav-users" role="tabpanel">
+                <div class="card border-0 shadow-sm rounded-4 p-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-user-plus text-success me-2"></i> New Physician Onboarding</h5>
-                        <button class="btn btn-sm btn-outline-secondary">View All</button>
+                        <h4 class="fw-bold text-dark mb-0"><i class="fas fa-users-cog text-primary me-2"></i> Physician Directory</h4>
+                        <div class="input-group w-25 shadow-sm rounded-3 overflow-hidden">
+                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="userSearchBox" class="form-control border-start-0 ps-0" placeholder="Search doctors or emails...">
+                        </div>
                     </div>
+
                     <div class="table-responsive">
-                        <table class="table table-borderless align-middle">
-                            <thead class="border-bottom">
+                        <table class="table table-custom table-hover" id="usersTable">
+                            <thead>
                                 <tr>
-                                    <th class="text-muted small">Doctor Name</th>
-                                    <th class="text-muted small">License Email</th>
-                                    <th class="text-muted small">Status</th>
+                                    <th>ID</th>
+                                    <th>Physician Name</th>
+                                    <th>Contact Email</th>
+                                    <th>Medical Reg ID</th>
+                                    <th>License Link</th>
+                                    <th class="text-center">Danger Zone</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for doc in recent_doctors %}
+                                {% for doc in all_doctors %}
                                 <tr>
-                                    <td class="fw-bold text-dark">Dr. {{ doc.full_name }}</td>
-                                    <td class="text-muted small">{{ doc.email }}</td>
-                                    <td><span class="badge bg-success bg-opacity-10 text-success border border-success">Verified</span></td>
+                                    <td class="text-muted fw-bold">#{{ doc.id }}</td>
+                                    <td>
+                                        {% if doc.email == current_user.email %}
+                                            <span class="badge bg-dark text-warning me-2"><i class="fas fa-crown"></i> Master</span>
+                                        {% endif %}
+                                        Dr. {{ doc.full_name }}
+                                    </td>
+                                    <td class="text-muted">{{ doc.email }}</td>
+                                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ doc.medical_reg_id }}</span></td>
+                                    <td><span class="badge bg-info bg-opacity-10 text-info border">{{ doc.subscription_email }}</span></td>
+                                    <td class="text-center">
+                                        {% if doc.email == current_user.email %}
+                                            <button class="btn btn-sm btn-secondary disabled" title="Cannot delete yourself"><i class="fas fa-ban"></i></button>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('admin_delete_doctor', doc_id=doc.id) }}" class="d-inline" onsubmit="return promptAdminDelete('{{ doc.full_name }}');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger fw-bold"><i class="fas fa-trash-alt me-1"></i> Nuke</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
                                 </tr>
-                                {% else %}
-                                <tr><td colspan="3" class="text-center text-muted">No doctors registered yet.</td></tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -240,32 +232,66 @@
                 </div>
             </div>
 
+            <div class="tab-pane fade" id="nav-licenses" role="tabpanel">
+                <div class="text-center py-5">
+                    <i class="fas fa-tools fa-4x text-muted mb-4 opacity-50"></i>
+                    <h3 class="fw-bold text-dark">License Generation Engine</h3>
+                    <p class="text-muted lead">The manual subscription bypass module will be deployed here in Phase 3.</p>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="nav-settings" role="tabpanel">
+                <div class="text-center py-5">
+                    <i class="fas fa-server fa-4x text-muted mb-4 opacity-50"></i>
+                    <h3 class="fw-bold text-dark">Global System Operations</h3>
+                    <p class="text-muted lead">The Maintenance Kill-Switch and Global Broadcast features will be deployed here in Phase 4.</p>
+                </div>
+            </div>
+
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
+        // 1. Live Clock
+        function updateClock() {
+            document.getElementById('clock').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        // 2. Chart.js Data
         const ctx = document.getElementById('moduleChart').getContext('2d');
-        const moduleChart = new Chart(ctx, {
+        new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Warfarin Dosing (Pharmacology)', 'Type 2 Diabetes (Pathology)'],
-                datasets: [{
-                    data: [{{ warfarin_count }}, {{ diabetes_count }}],
-                    backgroundColor: ['#3b82f6', '#ef4444'],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
+                labels: ['Warfarin Dosing', 'Type 2 Diabetes'],
+                datasets: [{ data: [{{ warfarin_count }}, {{ diabetes_count }}], backgroundColor: ['#3b82f6', '#ef4444'], borderWidth: 0, hoverOffset: 4 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom', labels: { font: { family: 'Segoe UI', weight: 'bold' } } }
-                },
-                cutout: '70%'
-            }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } }, cutout: '70%' }
         });
+
+        // 3. User Table Search Filter (Real-time Vanilla JS)
+        document.getElementById('userSearchBox').addEventListener('keyup', function() {
+            let filter = this.value.toLowerCase();
+            let rows = document.querySelectorAll('#usersTable tbody tr');
+            
+            rows.forEach(row => {
+                let text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+        // 4. Secure Admin Deletion Prompt
+        function promptAdminDelete(doctorName) {
+            let userInput = prompt(`DANGER: You are about to permanently delete Dr. ${doctorName} and ALL their patient data.\n\nType 'DELETE' in all caps to confirm this action:`);
+            if (userInput === 'DELETE') {
+                return true; // Allows form submission
+            } else {
+                alert("Action aborted. Incorrect confirmation typed.");
+                return false; // Blocks form submission
+            }
+        }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
