@@ -257,39 +257,8 @@
                                                 {% endif %}
                                             </td>
                                         </tr>
-
-                                        <div class="modal fade" id="accountsModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-                                                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-                                                    <div class="modal-header bg-dark text-white border-bottom-0">
-                                                        <h5 class="modal-title fw-bold"><i class="fas fa-users text-info me-2"></i> Accounts under {{ sub.email }}</h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body bg-light p-4">
-                                                        <table class="table table-custom mb-0">
-                                                            <thead><tr><th>ID</th><th>Physician Name</th><th>Email</th><th>Reg ID</th><th class="text-end">Actions</th></tr></thead>
-                                                            <tbody>
-                                                                {% set docs_in_sub = all_doctors | selectattr('subscription_email', 'equalto', sub.email) | list %}
-                                                                {% for doc in docs_in_sub %}
-                                                                <tr>
-                                                                    <td class="text-muted fw-bold">#{{ doc.id }}</td>
-                                                                    <td class="fw-bold">Dr. {{ doc.full_name }}</td>
-                                                                    <td>{{ doc.email }}</td>
-                                                                    <td>{{ doc.medical_reg_id }}</td>
-                                                                    <td class="text-end">
-                                                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fas fa-edit"></i> Edit</button>
-                                                                        <button type="button" class="btn btn-sm btn-outline-danger fw-bold ms-1" onclick="showModernNukeModal('{{ doc.id }}', '{{ doc.full_name }}');" data-bs-dismiss="modal"><i class="fas fa-trash-alt"></i> Nuke</button>
-                                                                    </td>
-                                                                </tr>
-                                                                {% else %}
-                                                                <tr><td colspan="5" class="text-center text-muted p-3">No active physician accounts under this license.</td></tr>
-                                                                {% endfor %}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        {% else %}
+                                        <tr><td colspan="5" class="text-center text-muted p-4">No enterprise licenses provisioned yet.</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -304,6 +273,41 @@
 
         </div>
     </div>
+
+    {% for sub in all_subs %}
+    <div class="modal fade" id="accountsModal{{ loop.index }}" tabindex="-1" aria-hidden="true" style="z-index: 1055;">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                <div class="modal-header bg-dark text-white border-bottom-0">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-users text-info me-2"></i> Accounts under {{ sub.email }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    <table class="table table-custom mb-0">
+                        <thead><tr><th>ID</th><th>Physician Name</th><th>Email</th><th>Reg ID</th><th class="text-end">Actions</th></tr></thead>
+                        <tbody>
+                            {% set docs_in_sub = all_doctors | selectattr('subscription_email', 'equalto', sub.email) | list %}
+                            {% for doc in docs_in_sub %}
+                            <tr>
+                                <td class="text-muted fw-bold">#{{ doc.id }}</td>
+                                <td class="fw-bold">Dr. {{ doc.full_name }}</td>
+                                <td>{{ doc.email }}</td>
+                                <td>{{ doc.medical_reg_id }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fas fa-edit"></i> Edit</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger fw-bold ms-1" onclick="showModernNukeModal('{{ doc.id }}', '{{ doc.full_name }}');" data-bs-dismiss="modal"><i class="fas fa-trash-alt"></i> Nuke</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center text-muted p-3">No active physician accounts under this license.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 
     {% for doc in all_doctors %}
     <div class="modal fade" id="editDocModal{{ doc.id }}" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
@@ -344,12 +348,13 @@
             </div>
         </div>
     </div>
+    
     <form id="hiddenDeleteForm" method="POST" action="" style="display: none;"></form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // JS Memory: Remember which Admin Tab was clicked even after page refresh!
+        // JS Memory: Remember which Admin Tab was clicked
         document.addEventListener("DOMContentLoaded", function() {
             const adminTabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
             adminTabs.forEach(tab => {
@@ -377,33 +382,20 @@
             document.querySelectorAll('#licenseTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none'; });
         });
 
-        // ==========================================================
         // DYNAMIC LICENSE PROVISIONING LOGIC
-        // ==========================================================
         const planSelect = document.getElementById('provPlan');
         const seatInput = document.getElementById('provSeats');
-
-        // Logic for when the dropdown changes
         planSelect.addEventListener('change', function() {
-            if (this.value === 'Individual') {
-                seatInput.value = 1; seatInput.readOnly = true; seatInput.classList.remove('border-danger');
-            } else if (this.value === 'Enterprise') {
-                seatInput.value = 50; seatInput.readOnly = true; seatInput.classList.remove('border-danger');
-            } else {
-                seatInput.readOnly = false; seatInput.classList.add('border-danger'); // Highlight it so admin knows to type
-            }
+            if (this.value === 'Individual') { seatInput.value = 1; seatInput.readOnly = true; seatInput.classList.remove('border-danger'); } 
+            else if (this.value === 'Enterprise') { seatInput.value = 50; seatInput.readOnly = true; seatInput.classList.remove('border-danger'); } 
+            else { seatInput.readOnly = false; seatInput.classList.add('border-danger'); }
         });
 
-        // Logic for clicking the 'Edit' pencil icon in the table
         function loadLicenseToForm(email, plan, maxSeats) {
             document.getElementById('provEmail').value = email;
             planSelect.value = plan;
             seatInput.value = maxSeats;
-            
-            // Trigger the change event to lock/unlock the seat box correctly
             planSelect.dispatchEvent(new Event('change'));
-            
-            // Scroll smoothly to the form
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
