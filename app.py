@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import csv
 import io
+from functools import wraps
 
 # --- THIRD PARTY IMPORTS ---
 import stripe
@@ -91,6 +92,19 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message = "Please log in to access the clinical dashboard."
 login_manager.login_message_category = "info"
+
+# --- MASTER ADMIN CONFIGURATION ---
+# The only email address allowed to access the Super Admin Panel
+ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'aniruddhas387@gmail.com')
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.email != ADMIN_EMAIL:
+            flash("🛡️ Access Denied: Administrator privileges required. This incident has been logged.", "danger")
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -1214,6 +1228,36 @@ def add_note(patient_id):
     db.session.commit()
     flash("Note added.", "success")
     return redirect(url_for('view_patient', patient_id=patient_id, _anchor='notes-tab'))
+
+# =======================================================
+# 8. SUPER ADMIN COMMAND CENTER
+# =======================================================
+
+@app.route('/admin/dashboard')
+@login_required
+@admin_required
+def admin_dashboard():
+    # 1. Fetch Global Platform Metrics
+    total_doctors = User.query.count()
+    total_patients = Patient.query.count()
+    total_reports = Report.query.count()
+    total_subscriptions = Subscription.query.count()
+    
+    # 2. Fetch Recent Activity (Last 5 registered doctors)
+    recent_doctors = User.query.order_by(User.id.desc()).limit(5).all()
+    
+    # 3. Calculate Platform Load (Drug vs Disease Reports)
+    warfarin_count = Report.query.filter_by(drug_name='Warfarin').count()
+    diabetes_count = Report.query.filter_by(drug_name='Type 2 Diabetes Assessment').count()
+    
+    return render_template('admin_dashboard.html', 
+                           total_doctors=total_doctors,
+                           total_patients=total_patients,
+                           total_reports=total_reports,
+                           total_subs=total_subscriptions,
+                           recent_doctors=recent_doctors,
+                           warfarin_count=warfarin_count,
+                           diabetes_count=diabetes_count)
 
 if __name__ == '__main__':
     app.run(debug=True)
