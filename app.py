@@ -1327,5 +1327,59 @@ def admin_revoke_license():
         flash(f"License for {email} has been immediately revoked.", "warning")
     return redirect(url_for('admin_dashboard'))
 
+# --- ADMIN MANUAL ACCOUNT CREATION & EDITING ---
+
+@app.route('/admin/doctor/create', methods=['POST'])
+@login_required
+@admin_required
+def admin_create_doctor():
+    email = request.form.get('email')
+    full_name = request.form.get('full_name')
+    reg_id = request.form.get('medical_reg_id')
+    password = request.form.get('password')
+    license_email = request.form.get('subscription_email')
+
+    if User.query.filter_by(email=email).first():
+        flash("Email already registered to an existing physician.", "danger")
+        return redirect(url_for('admin_dashboard'))
+
+    sub = Subscription.query.filter_by(email=license_email).first()
+    if not sub or not sub.is_active:
+        flash("Invalid or inactive License Email provided.", "danger")
+        return redirect(url_for('admin_dashboard'))
+
+    if sub.current_users >= sub.max_seats:
+        flash("License seat limit reached. Upgrade the license first.", "danger")
+        return redirect(url_for('admin_dashboard'))
+
+    new_doc = User(full_name=full_name, email=email, medical_reg_id=reg_id, subscription_email=license_email)
+    new_doc.set_password(password)
+    
+    sub.current_users += 1
+    db.session.add(new_doc)
+    db.session.commit()
+    
+    flash(f"Account for Dr. {full_name} successfully created under {license_email}.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/doctor/<int:doc_id>/edit', methods=['POST'])
+@login_required
+@admin_required
+def admin_edit_doctor(doc_id):
+    doctor = User.query.get_or_404(doc_id)
+    
+    # We don't let admins edit themselves through this specific route to prevent lockouts
+    if doctor.email == ADMIN_EMAIL:
+        flash("Cannot edit the Master Admin account here.", "danger")
+        return redirect(url_for('admin_dashboard'))
+
+    doctor.full_name = request.form.get('full_name')
+    doctor.email = request.form.get('email')
+    doctor.medical_reg_id = request.form.get('medical_reg_id')
+    
+    db.session.commit()
+    flash(f"Physician profile for Dr. {doctor.full_name} updated successfully.", "success")
+    return redirect(url_for('admin_dashboard'))
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -160,28 +160,52 @@
                 <div class="row g-4">
                     
                     <div class="col-lg-4">
-                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100 border-top border-4 border-primary">
-                            <h5 class="fw-bold text-dark mb-4"><i class="fas fa-magic text-primary me-2"></i> Provision License</h5>
-                            <p class="text-muted small mb-4">Generate an active subscription bypassing the Stripe payment gateway. Ideal for direct hospital contracts.</p>
-                            
+                        
+                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 border-top border-4 border-primary">
+                            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-magic text-primary me-2"></i> Provision / Edit License</h5>
+                            <p class="text-muted small mb-3">Generate or modify a subscription bypassing Stripe.</p>
                             <form method="POST" action="{{ url_for('admin_add_license') }}">
                                 <div class="mb-3">
-                                    <label class="form-label text-muted small fw-bold">Entity / Hospital Email</label>
-                                    <input type="email" name="email" class="form-control bg-light" placeholder="e.g. admin@apollo.com" required>
+                                    <label class="form-label text-muted small fw-bold">Entity Email</label>
+                                    <input type="email" name="email" id="provEmail" class="form-control bg-light" placeholder="admin@hospital.com" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-bold">Assigned Plan</label>
-                                    <select name="plan_type" class="form-select bg-light" required>
-                                        <option value="Individual">Individual Node</option>
-                                        <option value="Enterprise">Enterprise Hub</option>
+                                    <select name="plan_type" id="provPlan" class="form-select bg-light" required>
+                                        <option value="Individual" selected>Individual Node (1 Seat)</option>
+                                        <option value="Enterprise">Enterprise Hub (50 Seats)</option>
                                         <option value="Custom Override">Custom Override</option>
                                     </select>
                                 </div>
                                 <div class="mb-4">
-                                    <label class="form-label text-muted small fw-bold">Maximum Doctor Seats</label>
-                                    <input type="number" name="max_seats" class="form-control bg-light border-primary" value="1" min="1" required>
+                                    <label class="form-label text-muted small fw-bold">Maximum Seats</label>
+                                    <input type="number" name="max_seats" id="provSeats" class="form-control bg-light border-primary" value="1" min="1" required readonly>
+                                    <small class="text-muted" style="font-size: 0.75rem;">Locked unless Custom Override is selected.</small>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm py-2">Generate License</button>
+                                <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">Save License</button>
+                            </form>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-4 border-success">
+                            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-user-plus text-success me-2"></i> Create Physician Account</h5>
+                            <p class="text-muted small mb-3">Directly onboard a doctor to an active license.</p>
+                            <form method="POST" action="{{ url_for('admin_create_doctor') }}">
+                                <div class="mb-3">
+                                    <input type="text" name="full_name" class="form-control bg-light" placeholder="Dr. Full Name" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="email" name="email" class="form-control bg-light" placeholder="Physician Email" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" name="medical_reg_id" class="form-control bg-light" placeholder="Medical Reg ID" required>
+                                </div>
+                                <div class="mb-3">
+                                    <input type="text" name="subscription_email" class="form-control border-success bg-light" placeholder="License Email (e.g. hospital@.com)" required>
+                                </div>
+                                <div class="mb-4">
+                                    <input type="password" name="password" class="form-control bg-light" placeholder="Set Temporary Password" required>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">Create Account</button>
                             </form>
                         </div>
                     </div>
@@ -202,42 +226,70 @@
                                         <tr>
                                             <th>Entity Email</th>
                                             <th>Plan</th>
-                                            <th class="text-center">Seats (Active/Max)</th>
-                                            <th>Status</th>
-                                            <th class="text-end">Action</th>
+                                            <th class="text-center">Seats</th>
+                                            <th class="text-center">Accounts</th>
+                                            <th class="text-end">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for sub in all_subs %}
                                         <tr>
-                                            <td class="fw-bold text-dark">{{ sub.email }}</td>
-                                            <td><span class="badge bg-primary bg-opacity-10 text-primary border">{{ sub.plan_type }}</span></td>
-                                            <td class="text-center">
-                                                <span class="fw-bold {% if sub.current_users >= sub.max_seats %}text-danger{% else %}text-success{% endif %}">
-                                                    {{ sub.current_users }}
-                                                </span> 
-                                                <span class="text-muted">/ {{ sub.max_seats }}</span>
+                                            <td class="fw-bold text-dark">{{ sub.email }}
+                                                {% if not sub.is_active %}<span class="badge bg-danger ms-2">Revoked</span>{% endif %}
                                             </td>
-                                            <td>
-                                                {% if sub.is_active %}
-                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1"><i class="fas fa-check-circle me-1"></i>Active</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1"><i class="fas fa-times-circle me-1"></i>Revoked</span>
-                                                {% endif %}
+                                            <td><span class="badge bg-primary bg-opacity-10 text-primary border">{{ sub.plan_type }}</span></td>
+                                            <td class="text-center fw-bold {% if sub.current_users >= sub.max_seats %}text-danger{% else %}text-success{% endif %}">
+                                                {{ sub.current_users }} / <span class="text-muted">{{ sub.max_seats }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-sm btn-outline-info fw-bold" data-bs-toggle="modal" data-bs-target="#accountsModal{{ loop.index }}">
+                                                    <i class="fas fa-users"></i> Manage
+                                                </button>
                                             </td>
                                             <td class="text-end">
+                                                <button class="btn btn-sm btn-light border text-primary" onclick="loadLicenseToForm('{{ sub.email }}', '{{ sub.plan_type }}', {{ sub.max_seats }})"><i class="fas fa-edit"></i></button>
+                                                
                                                 {% if sub.is_active %}
-                                                <form method="POST" action="{{ url_for('admin_revoke_license') }}" onsubmit="return confirm('WARNING: Revoking this license will block all associated doctors from registering. Proceed?');">
+                                                <form method="POST" action="{{ url_for('admin_revoke_license') }}" class="d-inline" onsubmit="return confirm('Revoking this blocks all associated doctors. Proceed?');">
                                                     <input type="hidden" name="email" value="{{ sub.email }}">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger fw-bold"><i class="fas fa-ban me-1"></i> Revoke</button>
+                                                    <button type="submit" class="btn btn-sm btn-light border text-danger"><i class="fas fa-ban"></i></button>
                                                 </form>
-                                                {% else %}
-                                                    <button class="btn btn-sm btn-secondary disabled border-0"><i class="fas fa-lock"></i> Blocked</button>
                                                 {% endif %}
                                             </td>
                                         </tr>
-                                        {% else %}
-                                        <tr><td colspan="5" class="text-center text-muted p-4">No enterprise licenses provisioned yet.</td></tr>
+
+                                        <div class="modal fade" id="accountsModal{{ loop.index }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                                                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+                                                    <div class="modal-header bg-dark text-white border-bottom-0">
+                                                        <h5 class="modal-title fw-bold"><i class="fas fa-users text-info me-2"></i> Accounts under {{ sub.email }}</h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body bg-light p-4">
+                                                        <table class="table table-custom mb-0">
+                                                            <thead><tr><th>ID</th><th>Physician Name</th><th>Email</th><th>Reg ID</th><th class="text-end">Actions</th></tr></thead>
+                                                            <tbody>
+                                                                {% set docs_in_sub = all_doctors | selectattr('subscription_email', 'equalto', sub.email) | list %}
+                                                                {% for doc in docs_in_sub %}
+                                                                <tr>
+                                                                    <td class="text-muted fw-bold">#{{ doc.id }}</td>
+                                                                    <td class="fw-bold">Dr. {{ doc.full_name }}</td>
+                                                                    <td>{{ doc.email }}</td>
+                                                                    <td>{{ doc.medical_reg_id }}</td>
+                                                                    <td class="text-end">
+                                                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fas fa-edit"></i> Edit</button>
+                                                                        <button type="button" class="btn btn-sm btn-outline-danger fw-bold ms-1" onclick="showModernNukeModal('{{ doc.id }}', '{{ doc.full_name }}');" data-bs-dismiss="modal"><i class="fas fa-trash-alt"></i> Nuke</button>
+                                                                    </td>
+                                                                </tr>
+                                                                {% else %}
+                                                                <tr><td colspan="5" class="text-center text-muted p-3">No active physician accounts under this license.</td></tr>
+                                                                {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -253,19 +305,37 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modernNukeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    {% for doc in all_doctors %}
+    <div class="modal fade" id="editDocModal{{ doc.id }}" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i> Edit Dr. {{ doc.full_name }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form method="POST" action="{{ url_for('admin_edit_doctor', doc_id=doc.id) }}">
+                        <div class="mb-3"><label class="form-label text-muted small fw-bold">Full Name</label><input type="text" name="full_name" class="form-control" value="{{ doc.full_name }}" required></div>
+                        <div class="mb-3"><label class="form-label text-muted small fw-bold">Email Address</label><input type="email" name="email" class="form-control" value="{{ doc.email }}" required></div>
+                        <div class="mb-4"><label class="form-label text-muted small fw-bold">Medical Reg ID</label><input type="text" name="medical_reg_id" class="form-control" value="{{ doc.medical_reg_id }}" required></div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="modal fade" id="modernNukeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content danger-modal-content">
-                <div class="modal-header danger-modal-header">
-                    <h5 class="modal-title danger-modal-title" id="nukeModalTitle"><i class="fas fa-exclamation-triangle me-2"></i> DANGER: System Operation</h5>
-                </div>
+                <div class="modal-header danger-modal-header"><h5 class="modal-title danger-modal-title" id="nukeModalTitle"><i class="fas fa-exclamation-triangle me-2"></i> DANGER: System Operation</h5></div>
                 <div class="modal-body danger-modal-body text-center">
                     <p class="text-muted lead">You are about to permanently delete:</p>
                     <h3 class="fw-bold text-dark mb-2" id="nukePhysicianName"></h3>
                     <p class="small text-danger fw-bold mb-4">This will immediately purge ALL patient data, reports, and notes associated with this account. This cannot be undone.</p>
                     <p class="small text-muted mb-2">To proceed, please type <span class="fw-bold text-danger">DELETE</span> in the box below:</p>
                     <input type="text" class="form-control danger-input-modern mb-1 shadow-sm" id="nukeConfirmationInput" placeholder="TYPE HERE...">
-                    <small class="text-muted d-block mb-3">Confirmation is case-sensitive.</small>
                 </div>
                 <div class="modal-footer bg-white border-top-0 d-flex justify-content-between p-3 rounded-bottom-4">
                     <button type="button" class="btn btn-outline-secondary px-4 fw-bold" data-bs-dismiss="modal">Cancel Action</button>
@@ -283,15 +353,10 @@
         document.addEventListener("DOMContentLoaded", function() {
             const adminTabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
             adminTabs.forEach(tab => {
-                tab.addEventListener('shown.bs.tab', event => {
-                    sessionStorage.setItem('activeAdminTab', event.target.id);
-                });
+                tab.addEventListener('shown.bs.tab', event => { sessionStorage.setItem('activeAdminTab', event.target.id); });
             });
             const activeTab = sessionStorage.getItem('activeAdminTab');
-            if (activeTab) {
-                const tabToActivate = new bootstrap.Tab(document.getElementById(activeTab));
-                tabToActivate.show();
-            }
+            if (activeTab) { new bootstrap.Tab(document.getElementById(activeTab)).show(); }
         });
 
         // Live Clock
@@ -312,6 +377,36 @@
             document.querySelectorAll('#licenseTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none'; });
         });
 
+        // ==========================================================
+        // DYNAMIC LICENSE PROVISIONING LOGIC
+        // ==========================================================
+        const planSelect = document.getElementById('provPlan');
+        const seatInput = document.getElementById('provSeats');
+
+        // Logic for when the dropdown changes
+        planSelect.addEventListener('change', function() {
+            if (this.value === 'Individual') {
+                seatInput.value = 1; seatInput.readOnly = true; seatInput.classList.remove('border-danger');
+            } else if (this.value === 'Enterprise') {
+                seatInput.value = 50; seatInput.readOnly = true; seatInput.classList.remove('border-danger');
+            } else {
+                seatInput.readOnly = false; seatInput.classList.add('border-danger'); // Highlight it so admin knows to type
+            }
+        });
+
+        // Logic for clicking the 'Edit' pencil icon in the table
+        function loadLicenseToForm(email, plan, maxSeats) {
+            document.getElementById('provEmail').value = email;
+            planSelect.value = plan;
+            seatInput.value = maxSeats;
+            
+            // Trigger the change event to lock/unlock the seat box correctly
+            planSelect.dispatchEvent(new Event('change'));
+            
+            // Scroll smoothly to the form
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
         // Modern Nuke Modal Logic
         let currentDocIdToDelete = null;
         function showModernNukeModal(docId, docName) {
@@ -321,9 +416,7 @@
             document.getElementById('finalNukeConfirmBtn').disabled = true;
             new bootstrap.Modal(document.getElementById('modernNukeModal')).show();
         }
-        document.getElementById('nukeConfirmationInput').addEventListener('input', function() {
-            document.getElementById('finalNukeConfirmBtn').disabled = (this.value !== 'DELETE');
-        });
+        document.getElementById('nukeConfirmationInput').addEventListener('input', function() { document.getElementById('finalNukeConfirmBtn').disabled = (this.value !== 'DELETE'); });
         document.getElementById('finalNukeConfirmBtn').addEventListener('click', function() {
             if (currentDocIdToDelete) {
                 const deleteForm = document.getElementById('hiddenDeleteForm');
