@@ -1243,9 +1243,10 @@ def admin_dashboard():
     total_reports = Report.query.count()
     total_subscriptions = Subscription.query.count()
     
-    # 2. Fetch Doctors (Recent for dashboard, All for auditing)
+    # 2. Fetch Doctors & Licenses
     recent_doctors = User.query.order_by(User.id.desc()).limit(5).all()
     all_doctors = User.query.order_by(User.id.desc()).all()
+    all_subs = Subscription.query.order_by(Subscription.email).all()
     
     # 3. Calculate Platform Load
     warfarin_count = Report.query.filter_by(drug_name='Warfarin').count()
@@ -1258,6 +1259,7 @@ def admin_dashboard():
                            total_subs=total_subscriptions,
                            recent_doctors=recent_doctors,
                            all_doctors=all_doctors,
+                           all_subs=all_subs,
                            warfarin_count=warfarin_count,
                            diabetes_count=diabetes_count)
 
@@ -1272,16 +1274,57 @@ def admin_delete_doctor(doc_id):
     doctor = User.query.get_or_404(doc_id)
     doc_name = doctor.full_name
     
-    # Free up the license seat before deleting
     if doctor.subscription_email:
         sub = Subscription.query.filter_by(email=doctor.subscription_email).first()
-        if sub and sub.current_users > 0: 
-            sub.current_users -= 1
+        if sub and sub.current_users > 0: sub.current_users -= 1
             
     db.session.delete(doctor)
     db.session.commit()
     
     flash(f"Physician {doc_name} and all their clinical data have been permanently wiped.", "success")
+    return redirect(url_for('admin_dashboard'))
+
+# --- NEW: LICENSE MANAGER ROUTES ---
+
+@app.route('/admin/license/add', methods=['POST'])
+@login_required
+@admin_required
+def admin_add_license():
+    email = request.form.get('email')
+    plan_type = request.form.get('plan_type')
+    max_seats = request.form.get('max_seats')
+    
+    sub = Subscription.query.filter_by(email=email).first()
+    if sub:
+        sub.plan_type = plan_type
+        sub.max_seats = int(max_seats)
+        sub.is_active = True
+        flash(f"License successfully updated for {email}.", "success")
+    else:
+        new_sub = Subscription(
+            email=email,
+            stripe_customer_id="MANUAL_OVERRIDE",
+            plan_type=plan_type,
+            max_seats=int(max_seats),
+            is_active=True
+        )
+        db.session.add(new_sub)
+        flash(f"New manual license provisioned for {email}.", "success")
+        
+    db.session.commit()
+    return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/license/revoke', methods=['POST'])
+@login_required
+@admin_required
+def admin_revoke_license():
+    email = request.form.get('email')
+    sub = Subscription.query.filter_by(email=email).first()
+    if sub:
+        sub.is_active = False
+        sub.max_seats = 0
+        db.session.commit()
+        flash(f"License for {email} has been immediately revoked.", "warning")
     return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
