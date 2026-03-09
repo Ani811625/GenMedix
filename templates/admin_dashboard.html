@@ -10,39 +10,25 @@
     
     <style>
         body { background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; overflow-x: hidden; }
-        
-        /* Enterprise Sidebar */
         .admin-sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 250px; background-color: #000; color: #a1a1aa; border-right: 1px solid #27272a; z-index: 1000; display: flex; flex-direction: column; }
         .admin-brand { padding: 25px 20px; font-weight: 700; font-size: 1.1rem; color: #fff; letter-spacing: -0.5px; border-bottom: 1px solid #27272a; }
         .nav-link-admin { color: #a1a1aa; padding: 12px 20px; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; transition: all 0.2s; background: transparent; border: none; width: 100%; text-align: left; }
         .nav-link-admin:hover, .nav-link-admin.active { background-color: #18181b; color: #fff; }
         .nav-link-admin i { width: 20px; margin-right: 10px; font-size: 0.95rem; }
-
         .admin-content { margin-left: 250px; padding: 40px; min-height: 100vh; }
-        
-        /* Minimalist Cards */
         .card-ent { background: #fff; border: 1px solid #e4e4e7; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 25px; height: 100%; }
         .card-header-ent { font-size: 1.1rem; font-weight: 600; color: #09090b; margin-bottom: 20px; letter-spacing: -0.5px; border-bottom: 1px solid #e4e4e7; padding-bottom: 15px; }
-        
-        /* Clean Tables */
         .table-ent { width: 100%; border-collapse: collapse; }
         .table-ent th { text-align: left; padding: 12px 15px; border-bottom: 1px solid #e4e4e7; font-size: 0.75rem; text-transform: uppercase; color: #71717a; font-weight: 600; }
         .table-ent td { padding: 15px; border-bottom: 1px solid #f4f4f5; font-size: 0.9rem; color: #27272a; vertical-align: middle; }
-        
-        /* Minimal Inputs */
-        .form-control-ent { border: 1px solid #e4e4e7; border-radius: 4px; padding: 8px 12px; font-size: 0.9rem; width: 100%; transition: border-color 0.2s; }
-        .form-control-ent:focus { outline: none; border-color: #000; }
-        .form-select-ent { border: 1px solid #e4e4e7; border-radius: 4px; padding: 8px 12px; font-size: 0.9rem; width: 100%; background-color: #fff; }
-        
-        /* Buttons */
+        .form-control-ent, .form-select-ent { border: 1px solid #e4e4e7; border-radius: 4px; padding: 8px 12px; font-size: 0.9rem; width: 100%; transition: border-color 0.2s; background-color: #fff; }
+        .form-control-ent:focus, .form-select-ent:focus { outline: none; border-color: #000; }
         .btn-black { background-color: #000; color: #fff; border: 1px solid #000; border-radius: 4px; padding: 8px 16px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s; text-decoration: none; display: inline-block; text-align: center; }
         .btn-black:hover { background-color: #27272a; color: #fff; }
         .btn-outline { background-color: transparent; color: #000; border: 1px solid #e4e4e7; border-radius: 4px; padding: 6px 12px; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; }
         .btn-outline:hover { background-color: #f4f4f5; }
         .btn-danger-outline { background-color: transparent; color: #dc2626; border: 1px solid #fca5a5; border-radius: 4px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer; text-decoration: none; }
         .btn-danger-outline:hover { background-color: #fef2f2; }
-
-        /* Metric Stats */
         .stat-value { font-size: 2rem; font-weight: 800; letter-spacing: -1px; color: #09090b; }
         .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #71717a; font-weight: 600; letter-spacing: 0.5px; }
     </style>
@@ -296,39 +282,43 @@
                     <div class="col-md-6">
                         <div class="card-ent">
                             <div class="card-header-ent d-flex align-items-center">
-                                <i class="fas fa-bullhorn me-2"></i> Rich Broadcast Engine
+                                <i class="fas fa-bullhorn me-2"></i> Enterprise Broadcast Engine
                             </div>
-                            <p class="small text-muted mb-3">Push an HTML-rendered banner to the top of all user dashboards.</p>
+                            <p class="small text-muted mb-3">Push an interactive, semantic banner to all user dashboards.</p>
                             
                             <form method="POST" action="{{ url_for('admin_broadcast') }}">
-                                <div class="mb-2">
-                                    <label class="small fw-bold">Message Content (HTML Allowed)</label>
-                                    <textarea name="message" class="form-control-ent" rows="2" placeholder="e.g. <b>Update:</b> New features live!">{{ current_broadcast.get('message', '') }}</textarea>
+                                
+                                <div class="mb-3">
+                                    <label class="small fw-bold mb-1">Semantic Category</label>
+                                    <select name="broadcast_type" class="form-select-ent">
+                                        <option value="info" {% if current_broadcast.get('type') == 'info' %}selected{% endif %}>Information (Blue)</option>
+                                        <option value="warning" {% if current_broadcast.get('type') == 'warning' %}selected{% endif %}>Warning (Amber)</option>
+                                        <option value="danger" {% if current_broadcast.get('type') == 'danger' %}selected{% endif %}>Critical / Danger (Red)</option>
+                                        <option value="success" {% if current_broadcast.get('type') == 'success' %}selected{% endif %}>Success (Green)</option>
+                                    </select>
                                 </div>
-                                <div class="d-flex gap-3 mb-3">
-                                    <div class="w-50">
-                                        <label class="small fw-bold">Banner BG Color</label>
-                                        <input type="color" name="bg_color" class="form-control form-control-color w-100 p-1" style="height:40px;" value="{{ current_broadcast.get('bg_color', '#000000') }}">
-                                    </div>
-                                    <div class="w-50">
-                                        <label class="small fw-bold">Text Color</label>
-                                        <input type="color" name="text_color" class="form-control form-control-color w-100 p-1" style="height:40px;" value="{{ current_broadcast.get('text_color', '#ffffff') }}">
-                                    </div>
+
+                                <div class="mb-3">
+                                    <label class="small fw-bold mb-1">Message Content (HTML Allowed)</label>
+                                    <textarea name="message" class="form-control-ent" rows="2" placeholder="e.g. <b>Update:</b> Server maintenance tonight.">{{ current_broadcast.get('message', '') }}</textarea>
                                 </div>
                                 
                                 <div class="p-3 mb-3 border rounded bg-light">
-                                    <div class="form-check form-switch mb-2">
-                                        <input class="form-check-input" type="checkbox" name="is_promo" id="promoToggle" {% if current_broadcast.get('is_promo') %}checked{% endif %}>
-                                        <label class="form-check-label small fw-bold" for="promoToggle">Attach Promo/Discount Button</label>
-                                    </div>
+                                    <label class="small fw-bold mb-2">Call to Action (Optional Button)</label>
                                     <div class="d-flex gap-2">
-                                        <input type="text" name="promo_code" class="form-control-ent" placeholder="Button Text (e.g. SAVE20)" value="{{ current_broadcast.get('promo_code', '') }}">
-                                        <input type="text" name="promo_link" class="form-control-ent" placeholder="URL Link" value="{{ current_broadcast.get('promo_link', '#') }}">
+                                        <input type="text" name="cta_text" class="form-control-ent" placeholder="Btn Text (e.g. Read More)" value="{{ current_broadcast.get('cta_text', '') }}">
+                                        <input type="text" name="cta_link" class="form-control-ent" placeholder="URL Link" value="{{ current_broadcast.get('cta_link', '') }}">
                                     </div>
                                 </div>
 
-                                <button type="submit" class="btn-black w-100 mb-2">Transmit Banner</button>
-                                <button type="submit" class="btn-outline w-100 text-danger" onclick="document.querySelector('textarea[name=message]').value='';">Clear Active Broadcast</button>
+                                <div class="form-check form-switch mb-4">
+                                    <input class="form-check-input" type="checkbox" name="is_dismissible" id="dismissToggle" {% if current_broadcast.get('is_dismissible') %}checked{% endif %}>
+                                    <label class="form-check-label small fw-bold" for="dismissToggle">Allow users to dismiss this banner (Stateful)</label>
+                                    <small class="d-block text-muted" style="font-size: 0.75rem;">If enabled, users can click 'X' to close it, and the system will remember their preference via LocalStorage.</small>
+                                </div>
+
+                                <button type="submit" class="btn-black w-100 mb-2">Deploy Broadcast</button>
+                                <button type="submit" class="btn-outline w-100 text-danger" onclick="document.querySelector('textarea[name=message]').value='';">Deactivate Active Broadcast</button>
                             </form>
                         </div>
                     </div>

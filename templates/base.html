@@ -8,58 +8,49 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { 
-            background-color: var(--bs-body-bg); 
-            color: var(--bs-body-color);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            transition: background-color 0.3s ease, color 0.3s ease;
-        }
+        body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; }
         main { flex: 1; }
-        
-        /* Premium Navbar Styling */
-        .navbar {
-            background-color: var(--bs-body-bg) !important;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-        }
-        .navbar-brand {
-            font-weight: 800;
-            letter-spacing: 0.5px;
-            color: #0056b3 !important;
-            font-size: 1.4rem;
-        }
+        .navbar { background-color: var(--bs-body-bg) !important; backdrop-filter: blur(10px); transition: all 0.3s ease; }
+        .navbar-brand { font-weight: 800; letter-spacing: 0.5px; color: #0056b3 !important; font-size: 1.4rem; }
         [data-bs-theme="dark"] .navbar-brand { color: #6ea8fe !important; }
-        
-        .nav-link {
-            font-weight: 600;
-            color: var(--bs-body-color) !important;
-            margin: 0 8px;
-            transition: color 0.2s ease-in-out;
-        }
+        .nav-link { font-weight: 600; color: var(--bs-body-color) !important; margin: 0 8px; transition: color 0.2s ease-in-out; }
         .nav-link:hover { color: #0056b3 !important; }
         [data-bs-theme="dark"] .nav-link:hover { color: #6ea8fe !important; }
-
-        .btn-nav {
-            font-weight: 600;
-            border-radius: 8px;
-            padding: 8px 20px;
-            letter-spacing: 0.3px;
-        }
-
-        /* Dark Mode Toggle Button */
-        #themeToggle {
-            background: none;
-            border: none;
-            color: var(--bs-body-color);
-            font-size: 1.2rem;
-            margin-right: 15px;
-            transition: transform 0.3s ease;
-        }
+        .btn-nav { font-weight: 600; border-radius: 8px; padding: 8px 20px; letter-spacing: 0.3px; }
+        #themeToggle { background: none; border: none; color: var(--bs-body-color); font-size: 1.2rem; margin-right: 15px; transition: transform 0.3s ease; }
         #themeToggle:hover { transform: scale(1.1); color: #0056b3; }
         [data-bs-theme="dark"] #themeToggle:hover { color: #ffc107; }
+
+        /* ENTERPRISE BROADCAST BANNER STYLES */
+        .broadcast-banner { font-size: 0.95rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); position: relative; z-index: 1050; }
+        .broadcast-icon { font-size: 1.2rem; }
+        .broadcast-btn { border-radius: 6px; font-weight: 600; padding: 4px 15px; text-decoration: none; border: 1px solid transparent; transition: all 0.2s; }
+        .broadcast-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
+        .broadcast-close:hover { opacity: 1; }
+        
+        /* Semantic Types */
+        .type-info { background-color: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+        .type-info .broadcast-btn { background-color: #0369a1; color: #fff; }
+        .type-info .broadcast-close { color: #0369a1; }
+        
+        .type-warning { background-color: #fffbeb; color: #b45309; border-color: #fde68a; }
+        .type-warning .broadcast-btn { background-color: #b45309; color: #fff; }
+        .type-warning .broadcast-close { color: #b45309; }
+        
+        .type-danger { background-color: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .type-danger .broadcast-btn { background-color: #b91c1c; color: #fff; }
+        .type-danger .broadcast-close { color: #b91c1c; }
+        
+        .type-success { background-color: #f0fdf4; color: #047857; border-color: #bbf7d0; }
+        .type-success .broadcast-btn { background-color: #047857; color: #fff; }
+        .type-success .broadcast-close { color: #047857; }
+
+        [data-bs-theme="dark"] .type-info { background-color: #0c4a6e; color: #e0f2fe; border-color: #0369a1; }
+        [data-bs-theme="dark"] .type-warning { background-color: #78350f; color: #fef3c7; border-color: #b45309; }
+        [data-bs-theme="dark"] .type-danger { background-color: #7f1d1d; color: #fee2e2; border-color: #b91c1c; }
+        [data-bs-theme="dark"] .type-success { background-color: #064e3b; color: #d1fae5; border-color: #047857; }
+        [data-bs-theme="dark"] .broadcast-btn { border-color: rgba(255,255,255,0.2) !important; }
+        [data-bs-theme="dark"] .broadcast-close { filter: invert(1); }
     </style>
 
     <script>
@@ -71,14 +62,8 @@
 
     <nav class="navbar navbar-expand-lg sticky-top shadow-sm border-bottom py-2">
         <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}">
-                <i class="fas fa-laptop-medical text-primary me-2 fs-3"></i>
-                GenMedix<span class="text-secondary fw-light ms-1">CDSS</span>
-            </a>
-            
-            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('home') }}"><i class="fas fa-laptop-medical text-primary me-2 fs-3"></i>GenMedix<span class="text-secondary fw-light ms-1">CDSS</span></a>
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 mt-2 mt-lg-0">
@@ -89,18 +74,12 @@
                 </ul>
                 
                 <div class="d-flex align-items-center flex-column flex-lg-row gap-2">
-                    <button id="themeToggle" title="Toggle Dark/Light Mode">
-                        <i class="fas fa-moon" id="themeIcon"></i>
-                    </button>
+                    <button id="themeToggle" title="Toggle Dark/Light Mode"><i class="fas fa-moon" id="themeIcon"></i></button>
 
                     {% if current_user.is_authenticated %}
-                        
                         {% if is_admin %}
-                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-dark btn-nav shadow-sm fw-bold border-0 me-1">
-                                <i class="fas fa-shield-alt text-warning me-1"></i> Admin
-                            </a>
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-dark btn-nav shadow-sm fw-bold border-0 me-1"><i class="fas fa-shield-alt text-warning me-1"></i> Admin</a>
                         {% endif %}
-
                         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-nav"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
                         <a href="{{ url_for('account') }}" class="btn btn-light btn-nav border"><i class="fas fa-user me-1"></i> Account</a>
                         <a href="{{ url_for('logout') }}" class="btn btn-danger btn-nav"><i class="fas fa-sign-out-alt me-1"></i> Logout</a>
@@ -110,7 +89,6 @@
                     {% else %}
                         <a href="{{ url_for('patient_login') }}" class="btn btn-outline-secondary btn-nav border-0"><i class="fas fa-procedures me-1"></i> Patient Portal</a>
                         <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-nav px-4">Doctor Login</a>
-                        
                         <a href="{{ url_for('admin_login') }}" class="btn btn-dark btn-nav px-4 border-0 text-warning"><i class="fas fa-lock me-1"></i> Admin Login</a>
                     {% endif %}
                 </div>
@@ -120,15 +98,28 @@
 
     <main>
         {% if global_broadcast %}
-        <div style="background-color: {{ global_broadcast.bg_color }}; color: {{ global_broadcast.text_color }}; z-index: 1050; position: relative;" class="text-center py-3 shadow-sm border-bottom">
-            <div class="container d-flex align-items-center justify-content-center flex-wrap">
-                <span class="fs-6 me-3">{{ global_broadcast.message | safe }}</span>
+        <div id="globalBroadcastBanner" class="broadcast-banner type-{{ global_broadcast.type }} d-none" data-broadcast-id="{{ global_broadcast.id }}">
+            <div class="container d-flex align-items-center justify-content-between py-3">
+                <div class="d-flex align-items-center">
+                    <span class="broadcast-icon me-3">
+                        {% if global_broadcast.type == 'info' %}<i class="fas fa-info-circle"></i>
+                        {% elif global_broadcast.type == 'warning' %}<i class="fas fa-exclamation-triangle"></i>
+                        {% elif global_broadcast.type == 'danger' %}<i class="fas fa-skull-crossbones"></i>
+                        {% elif global_broadcast.type == 'success' %}<i class="fas fa-check-circle"></i>
+                        {% endif %}
+                    </span>
+                    <span class="fw-bold">{{ global_broadcast.message | safe }}</span>
+                </div>
                 
-                {% if global_broadcast.is_promo %}
-                <a href="{{ global_broadcast.promo_link }}" class="btn btn-sm shadow-sm fw-bold ms-2 px-3" style="background-color: {{ global_broadcast.text_color }}; color: {{ global_broadcast.bg_color }}; border-radius: 6px;">
-                    USE CODE: {{ global_broadcast.promo_code }}
-                </a>
-                {% endif %}
+                <div class="d-flex align-items-center">
+                    {% if global_broadcast.cta_text %}
+                        <a href="{{ global_broadcast.cta_link }}" class="btn btn-sm broadcast-btn ms-3">{{ global_broadcast.cta_text }}</a>
+                    {% endif %}
+                    
+                    {% if global_broadcast.is_dismissible %}
+                        <button class="broadcast-close ms-4" id="dismissBroadcastBtn"><i class="fas fa-times"></i></button>
+                    {% endif %}
+                </div>
             </div>
         </div>
         {% endif %}
@@ -156,10 +147,7 @@
 
                         <div class="toast align-items-center text-white {{ bg_class }} border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="4000">
                             <div class="d-flex">
-                                <div class="toast-body fw-bold" style="font-size: 0.95rem;">
-                                    <i class="fas {{ icon }} me-2 fs-5 align-middle"></i>
-                                    {{ message }}
-                                </div>
+                                <div class="toast-body fw-bold" style="font-size: 0.95rem;"><i class="fas {{ icon }} me-2 fs-5 align-middle"></i>{{ message }}</div>
                                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
                             </div>
                         </div>
@@ -178,16 +166,10 @@
                 </div>
                 <div class="modal-body p-4 bg-light text-dark" style="font-size: 0.95rem; line-height: 1.7;">
                     <h6 class="fw-bold text-danger mb-3">You must read and accept these terms before accessing the GenMedix CDSS platform.</h6>
-                    
                     <p><strong>1. Clinical Support Tool, Not Medical Advice:</strong><br> GenMedix is a Clinical Decision Support System (CDSS) designed to assist, not replace, the independent clinical judgment of qualified healthcare professionals. AI-generated dosage recommendations (Pharmacology) and disease risk classifications (Pathology) are based on statistical modeling and must be clinically correlated with the patient's comprehensive medical profile.</p>
-                    
                     <p><strong>2. Accuracy and Physician Liability:</strong><br> While our algorithms are trained on validated clinical and genomic datasets, Machine Learning models can produce false positives, false negatives, or statistical outliers. The attending physician retains full liability and responsibility for any diagnostic, preventative, or prescribing decisions.</p>
-                    
                     <p><strong>3. Data Privacy and PHI Compliance:</strong><br> By using this system, you agree to handle Protected Health Information (PHI) securely. You must ensure that you have the legal right or patient consent to process their demographic, clinical, and genomic data through this platform.</p>
-                    
-                    <div class="alert alert-warning border-warning mt-4 mb-0 shadow-sm">
-                        <i class="fas fa-exclamation-triangle me-2"></i> By clicking "I Accept & Continue", you acknowledge that you have read, understood, and legally agree to be bound by these Terms and Conditions.
-                    </div>
+                    <div class="alert alert-warning border-warning mt-4 mb-0 shadow-sm"><i class="fas fa-exclamation-triangle me-2"></i> By clicking "I Accept & Continue", you acknowledge that you have read, understood, and legally agree to be bound by these Terms and Conditions.</div>
                 </div>
                 <div class="modal-footer bg-white border-top-0 d-flex justify-content-between p-3">
                     <a href="{% if current_user.is_authenticated %}{{ url_for('logout') }}{% else %}{{ url_for('patient_logout') }}{% endif %}" class="btn btn-outline-secondary fw-bold px-4">Decline & Logout</a>
@@ -201,53 +183,53 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // --- Dark Mode Logic ---
+        // Theme Logic
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
-        
-        if (storedTheme === 'dark') {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-            themeIcon.style.color = '#ffc107'; 
-        }
-
+        if (storedTheme === 'dark') { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); themeIcon.style.color = '#ffc107'; }
         themeToggle.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-bs-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-            
             document.documentElement.setAttribute('data-bs-theme', newTheme);
             localStorage.setItem('theme', newTheme);
-            
-            if (newTheme === 'dark') {
-                themeIcon.classList.remove('fa-moon');
-                themeIcon.classList.add('fa-sun');
-                themeIcon.style.color = '#ffc107';
-            } else {
-                themeIcon.classList.remove('fa-sun');
-                themeIcon.classList.add('fa-moon');
-                themeIcon.style.color = ''; 
-            }
+            if (newTheme === 'dark') { themeIcon.classList.remove('fa-moon'); themeIcon.classList.add('fa-sun'); themeIcon.style.color = '#ffc107'; } 
+            else { themeIcon.classList.remove('fa-sun'); themeIcon.classList.add('fa-moon'); themeIcon.style.color = ''; }
         });
 
-        // --- Toasts Logic ---
+        // Toast & Modal Logic
         document.addEventListener("DOMContentLoaded", function() {
             var toastElList = [].slice.call(document.querySelectorAll('.toast'));
             var toastList = toastElList.map(function(toastEl) { return new bootstrap.Toast(toastEl); });
             toastList.forEach(toast => toast.show());
             
-            // --- Disclaimer Modal Logic ---
             {% if current_user.is_authenticated or session.get('patient_aadhar') %}
             if (!sessionStorage.getItem('genmedix_terms_accepted')) {
                 var disclaimerModal = new bootstrap.Modal(document.getElementById('legalDisclaimerModal'));
                 disclaimerModal.show();
             }
-
             document.getElementById('acceptDisclaimerBtn').addEventListener('click', function() {
                 sessionStorage.setItem('genmedix_terms_accepted', 'true');
                 var modalInstance = bootstrap.Modal.getInstance(document.getElementById('legalDisclaimerModal'));
                 modalInstance.hide();
             });
             {% endif %}
+
+            // --- NEW: STATEFUL BROADCAST LOGIC ---
+            const banner = document.getElementById('globalBroadcastBanner');
+            if (banner) {
+                const bId = banner.getAttribute('data-broadcast-id');
+                // If the user hasn't explicitly dismissed this exact broadcast ID, show it
+                if (localStorage.getItem('dismissed_broadcast') !== bId) {
+                    banner.classList.remove('d-none');
+                }
+                const closeBtn = document.getElementById('dismissBroadcastBtn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function() {
+                        banner.style.display = 'none';
+                        localStorage.setItem('dismissed_broadcast', bId); // Remember the dismissal
+                    });
+                }
+            }
         });
     </script>
 </body>
