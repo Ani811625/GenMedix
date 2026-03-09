@@ -630,6 +630,58 @@ def register():
         
     return render_template('register.html')
 
+# --- PASSWORD RECOVERY ---
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated: 
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Generate a secure 10-character temporary password
+            temp_password = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+            user.set_password(temp_password)
+            db.session.commit()
+            
+            # Dispatch the email using your existing SMTP configuration
+            try:
+                msg = MIMEMultipart()
+                msg['From'] = MAIL_USERNAME
+                msg['To'] = user.email
+                msg['Subject'] = "GenMedix Security: Temporary Password Reset"
+                
+                body = f"Hello Dr. {user.full_name},\n\nA password reset was requested for your GenMedix account.\n\nYour temporary password is: {temp_password}\n\nPlease log in immediately and update your password securely in your Account settings."
+                msg.attach(MIMEText(body, 'plain'))
+                
+                context = ssl.create_default_context()
+                with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
+                    server.login(MAIL_USERNAME, MAIL_PASSWORD)
+                    server.send_message(msg)
+            except Exception as e:
+                print(f"SMTP Error: {e}")
+                
+        flash("If your email is registered, a temporary password has been sent to your inbox.", "info")
+        return redirect(url_for('login'))
+        
+    return render_template('forgot_password.html')
+
+# --- USER ACCOUNT MANAGEMENT ---
+@app.route('/account', methods=['GET', 'POST'])
+@login_required
+def account():
+    if request.method == 'POST':
+        new_password = request.form.get('new_password')
+        if new_password:
+            current_user.set_password(new_password)
+            db.session.commit()
+            flash("Your password has been successfully updated.", "success")
+        return redirect(url_for('account'))
+        
+    return render_template('account.html')
+
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
