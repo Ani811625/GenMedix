@@ -3,458 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GenMedix Command Center</title>
+    <title>GenMedix - System Operations</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <style>
-        body { background-color: #f1f5f9; font-family: 'Segoe UI', Roboto, sans-serif; overflow-x: hidden; }
+        body { background-color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #111; }
         
-        /* Glassmorphism Top Bar */
-        .top-bar {
-            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); padding: 15px 30px;
-            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 30px;
-            border: 1px solid rgba(255,255,255,0.5); display: flex; justify-content: space-between; align-items: center;
-        }
+        /* Enterprise Sidebar */
+        .admin-sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 250px; background-color: #000; color: #a1a1aa; border-right: 1px solid #27272a; z-index: 1000; display: flex; flex-direction: column; }
+        .admin-brand { padding: 25px 20px; font-weight: 700; font-size: 1.1rem; color: #fff; letter-spacing: -0.5px; border-bottom: 1px solid #27272a; }
+        .nav-link-admin { color: #a1a1aa; padding: 12px 20px; font-weight: 500; font-size: 0.9rem; display: flex; align-items: center; transition: all 0.2s; background: transparent; border: none; width: 100%; text-align: left; }
+        .nav-link-admin:hover, .nav-link-admin.active { background-color: #18181b; color: #fff; }
+        .nav-link-admin i { width: 20px; margin-right: 10px; font-size: 0.95rem; }
 
-        /* Dedicated Admin Sidebar */
-        .admin-sidebar {
-            position: fixed; top: 0; left: 0; height: 100vh; width: 260px;
-            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-            color: #fff; z-index: 1000; padding-top: 20px; box-shadow: 4px 0 25px rgba(0,0,0,0.15);
-        }
+        .admin-content { margin-left: 250px; padding: 40px; min-height: 100vh; }
         
-        .admin-brand { font-size: 1.5rem; font-weight: 800; text-align: center; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; color: #38bdf8; }
-
-        .nav-link-admin {
-            color: #94a3b8; padding: 14px 25px; font-weight: 600; font-size: 0.95rem;
-            display: flex; align-items: center; transition: all 0.3s; text-decoration: none; background: transparent; border: none; width: 100%; text-align: left;
-        }
-
-        .nav-link-admin:hover, .nav-link-admin.active { background-color: rgba(56, 189, 248, 0.1); color: #ffffff; border-left: 4px solid #38bdf8; }
-        .nav-link-admin i { width: 25px; font-size: 1.1rem; margin-right: 12px; }
-
-        .admin-content { margin-left: 260px; padding: 30px; min-height: 100vh; }
-
-        /* Metric Cards */
-        .metric-card { border: none; border-radius: 16px; background: #fff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s; }
-        .metric-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .metric-icon { width: 55px; height: 55px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
-
-        /* Custom Table Styling */
-        .table-custom { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        .table-custom thead { background-color: #f8fafc; color: #64748b; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .table-custom td { vertical-align: middle; padding: 15px; color: #334155; font-weight: 500; }
+        /* Minimalist Cards */
+        .card-ent { background: #fff; border: 1px solid #e4e4e7; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 25px; }
+        .card-header-ent { font-size: 1.1rem; font-weight: 600; color: #09090b; margin-bottom: 20px; letter-spacing: -0.5px; border-bottom: 1px solid #e4e4e7; padding-bottom: 15px; }
         
-        .badge-admin-live { background-color: #10b981; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-
-        /* MODERN DANGER MODAL STYLING */
-        .danger-modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 50px rgba(220, 53, 69, 0.15); }
-        .danger-modal-header { background-color: #dc3545; color: white; border-radius: 16px 16px 0 0; border-bottom: none; padding: 20px 25px; }
-        .danger-modal-title { font-weight: 800; letter-spacing: 1px; }
-        .danger-modal-body { background-color: #f8f9fa; padding: 25px; }
-        .danger-input-modern { border-radius: 10px; border: 2px solid #e2e8f0; padding: 12px; font-weight: 700; color: #dc3545; letter-spacing: 2px; text-align: center; }
-        .danger-input-modern:focus { border-color: #dc3545; box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.15); }
+        /* Clean Tables */
+        .table-ent { width: 100%; border-collapse: collapse; }
+        .table-ent th { text-align: left; padding: 12px 15px; border-bottom: 1px solid #e4e4e7; font-size: 0.75rem; text-transform: uppercase; color: #71717a; font-weight: 600; }
+        .table-ent td { padding: 15px; border-bottom: 1px solid #f4f4f5; font-size: 0.9rem; color: #27272a; vertical-align: middle; }
+        
+        /* Minimal Inputs */
+        .form-control-ent { border: 1px solid #e4e4e7; border-radius: 4px; padding: 8px 12px; font-size: 0.9rem; width: 100%; transition: border-color 0.2s; }
+        .form-control-ent:focus { outline: none; border-color: #000; }
+        
+        /* Buttons */
+        .btn-black { background-color: #000; color: #fff; border: 1px solid #000; border-radius: 4px; padding: 8px 16px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+        .btn-black:hover { background-color: #27272a; color: #fff; }
+        .btn-outline { background-color: transparent; color: #000; border: 1px solid #e4e4e7; border-radius: 4px; padding: 6px 12px; font-size: 0.85rem; font-weight: 500; cursor: pointer; }
+        .btn-outline:hover { background-color: #f4f4f5; }
+        .btn-danger-outline { background-color: transparent; color: #dc2626; border: 1px solid #fca5a5; border-radius: 4px; padding: 6px 12px; font-size: 0.85rem; cursor: pointer; }
+        .btn-danger-outline:hover { background-color: #fef2f2; }
     </style>
 </head>
 <body>
 
     <div class="admin-sidebar">
-        <div class="admin-brand"><i class="fas fa-shield-alt me-2 text-primary"></i>GenMedix <span class="text-white">Admin</span></div>
-        <div class="px-4 mb-4 text-center">
-            <div class="badge-admin-live mb-2 d-inline-block"><i class="fas fa-circle ms-1 me-1" style="font-size: 8px;"></i> System Live</div>
-            <p class="small text-muted mb-0 mt-2">Logged in as:</p>
-            <p class="small fw-bold text-white text-break">{{ current_user.email }}</p>
+        <div class="admin-brand"><i class="fas fa-layer-group me-2"></i> GenMedix Admin</div>
+        <div class="px-3 mb-4 mt-3">
+            <span style="background: #052e16; color: #10b981; padding: 4px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; border: 1px solid #047857;">PRODUCTION</span>
         </div>
-
-        <div class="nav flex-column mt-2" id="adminTabs" role="tablist">
-            <button class="nav-link-admin active" id="nav-metrics-tab" data-bs-toggle="tab" data-bs-target="#nav-metrics" type="button" role="tab"><i class="fas fa-tachometer-alt"></i> Platform Metrics</button>
-            <button class="nav-link-admin" id="nav-users-tab" data-bs-toggle="tab" data-bs-target="#nav-users" type="button" role="tab"><i class="fas fa-users-cog"></i> User Auditing</button>
-            <button class="nav-link-admin" id="nav-licenses-tab" data-bs-toggle="tab" data-bs-target="#nav-licenses" type="button" role="tab"><i class="fas fa-key"></i> License Manager</button>
-            <button class="nav-link-admin text-warning" id="nav-settings-tab" data-bs-toggle="tab" data-bs-target="#nav-settings" type="button" role="tab"><i class="fas fa-power-off"></i> System Controls</button>
+        <div class="nav flex-column" id="adminTabs" role="tablist">
+            <button class="nav-link-admin active" id="nav-users-tab" data-bs-toggle="tab" data-bs-target="#nav-users"><i class="fas fa-users"></i> Users & IAM</button>
+            <button class="nav-link-admin" id="nav-system-tab" data-bs-toggle="tab" data-bs-target="#nav-system"><i class="fas fa-terminal"></i> System & Broadcast</button>
         </div>
-
-        <div class="position-absolute bottom-0 w-100 p-4">
-            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary w-100 fw-bold border-secondary text-light"><i class="fas fa-sign-out-alt me-2"></i> Exit God Mode</a>
+        <div class="mt-auto p-3 border-top" style="border-color: #27272a !important;">
+            <p class="small mb-1 text-muted">Signed in as:</p>
+            <p class="small text-white fw-bold text-break mb-3">{{ current_user.email }}</p>
+            <a href="{{ url_for('dashboard') }}" class="btn-outline text-white border-secondary w-100 text-center d-block text-decoration-none">Exit Dashboard</a>
         </div>
     </div>
 
     <div class="admin-content">
-        <div class="top-bar">
-            <h4 class="fw-bold text-slate-800 mb-0"><i class="fas fa-satellite-dish text-primary me-2"></i> Command Center</h4>
-            <div class="d-flex align-items-center">
-                <span class="text-muted fw-bold me-3 bg-light px-3 py-1 rounded-pill border"><i class="fas fa-clock me-1 text-primary"></i> Server Time: <span id="clock"></span></span>
-            </div>
-        </div>
-
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show shadow-sm border-0 rounded-3" role="alert">
-                        <i class="fas {{ 'fa-check-circle' if category == 'success' else 'fa-exclamation-triangle' }} me-2"></i> {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert alert-{{ 'dark' if category == 'success' else 'danger' }} shadow-sm rounded-0 border-0 mb-4 fw-bold" style="font-size: 0.9rem;">
+                        {{ message }}
                     </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
-        <div class="tab-content" id="nav-tabContent">
-            
-            <div class="tab-pane fade show active" id="nav-metrics" role="tabpanel">
-                <div class="row g-4 mb-4">
-                    <div class="col-md-3"><div class="metric-card p-4"><div class="d-flex justify-content-between align-items-center"><div><p class="text-muted small fw-bold mb-1 text-uppercase">Total Physicians</p><h2 class="fw-bolder mb-0 text-dark">{{ total_doctors }}</h2></div><div class="metric-icon bg-primary bg-opacity-10 text-primary"><i class="fas fa-user-md"></i></div></div></div></div>
-                    <div class="col-md-3"><div class="metric-card p-4"><div class="d-flex justify-content-between align-items-center"><div><p class="text-muted small fw-bold mb-1 text-uppercase">Total Patients</p><h2 class="fw-bolder mb-0 text-dark">{{ total_patients }}</h2></div><div class="metric-icon bg-success bg-opacity-10 text-success"><i class="fas fa-procedures"></i></div></div></div></div>
-                    <div class="col-md-3"><div class="metric-card p-4"><div class="d-flex justify-content-between align-items-center"><div><p class="text-muted small fw-bold mb-1 text-uppercase">AI Reports</p><h2 class="fw-bolder mb-0 text-dark">{{ total_reports }}</h2></div><div class="metric-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-file-medical-alt"></i></div></div></div></div>
-                    <div class="col-md-3"><div class="metric-card p-4"><div class="d-flex justify-content-between align-items-center"><div><p class="text-muted small fw-bold mb-1 text-uppercase">Active Licenses</p><h2 class="fw-bolder mb-0 text-dark">{{ total_subs }}</h2></div><div class="metric-icon bg-danger bg-opacity-10 text-danger"><i class="fas fa-id-badge"></i></div></div></div></div>
-                </div>
-                <div class="row g-4">
-                    <div class="col-md-6"><div class="card border-0 shadow-sm rounded-4 h-100 p-4"><h5 class="fw-bold mb-4 text-dark"><i class="fas fa-brain text-primary me-2"></i> AI Module Utilization</h5><div style="position: relative; height:250px; width:100%"><canvas id="moduleChart"></canvas></div></div></div>
-                    <div class="col-md-6">
-                        <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
-                            <h5 class="fw-bold text-dark mb-4"><i class="fas fa-user-plus text-success me-2"></i> Recent Onboarding</h5>
-                            <div class="table-responsive"><table class="table table-borderless align-middle"><thead class="border-bottom"><tr><th class="text-muted small">Doctor Name</th><th class="text-muted small">Status</th></tr></thead><tbody>
-                                {% for doc in recent_doctors %}<tr><td class="fw-bold text-dark">Dr. {{ doc.full_name }}<br><span class="text-muted fw-normal small">{{ doc.email }}</span></td><td><span class="badge bg-success bg-opacity-10 text-success border border-success px-2 py-1">Active</span></td></tr>{% else %}<tr><td colspan="2" class="text-center text-muted">No doctors registered yet.</td></tr>{% endfor %}
-                            </tbody></table></div>
-                        </div>
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="nav-users">
+                <div class="card-ent">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                        <div class="card-header-ent border-0 mb-0 pb-0">Administrator Access (IAM)</div>
                     </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="nav-users" role="tabpanel">
-                <div class="card border-0 shadow-sm rounded-4 p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="fw-bold text-dark mb-0"><i class="fas fa-users-cog text-primary me-2"></i> Physician Directory</h4>
-                        <div class="input-group w-25 shadow-sm rounded-3 overflow-hidden">
-                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                            <input type="text" id="userSearchBox" class="form-control border-start-0 ps-0" placeholder="Search doctors or emails...">
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-custom table-hover" id="usersTable">
-                            <thead><tr><th>ID</th><th>Physician Name</th><th>Contact Email</th><th>Medical Reg ID</th><th class="text-center">Danger Zone</th></tr></thead>
-                            <tbody>
-                                {% for doc in all_doctors %}
-                                <tr>
-                                    <td class="text-muted fw-bold">#{{ doc.id }}</td>
-                                    <td>{% if doc.email == current_user.email %}<span class="badge bg-dark text-warning me-2"><i class="fas fa-crown"></i> Master</span>{% endif %} Dr. {{ doc.full_name }}</td>
-                                    <td class="text-muted">{{ doc.email }}</td>
-                                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ doc.medical_reg_id }}</span></td>
-                                    <td class="text-center">
-                                        {% if doc.email == current_user.email %}
-                                            <button class="btn btn-sm btn-secondary disabled" title="Cannot delete yourself"><i class="fas fa-ban"></i></button>
-                                        {% else %}
-                                            <button type="button" class="btn btn-sm btn-outline-danger fw-bold" onclick="showModernNukeModal('{{ doc.id }}', '{{ doc.full_name }}');"><i class="fas fa-trash-alt me-1"></i> Nuke</button>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="nav-licenses" role="tabpanel">
-                <div class="row g-4">
-                    
-                    <div class="col-lg-4">
-                        
-                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 border-top border-4 border-primary">
-                            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-magic text-primary me-2"></i> Provision / Edit License</h5>
-                            <p class="text-muted small mb-3">Generate or modify a subscription bypassing Stripe.</p>
-                            <form method="POST" action="{{ url_for('admin_add_license') }}">
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small fw-bold">Entity Email</label>
-                                    <input type="email" name="email" id="provEmail" class="form-control bg-light" placeholder="admin@hospital.com" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small fw-bold">Assigned Plan</label>
-                                    <select name="plan_type" id="provPlan" class="form-select bg-light" required>
-                                        <option value="Individual" selected>Individual Node (1 Seat)</option>
-                                        <option value="Enterprise">Enterprise Hub (50 Seats)</option>
-                                        <option value="Custom Override">Custom Override</option>
-                                    </select>
-                                </div>
-                                <div class="mb-4">
-                                    <label class="form-label text-muted small fw-bold">Maximum Seats</label>
-                                    <input type="number" name="max_seats" id="provSeats" class="form-control bg-light border-primary" value="1" min="1" required readonly>
-                                    <small class="text-muted" style="font-size: 0.75rem;">Locked unless Custom Override is selected.</small>
-                                </div>
-                                <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm">Save License</button>
+                    <div class="row">
+                        <div class="col-md-5 border-end pe-4">
+                            <p class="small text-muted mb-3">Authorize an existing user email to access this control panel.</p>
+                            <form method="POST" action="{{ url_for('admin_add_admin') }}">
+                                <input type="email" name="email" class="form-control-ent mb-2" placeholder="e.g. cto@hospital.com" required>
+                                <button type="submit" class="btn-black w-100">Grant Admin Privileges</button>
                             </form>
                         </div>
-
-                        <div class="card border-0 shadow-sm rounded-4 p-4 border-top border-4 border-success">
-                            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-user-plus text-success me-2"></i> Create Physician Account</h5>
-                            <p class="text-muted small mb-3">Directly onboard a doctor to an active license.</p>
-                            <form method="POST" action="{{ url_for('admin_create_doctor') }}">
-                                <div class="mb-3">
-                                    <input type="text" name="full_name" class="form-control bg-light" placeholder="Dr. Full Name" required>
-                                </div>
-                                <div class="mb-3">
-                                    <input type="email" name="email" class="form-control bg-light" placeholder="Physician Email" required>
-                                </div>
-                                <div class="mb-3">
-                                    <input type="text" name="medical_reg_id" class="form-control bg-light" placeholder="Medical Reg ID" required>
-                                </div>
-                                <div class="mb-3">
-                                    <input type="text" name="subscription_email" class="form-control border-success bg-light" placeholder="License Email (e.g. hospital@.com)" required>
-                                </div>
-                                <div class="mb-4">
-                                    <input type="password" name="password" class="form-control bg-light" placeholder="Set Temporary Password" required>
-                                </div>
-                                <button type="submit" class="btn btn-success w-100 fw-bold shadow-sm">Create Account</button>
-                            </form>
+                        <div class="col-md-7 ps-4">
+                            <table class="table-ent">
+                                <thead><tr><th>Authorized Email</th><th>Added By</th></tr></thead>
+                                <tbody>
+                                    {% for adm in all_admins %}
+                                    <tr>
+                                        <td class="fw-bold">{{ adm.email }}</td>
+                                        <td class="text-muted">{{ adm.added_by }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-
-                    <div class="col-lg-8">
-                        <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-id-badge text-danger me-2"></i> Global Subscriptions</h5>
-                                <div class="input-group w-50 shadow-sm rounded-3 overflow-hidden">
-                                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                                    <input type="text" id="licenseSearchBox" class="form-control border-start-0 ps-0" placeholder="Search entity emails...">
-                                </div>
-                            </div>
-                            
-                            <div class="table-responsive">
-                                <table class="table table-custom table-hover" id="licenseTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Entity Email</th>
-                                            <th>Plan</th>
-                                            <th class="text-center">Seats</th>
-                                            <th class="text-center">Accounts</th>
-                                            <th class="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for sub in all_subs %}
-                                        <tr>
-                                            <td class="fw-bold text-dark">{{ sub.email }}
-                                                {% if not sub.is_active %}<span class="badge bg-danger ms-2">Revoked</span>{% endif %}
-                                            </td>
-                                            <td><span class="badge bg-primary bg-opacity-10 text-primary border">{{ sub.plan_type }}</span></td>
-                                            <td class="text-center fw-bold {% if sub.current_users >= sub.max_seats %}text-danger{% else %}text-success{% endif %}">
-                                                {{ sub.current_users }} / <span class="text-muted">{{ sub.max_seats }}</span>
-                                            </td>
-                                            <td class="text-center">
-                                                <button class="btn btn-sm btn-outline-info fw-bold" data-bs-toggle="modal" data-bs-target="#accountsModal{{ loop.index }}">
-                                                    <i class="fas fa-users"></i> Manage
-                                                </button>
-                                            </td>
-                                            <td class="text-end">
-                                                <button class="btn btn-sm btn-light border text-primary" onclick="loadLicenseToForm('{{ sub.email }}', '{{ sub.plan_type }}', {{ sub.max_seats }})"><i class="fas fa-edit"></i></button>
-                                                
-                                                {% if sub.is_active %}
-                                                <form method="POST" action="{{ url_for('admin_revoke_license') }}" class="d-inline" onsubmit="return confirm('Revoking this blocks all associated doctors. Proceed?');">
-                                                    <input type="hidden" name="email" value="{{ sub.email }}">
-                                                    <button type="submit" class="btn btn-sm btn-light border text-danger"><i class="fas fa-ban"></i></button>
-                                                </form>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        {% else %}
-                                        <tr><td colspan="5" class="text-center text-muted p-4">No enterprise licenses provisioned yet.</td></tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
-            </div>
 
-            <div class="tab-pane fade" id="nav-settings" role="tabpanel">
-                <div class="row g-4">
-                    
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm rounded-4 p-5 h-100 text-center {% if maintenance_active %}border-top border-4 border-danger{% else %}border-top border-4 border-success{% endif %}">
-                            {% if maintenance_active %}
-                                <i class="fas fa-lock fa-4x text-danger mb-3"></i>
-                                <h4 class="fw-bold text-danger">System is OFFLINE</h4>
-                                <p class="text-muted">The Kill Switch is engaged. All doctors and patients are locked out. Only the Master Admin can navigate the platform.</p>
-                            {% else %}
-                                <i class="fas fa-globe fa-4x text-success mb-3"></i>
-                                <h4 class="fw-bold text-success">System is ONLINE</h4>
-                                <p class="text-muted">The platform is running normally. All registered users have full access to clinical modules.</p>
-                            {% endif %}
-                            
-                            <form method="POST" action="{{ url_for('admin_toggle_maintenance') }}" class="mt-4" onsubmit="return confirm('WARNING: Are you sure you want to toggle the global system state?');">
-                                {% if maintenance_active %}
-                                    <button type="submit" class="btn btn-success btn-lg fw-bold w-100 shadow-sm"><i class="fas fa-power-off me-2"></i> Restore System Online</button>
-                                {% else %}
-                                    <button type="submit" class="btn btn-danger btn-lg fw-bold w-100 shadow-sm"><i class="fas fa-skull-crossbones me-2"></i> ENGAGE KILL SWITCH</button>
-                                {% endif %}
-                            </form>
-                        </div>
-                    </div>
-
-                    <div class="col-lg-6">
-                        <div class="card border-0 shadow-sm rounded-4 p-5 h-100 border-top border-4 border-warning">
-                            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-bullhorn text-warning me-2"></i> Global Broadcast Antenna</h5>
-                            <p class="text-muted small mb-4">Set a global banner message that will appear at the top of every user's screen. Delete the text and submit to remove the banner.</p>
-                            
-                            <form method="POST" action="{{ url_for('admin_broadcast') }}">
-                                <div class="mb-4">
-                                    <textarea name="broadcast_message" class="form-control bg-light" rows="3" placeholder="e.g. System scheduled for updates at midnight IST...">{{ current_broadcast }}</textarea>
-                                </div>
-                                <button type="submit" class="btn btn-warning text-dark fw-bold w-100 shadow-sm"><i class="fas fa-satellite-dish me-2"></i> Transmit Broadcast</button>
-                            </form>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    </div>
-
-    {% for sub in all_subs %}
-    <div class="modal fade" id="accountsModal{{ loop.index }}" tabindex="-1" aria-hidden="true" style="z-index: 1055;">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
-                <div class="modal-header bg-dark text-white border-bottom-0">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-users text-info me-2"></i> Accounts under {{ sub.email }}</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body bg-light p-4">
-                    <table class="table table-custom mb-0">
-                        <thead><tr><th>ID</th><th>Physician Name</th><th>Email</th><th>Reg ID</th><th class="text-end">Actions</th></tr></thead>
+                <div class="card-ent">
+                    <div class="card-header-ent">Global Physician Directory</div>
+                    <table class="table-ent">
+                        <thead><tr><th>Physician Name</th><th>Contact Email</th><th>Status</th><th>Actions</th></tr></thead>
                         <tbody>
-                            {% set docs_in_sub = all_doctors | selectattr('subscription_email', 'equalto', sub.email) | list %}
-                            {% for doc in docs_in_sub %}
+                            {% for doc in all_doctors %}
                             <tr>
-                                <td class="text-muted fw-bold">#{{ doc.id }}</td>
-                                <td class="fw-bold">Dr. {{ doc.full_name }}</td>
+                                <td><span class="fw-bold">Dr. {{ doc.full_name }}</span></td>
                                 <td>{{ doc.email }}</td>
-                                <td>{{ doc.medical_reg_id }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}"><i class="fas fa-edit"></i> Edit</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger fw-bold ms-1" onclick="showModernNukeModal('{{ doc.id }}', '{{ doc.full_name }}');" data-bs-dismiss="modal"><i class="fas fa-trash-alt"></i> Nuke</button>
+                                <td><span style="color: #10b981; font-size: 0.8rem; font-weight: 600;">● Active</span></td>
+                                <td>
+                                    {% if doc.email != 'aniruddhas387@gmail.com' %}
+                                    <form method="POST" action="{{ url_for('admin_delete_doctor', doc_id=doc.id) }}" onsubmit="return confirm('Purge user and all patient data permanently?');">
+                                        <button type="submit" class="btn-danger-outline">Purge Account</button>
+                                    </form>
+                                    {% endif %}
                                 </td>
                             </tr>
-                            {% else %}
-                            <tr><td colspan="5" class="text-center text-muted p-3">No active physician accounts under this license.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </div>
-    </div>
-    {% endfor %}
 
-    {% for doc in all_doctors %}
-    <div class="modal fade" id="editDocModal{{ doc.id }}" tabindex="-1" aria-hidden="true" style="z-index: 1060;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow" style="border-radius: 16px;">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i> Edit Dr. {{ doc.full_name }}</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <form method="POST" action="{{ url_for('admin_edit_doctor', doc_id=doc.id) }}">
-                        <div class="mb-3"><label class="form-label text-muted small fw-bold">Full Name</label><input type="text" name="full_name" class="form-control" value="{{ doc.full_name }}" required></div>
-                        <div class="mb-3"><label class="form-label text-muted small fw-bold">Email Address</label><input type="email" name="email" class="form-control" value="{{ doc.email }}" required></div>
-                        <div class="mb-4"><label class="form-label text-muted small fw-bold">Medical Reg ID</label><input type="text" name="medical_reg_id" class="form-control" value="{{ doc.medical_reg_id }}" required></div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">Save Changes</button>
-                    </form>
+            <div class="tab-pane fade" id="nav-system">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card-ent" style="{% if maintenance_active %}border: 1px solid #fca5a5; background-color: #fef2f2;{% endif %}">
+                            <div class="card-header-ent d-flex align-items-center" style="border-color: #e4e4e7;">
+                                <i class="fas fa-power-off me-2 {% if maintenance_active %}text-danger{% endif %}"></i> Global Kill Switch
+                            </div>
+                            <p class="small text-muted mb-4">Engage maintenance mode to lock out all non-admin users. You must specify an estimated end time which will be displayed as a live countdown to users.</p>
+                            
+                            <form method="POST" action="{{ url_for('admin_toggle_maintenance') }}">
+                                {% if maintenance_active %}
+                                    <button type="submit" class="btn-black w-100" style="background: #10b981; border-color: #10b981;">Restore System Online</button>
+                                {% else %}
+                                    <label class="small fw-bold mb-1">Estimated Completion Time:</label>
+                                    <input type="datetime-local" name="end_time" class="form-control-ent mb-3" required>
+                                    <button type="submit" class="btn-black w-100" style="background: #dc2626; border-color: #dc2626;">Engage Lockdown</button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card-ent">
+                            <div class="card-header-ent d-flex align-items-center">
+                                <i class="fas fa-bullhorn me-2"></i> Rich Broadcast Engine
+                            </div>
+                            <p class="small text-muted mb-3">Push an HTML-rendered banner to the top of all user dashboards. HTML tags (<code>&lt;b&gt;</code>, <code>&lt;i&gt;</code>) are permitted.</p>
+                            
+                            <form method="POST" action="{{ url_for('admin_broadcast') }}">
+                                <div class="mb-2">
+                                    <label class="small fw-bold">Message Content</label>
+                                    <textarea name="message" class="form-control-ent" rows="2" placeholder="e.g. <b>Update:</b> New features live!">{{ current_broadcast.get('message', '') }}</textarea>
+                                </div>
+                                <div class="d-flex gap-3 mb-3">
+                                    <div class="w-50">
+                                        <label class="small fw-bold">Banner BG Color</label>
+                                        <input type="color" name="bg_color" class="form-control form-control-color w-100 p-1" value="{{ current_broadcast.get('bg_color', '#000000') }}">
+                                    </div>
+                                    <div class="w-50">
+                                        <label class="small fw-bold">Text Color</label>
+                                        <input type="color" name="text_color" class="form-control form-control-color w-100 p-1" value="{{ current_broadcast.get('text_color', '#ffffff') }}">
+                                    </div>
+                                </div>
+                                
+                                <div class="p-3 mb-3 border rounded bg-light">
+                                    <div class="form-check form-switch mb-2">
+                                        <input class="form-check-input" type="checkbox" name="is_promo" id="promoToggle" {% if current_broadcast.get('is_promo') %}checked{% endif %}>
+                                        <label class="form-check-label small fw-bold" for="promoToggle">Attach Promo/Discount Button</label>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <input type="text" name="promo_code" class="form-control-ent" placeholder="Code (e.g. SAVE20)" value="{{ current_broadcast.get('promo_code', '') }}">
+                                        <input type="text" name="promo_link" class="form-control-ent" placeholder="URL Link" value="{{ current_broadcast.get('promo_link', '#') }}">
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn-black w-100 mb-2">Transmit Banner</button>
+                                <button type="submit" class="btn-outline w-100 text-danger" onclick="document.querySelector('textarea[name=message]').value='';">Clear Active Broadcast</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    {% endfor %}
-
-    <div class="modal fade" id="modernNukeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true" style="z-index: 1070;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content danger-modal-content">
-                <div class="modal-header danger-modal-header"><h5 class="modal-title danger-modal-title" id="nukeModalTitle"><i class="fas fa-exclamation-triangle me-2"></i> DANGER: System Operation</h5></div>
-                <div class="modal-body danger-modal-body text-center">
-                    <p class="text-muted lead">You are about to permanently delete:</p>
-                    <h3 class="fw-bold text-dark mb-2" id="nukePhysicianName"></h3>
-                    <p class="small text-danger fw-bold mb-4">This will immediately purge ALL patient data, reports, and notes associated with this account. This cannot be undone.</p>
-                    <p class="small text-muted mb-2">To proceed, please type <span class="fw-bold text-danger">DELETE</span> in the box below:</p>
-                    <input type="text" class="form-control danger-input-modern mb-1 shadow-sm" id="nukeConfirmationInput" placeholder="TYPE HERE...">
-                </div>
-                <div class="modal-footer bg-white border-top-0 d-flex justify-content-between p-3 rounded-bottom-4">
-                    <button type="button" class="btn btn-outline-secondary px-4 fw-bold" data-bs-dismiss="modal">Cancel Action</button>
-                    <button type="button" class="btn btn-danger px-5 fw-bold shadow-sm" id="finalNukeConfirmBtn" disabled>Confirm Nuke</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <form id="hiddenDeleteForm" method="POST" action="" style="display: none;"></form>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     <script>
-        // JS Memory: Remember which Admin Tab was clicked
         document.addEventListener("DOMContentLoaded", function() {
-            const adminTabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
-            adminTabs.forEach(tab => {
-                tab.addEventListener('shown.bs.tab', event => { sessionStorage.setItem('activeAdminTab', event.target.id); });
-            });
-            const activeTab = sessionStorage.getItem('activeAdminTab');
-            if (activeTab) { new bootstrap.Tab(document.getElementById(activeTab)).show(); }
-        });
-
-        // Live Clock
-        function updateClock() { document.getElementById('clock').textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'}); }
-        setInterval(updateClock, 1000); updateClock();
-
-        // Chart.js
-        const ctx = document.getElementById('moduleChart').getContext('2d');
-        new Chart(ctx, { type: 'doughnut', data: { labels: ['Warfarin Dosing', 'Type 2 Diabetes'], datasets: [{ data: [{{ warfarin_count }}, {{ diabetes_count }}], backgroundColor: ['#3b82f6', '#ef4444'], borderWidth: 0, hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { weight: 'bold' } } } }, cutout: '70%' } });
-
-        // Search Filters
-        document.getElementById('userSearchBox').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase();
-            document.querySelectorAll('#usersTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none'; });
-        });
-        document.getElementById('licenseSearchBox').addEventListener('keyup', function() {
-            let filter = this.value.toLowerCase();
-            document.querySelectorAll('#licenseTable tbody tr').forEach(row => { row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none'; });
-        });
-
-        // DYNAMIC LICENSE PROVISIONING LOGIC
-        const planSelect = document.getElementById('provPlan');
-        const seatInput = document.getElementById('provSeats');
-        planSelect.addEventListener('change', function() {
-            if (this.value === 'Individual') { seatInput.value = 1; seatInput.readOnly = true; seatInput.classList.remove('border-danger'); } 
-            else if (this.value === 'Enterprise') { seatInput.value = 50; seatInput.readOnly = true; seatInput.classList.remove('border-danger'); } 
-            else { seatInput.readOnly = false; seatInput.classList.add('border-danger'); }
-        });
-
-        function loadLicenseToForm(email, plan, maxSeats) {
-            document.getElementById('provEmail').value = email;
-            planSelect.value = plan;
-            seatInput.value = maxSeats;
-            planSelect.dispatchEvent(new Event('change'));
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        // Modern Nuke Modal Logic
-        let currentDocIdToDelete = null;
-        function showModernNukeModal(docId, docName) {
-            currentDocIdToDelete = docId;
-            document.getElementById('nukePhysicianName').textContent = "Dr. " + docName;
-            document.getElementById('nukeConfirmationInput').value = '';
-            document.getElementById('finalNukeConfirmBtn').disabled = true;
-            new bootstrap.Modal(document.getElementById('modernNukeModal')).show();
-        }
-        document.getElementById('nukeConfirmationInput').addEventListener('input', function() { document.getElementById('finalNukeConfirmBtn').disabled = (this.value !== 'DELETE'); });
-        document.getElementById('finalNukeConfirmBtn').addEventListener('click', function() {
-            if (currentDocIdToDelete) {
-                const deleteForm = document.getElementById('hiddenDeleteForm');
-                deleteForm.action = `/admin/doctor/${currentDocIdToDelete}/delete`;
-                deleteForm.submit();
-            }
+            const tabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
+            tabs.forEach(tab => { tab.addEventListener('shown.bs.tab', e => sessionStorage.setItem('activeTab', e.target.id)); });
+            const active = sessionStorage.getItem('activeTab');
+            if (active) { new bootstrap.Tab(document.getElementById(active)).show(); }
         });
     </script>
 </body>

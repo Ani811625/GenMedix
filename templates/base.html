@@ -19,7 +19,7 @@
         }
         main { flex: 1; }
         
-        /* Premium Navbar Styling - Adapts to Dark Mode */
+        /* Premium Navbar Styling */
         .navbar {
             background-color: var(--bs-body-bg) !important;
             backdrop-filter: blur(10px);
@@ -31,7 +31,6 @@
             color: #0056b3 !important;
             font-size: 1.4rem;
         }
-        /* Fix brand color in dark mode */
         [data-bs-theme="dark"] .navbar-brand { color: #6ea8fe !important; }
         
         .nav-link {
@@ -90,12 +89,18 @@
                 </ul>
                 
                 <div class="d-flex align-items-center flex-column flex-lg-row gap-2">
-                    
                     <button id="themeToggle" title="Toggle Dark/Light Mode">
                         <i class="fas fa-moon" id="themeIcon"></i>
                     </button>
 
                     {% if current_user.is_authenticated %}
+                        
+                        {% if is_admin %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="btn btn-dark btn-nav shadow-sm fw-bold border-0 me-1">
+                                <i class="fas fa-shield-alt text-warning me-1"></i> Admin
+                            </a>
+                        {% endif %}
+
                         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-nav"><i class="fas fa-chart-pie me-1"></i> Dashboard</a>
                         <a href="{{ url_for('account') }}" class="btn btn-light btn-nav border"><i class="fas fa-user me-1"></i> Account</a>
                         <a href="{{ url_for('logout') }}" class="btn btn-danger btn-nav"><i class="fas fa-sign-out-alt me-1"></i> Logout</a>
@@ -105,7 +110,8 @@
                     {% else %}
                         <a href="{{ url_for('patient_login') }}" class="btn btn-outline-secondary btn-nav border-0"><i class="fas fa-procedures me-1"></i> Patient Portal</a>
                         <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-nav px-4">Doctor Login</a>
-                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-nav px-4 shadow-sm">Sign Up</a>
+                        
+                        <a href="{{ url_for('admin_login') }}" class="btn btn-dark btn-nav px-4 border-0 text-warning"><i class="fas fa-lock me-1"></i> Admin Login</a>
                     {% endif %}
                 </div>
             </div>
@@ -114,8 +120,16 @@
 
     <main>
         {% if global_broadcast %}
-        <div class="bg-warning text-dark text-center py-2 fw-bold shadow-sm border-bottom border-warning" style="font-size: 0.95rem; z-index: 1050; position: relative;">
-            <i class="fas fa-bullhorn me-2"></i> {{ global_broadcast }}
+        <div style="background-color: {{ global_broadcast.bg_color }}; color: {{ global_broadcast.text_color }}; z-index: 1050; position: relative;" class="text-center py-3 shadow-sm border-bottom">
+            <div class="container d-flex align-items-center justify-content-center flex-wrap">
+                <span class="fs-6 me-3">{{ global_broadcast.message | safe }}</span>
+                
+                {% if global_broadcast.is_promo %}
+                <a href="{{ global_broadcast.promo_link }}" class="btn btn-sm shadow-sm fw-bold ms-2 px-3" style="background-color: {{ global_broadcast.text_color }}; color: {{ global_broadcast.bg_color }}; border-radius: 6px;">
+                    USE CODE: {{ global_broadcast.promo_code }}
+                </a>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
 
