@@ -8,12 +8,10 @@
         .container { max-width: 500px; padding: 40px; border: 1px solid #333; border-radius: 8px; background: #0a0a0a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         h1 { font-weight: 700; margin-bottom: 10px; font-size: 1.5rem; letter-spacing: -0.5px; }
         p { color: #a1a1aa; font-size: 0.95rem; line-height: 1.5; margin-bottom: 30px; }
-        .timer-box { display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; }
+        .timer-box { display: flex; justify-content: center; gap: 15px; margin-bottom: 10px; }
         .time-block { background: #18181b; border: 1px solid #27272a; padding: 15px; border-radius: 6px; width: 70px; }
         .time-val { font-size: 1.8rem; font-weight: 800; display: block; color: #fff; }
         .time-label { font-size: 0.65rem; text-transform: uppercase; color: #71717a; letter-spacing: 1px; font-weight: 600; }
-        .btn { background: transparent; color: #fff; border: 1px solid #3f3f46; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 0.85rem; transition: background 0.2s; }
-        .btn:hover { background: #27272a; }
     </style>
 </head>
 <body>
@@ -22,8 +20,8 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
         </svg>
         
-        <h1>System Upgrades in Progress</h1>
-        <p>GenMedix is currently locked down for critical infrastructure updates. No patient data is at risk. Services will resume shortly.</p>
+        <h1>{{ m_title }}</h1>
+        <p>{{ m_message }}</p>
         
         <div class="timer-box" id="timerContainer" style="display: none;">
             <div class="time-block"><span class="time-val" id="days">00</span><span class="time-label">Days</span></div>
@@ -31,10 +29,8 @@
             <div class="time-block"><span class="time-val" id="mins">00</span><span class="time-label">Mins</span></div>
             <div class="time-block"><span class="time-val" id="secs">00</span><span class="time-label">Secs</span></div>
         </div>
-
+        
         <input type="hidden" id="targetTime" value="{{ end_time }}">
-
-        <a href="{{ url_for('admin_login') }}" class="btn mt-4">Admin Override Login</a>
     </div>
 
     <script>
@@ -49,7 +45,7 @@
 
                 if (distance < 0) {
                     clearInterval(interval);
-                    document.getElementById('timerContainer').innerHTML = "<p style='color:#10b981; font-weight:bold;'>Updates Complete. Awaiting Admin restart.</p>";
+                    document.getElementById('timerContainer').innerHTML = "<p style='color:#10b981; font-weight:bold; font-size:0.9rem;'>Updates Complete. Awaiting System Restart.</p>";
                     return;
                 }
 

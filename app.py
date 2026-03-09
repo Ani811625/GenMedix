@@ -266,13 +266,17 @@ def check_maintenance_and_db():
                 pass # Admins bypass maintenance
             else:
                 end_time = None
+                m_title = "System Upgrades in Progress"
+                m_message = "GenMedix is currently locked down for critical infrastructure updates. No patient data is at risk. Services will resume shortly."
                 try:
                     with open(maintenance_file, 'r') as f:
                         m_data = json.load(f)
                         end_time = m_data.get("end_time")
+                        if m_data.get("title"): m_title = m_data.get("title")
+                        if m_data.get("message"): m_message = m_data.get("message")
                 except Exception: 
                     pass
-                return render_template('maintenance.html', end_time=end_time), 503
+                return render_template('maintenance.html', end_time=end_time, m_title=m_title, m_message=m_message), 503
 
 @app.after_request
 def add_header(response):
@@ -1215,14 +1219,12 @@ def generate_diabetes_report(patient_id):
         "safety_info": safety_info, "results": results, "doctor_name": doctor_name
     }
 
-    # We will build 'display_disease_report.html' in the next step
     html_string = render_template('display_disease_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=None)
     pdf_bytes = HTML(string=html_string).write_pdf()
 
-    # Save to database
     new_report = Report(
-        drug_name="Type 2 Diabetes Assessment", # Saving the Disease name
-        predicted_dose=results['predicted_dose_mg_per_week'], # Saving the "Risk Level"
+        drug_name="Type 2 Diabetes Assessment",
+        predicted_dose=results['predicted_dose_mg_per_week'], 
         model_used=results['model_used'], confidence=results['confidence_score'],
         doctor_name=doctor_name, report_data_json=json.dumps(full_report_data),
         patient_id=patient.id, pdf_storage_path=None
@@ -1232,7 +1234,7 @@ def generate_diabetes_report(patient_id):
 
     return make_response(render_template('display_disease_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, report_obj=new_report))
 
-# --- DYNAMIC REPORT VIEWER (Loads Drug vs Disease HTML based on DB) ---
+# --- DYNAMIC REPORT VIEWER ---
 @app.route('/report/<int:report_id>')
 @login_required
 def view_report(report_id):
@@ -1241,7 +1243,6 @@ def view_report(report_id):
     try: report_data = json.loads(report.report_data_json)
     except: return redirect(url_for('view_patient', patient_id=report.patient_id))
     
-    # Check if it's a Disease Report or a Drug Report to load the correct HTML template
     if report.drug_name == "Type 2 Diabetes Assessment":
         template_name = 'display_disease_report.html'
         interaction_warnings = []
@@ -1315,8 +1316,9 @@ def add_note(patient_id):
     flash("Note added.", "success")
     return redirect(url_for('view_patient', patient_id=patient_id, _anchor='notes-tab'))
 
+
 # =======================================================
-# 8. SUPER ADMIN COMMAND CENTER (NEW ENTERPRISE UPDATE)
+# 8. SUPER ADMIN COMMAND CENTER
 # =======================================================
 
 @app.route('/admin/dashboard')
@@ -1332,6 +1334,9 @@ def admin_dashboard():
     all_subs = Subscription.query.order_by(Subscription.email).all()
     all_admins = AdminEmail.query.all()
     
+    warfarin_count = Report.query.filter_by(drug_name='Warfarin').count()
+    diabetes_count = Report.query.filter_by(drug_name='Type 2 Diabetes Assessment').count()
+    
     basedir = os.path.abspath(os.path.dirname(__file__))
     maintenance_active = os.path.exists(os.path.join(basedir, 'maintenance.json'))
     
@@ -1344,17 +1349,24 @@ def admin_dashboard():
         except Exception:
             pass
             
+    # Load custom maintenance info to display in the form
+    current_maintenance = {}
+    maintenance_file = os.path.join(basedir, 'maintenance.json')
+    if os.path.exists(maintenance_file):
+        try:
+            with open(maintenance_file, 'r') as f:
+                current_maintenance = json.load(f)
+        except: pass
+            
     return render_template(
         'admin_dashboard.html', 
-        total_doctors=total_doctors, 
-        total_patients=total_patients,
-        total_reports=total_reports, 
-        total_subs=total_subscriptions,
-        all_doctors=all_doctors, 
-        all_subs=all_subs, 
-        all_admins=all_admins,
+        total_doctors=total_doctors, total_patients=total_patients,
+        total_reports=total_reports, total_subs=total_subscriptions,
+        all_doctors=all_doctors, all_subs=all_subs, all_admins=all_admins,
         maintenance_active=maintenance_active, 
-        current_broadcast=current_broadcast
+        current_broadcast=current_broadcast,
+        current_maintenance=current_maintenance,
+        warfarin_count=warfarin_count, diabetes_count=diabetes_count
     )
 
 @app.route('/admin/system/add_admin', methods=['POST'])
@@ -1363,7 +1375,6 @@ def admin_dashboard():
 def admin_add_admin():
     new_email = request.form.get('email')
     existing_admin = AdminEmail.query.filter_by(email=new_email).first()
-    
     if existing_admin:
         flash("Email already has admin privileges.", "warning")
     else:
@@ -1371,7 +1382,6 @@ def admin_add_admin():
         db.session.add(new_admin)
         db.session.commit()
         flash(f"Granted admin privileges to {new_email}.", "success")
-        
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/system/toggle_maintenance', methods=['POST'])
@@ -1386,8 +1396,16 @@ def admin_toggle_maintenance():
         flash("System is now ONLINE.", "success")
     else:
         end_time = request.form.get('end_time')
+        m_title = request.form.get('m_title', 'System Upgrades in Progress')
+        m_message = request.form.get('m_message', 'GenMedix is currently locked down for critical infrastructure updates. No patient data is at risk. Services will resume shortly.')
+        
         with open(maintenance_file, 'w') as f:
-            json.dump({"status": "OFFLINE", "end_time": end_time}, f)
+            json.dump({
+                "status": "OFFLINE", 
+                "end_time": end_time,
+                "title": m_title,
+                "message": m_message
+            }, f)
         flash(f"KILL SWITCH ENGAGED. Lockout active until {end_time}.", "danger")
         
     return redirect(url_for('admin_dashboard'))
@@ -1432,13 +1450,11 @@ def admin_delete_doctor(doc_id):
     
     if doctor.subscription_email:
         sub = Subscription.query.filter_by(email=doctor.subscription_email).first()
-        if sub and sub.current_users > 0: 
-            sub.current_users -= 1
+        if sub and sub.current_users > 0: sub.current_users -= 1
             
     db.session.delete(doctor)
     db.session.commit()
     flash(f"Physician {doc_name} and all their clinical data have been permanently wiped.", "success")
-    
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/license/add', methods=['POST'])
@@ -1457,11 +1473,8 @@ def admin_add_license():
         flash(f"License successfully updated for {email}.", "success")
     else:
         new_sub = Subscription(
-            email=email,
-            stripe_customer_id="MANUAL_OVERRIDE",
-            plan_type=plan_type,
-            max_seats=int(max_seats),
-            is_active=True
+            email=email, stripe_customer_id="MANUAL_OVERRIDE",
+            plan_type=plan_type, max_seats=int(max_seats), is_active=True
         )
         db.session.add(new_sub)
         flash(f"New manual license provisioned for {email}.", "success")
@@ -1507,12 +1520,7 @@ def admin_create_doctor():
         flash("License seat limit reached. Upgrade the license first.", "danger")
         return redirect(url_for('admin_dashboard'))
 
-    new_doc = User(
-        full_name=full_name, 
-        email=email, 
-        medical_reg_id=reg_id, 
-        subscription_email=license_email
-    )
+    new_doc = User(full_name=full_name, email=email, medical_reg_id=reg_id, subscription_email=license_email)
     new_doc.set_password(password)
     
     sub.current_users += 1
@@ -1539,6 +1547,7 @@ def admin_edit_doctor(doc_id):
     db.session.commit()
     flash(f"Physician profile for Dr. {doctor.full_name} updated successfully.", "success")
     return redirect(url_for('admin_dashboard'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
