@@ -579,6 +579,57 @@ def login():
         
     return render_template('login.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated: 
+        return redirect(url_for('dashboard'))
+        
+    if request.method == 'POST':
+        full_name = request.form.get('full_name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        medical_reg_id = request.form.get('medical_reg_id')
+        subscription_email = request.form.get('subscription_email')
+
+        # 1. Check if email or medical ID already exists
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered. Please log in.', 'danger')
+            return redirect(url_for('register'))
+            
+        if User.query.filter_by(medical_reg_id=medical_reg_id).first():
+            flash('Medical Registration ID already in use.', 'danger')
+            return redirect(url_for('register'))
+
+        # 2. Validate Enterprise License
+        sub = Subscription.query.filter_by(email=subscription_email).first()
+        if not sub or not sub.is_active:
+            flash('Invalid or inactive License Email provided. Check with your hospital administrator.', 'danger')
+            return redirect(url_for('register'))
+
+        if sub.current_users >= sub.max_seats:
+            flash('License seat limit reached. Your institution must upgrade their plan.', 'danger')
+            return redirect(url_for('register'))
+
+        # 3. Create the new doctor account
+        new_doc = User(
+            full_name=full_name,
+            email=email,
+            medical_reg_id=medical_reg_id,
+            subscription_email=subscription_email
+        )
+        new_doc.set_password(password)
+        
+        # 4. Consume a seat on the license
+        sub.current_users += 1
+        
+        db.session.add(new_doc)
+        db.session.commit()
+        
+        flash('Registration successful! You can now log in to the clinical dashboard.', 'success')
+        return redirect(url_for('login'))
+        
+    return render_template('register.html')
+
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
