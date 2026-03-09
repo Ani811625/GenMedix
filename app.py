@@ -543,12 +543,15 @@ def register():
 @app.route('/logout')
 @login_required
 def logout():
+    # 1. Let Flask-Login securely handle the auth state and cookie deletion flags
     logout_user()
-    session.clear()
+    
+    # 2. Safely pop our custom variables instead of obliterating the whole session dict
+    session.pop('reset_email', None)
+    session.pop('can_reset_password', None)
+    
     flash('You have been logged out.', 'success')
-    res = make_response(redirect(url_for('home')))
-    res.set_cookie('access_token', '', expires=0)
-    return res
+    return redirect(url_for('home'))
 
 @app.route('/account', methods=['GET', 'POST'])
 @login_required
