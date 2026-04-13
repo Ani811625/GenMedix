@@ -202,10 +202,13 @@ def check_maintenance_and_db():
         if not inspector.has_table("user") or not inspector.has_table("admin_email"):
              with app.app_context(): db.create_all()
              
+        
         # NEW: Auto-add the beta tester column to existing databases safely
         with app.app_context():
             try:
-                db.session.execute(text('ALTER TABLE user ADD COLUMN is_beta_tester BOOLEAN DEFAULT 0'))
+                # PostgreSQL requires reserved words like "user" to be in double quotes. 
+                # It also expects FALSE instead of 0 for boolean defaults.
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN is_beta_tester BOOLEAN DEFAULT FALSE'))
                 db.session.commit()
             except Exception:
                 db.session.rollback() # Column already exists, ignore
