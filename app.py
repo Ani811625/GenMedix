@@ -23,7 +23,7 @@ from flask_login import (
     LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 # --- ML & PDF IMPORTS ---
 import joblib
@@ -144,6 +144,10 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
+    
+    # NEW: Beta Tester Feature Flag
+    is_beta_tester = db.Column(db.Boolean, default=False)
+    
     subscription_email = db.Column(db.String(150), db.ForeignKey('subscription.email'))
     patients = db.relationship('Patient', backref='doctor', lazy=True, cascade="all, delete-orphan")
     notes = db.relationship('Note', backref='doctor', lazy=True, cascade="all, delete-orphan")
@@ -197,6 +201,15 @@ def check_maintenance_and_db():
         inspector = inspect(db.engine)
         if not inspector.has_table("user") or not inspector.has_table("admin_email"):
              with app.app_context(): db.create_all()
+             
+        # NEW: Auto-add the beta tester column to existing databases safely
+        with app.app_context():
+            try:
+                db.session.execute(text('ALTER TABLE user ADD COLUMN is_beta_tester BOOLEAN DEFAULT 0'))
+                db.session.commit()
+            except Exception:
+                db.session.rollback() # Column already exists, ignore
+                
         with app.app_context():
             if not AdminEmail.query.filter_by(email='aniruddhas387@gmail.com').first():
                 db.session.add(AdminEmail(email='aniruddhas387@gmail.com', added_by='SYSTEM_INIT'))
@@ -242,9 +255,15 @@ try:
     enhanced_model_columns = joblib.load(os.path.join(MODEL_DIR, 'model_columns.pkl'))
     enhanced_explainer = shap.TreeExplainer(enhanced_model)
     base_explainer = shap.TreeExplainer(base_model)
+    
     diabetes_model = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_v1.pkl'))
     diabetes_model_columns = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_columns.pkl'))
     diabetes_explainer = shap.TreeExplainer(diabetes_model)
+    
+    # NEW: Prepared for Vancomycin Models
+    vancomycin_model = joblib.load(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_xgb_model_v1.pkl'))
+    vancomycin_model_columns = joblib.load(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_model_columns.pkl'))
+    vancomycin_explainer = shap.TreeExplainer(vancomycin_model)
 except: pass 
 
 # =======================================================
@@ -922,6 +941,19 @@ def admin_dashboard():
         current_maintenance=current_maintenance,
         warfarin_count=warfarin_count, diabetes_count=diabetes_count
     )
+
+# NEW ROUTE: BETA TESTER TOGGLE
+@app.route('/admin/doctor/<int:doc_id>/toggle_beta', methods=['POST'])
+@login_required
+@admin_required
+def admin_toggle_beta(doc_id):
+    doctor = User.query.get_or_404(doc_id)
+    doctor.is_beta_tester = not doctor.is_beta_tester
+    db.session.commit()
+    
+    status = "GRANTED" if doctor.is_beta_tester else "REVOKED"
+    flash(f"Beta Testing Access {status} for Dr. {doctor.full_name}.", "success")
+    return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/system/add_admin', methods=['POST'])
 @login_required

@@ -158,10 +158,21 @@
                                 {% for doc in all_doctors %}
                                 <tr>
                                     <td class="text-muted">#{{ doc.id }}</td>
-                                    <td><span class="fw-bold">Dr. {{ doc.full_name }}</span></td>
+                                    <td>
+                                        <span class="fw-bold">Dr. {{ doc.full_name }}</span>
+                                        {% if doc.is_beta_tester %}
+                                            <span class="badge bg-warning text-dark ms-2 shadow-sm" style="font-size: 0.65rem; letter-spacing: 0.5px;">BETA TESTER</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ doc.email }}</td>
                                     <td>{{ doc.medical_reg_id }}</td>
                                     <td>
+                                        <form method="POST" action="{{ url_for('admin_toggle_beta', doc_id=doc.id) }}" class="d-inline">
+                                            <button type="submit" class="btn-outline me-1" title="Toggle Beta Access">
+                                                <i class="fas fa-flask {% if doc.is_beta_tester %}text-warning{% else %}text-muted{% endif %}"></i>
+                                            </button>
+                                        </form>
+                                        
                                         <button class="btn-outline me-1" data-bs-toggle="modal" data-bs-target="#editDocModal{{ doc.id }}">Edit</button>
                                         {% if doc.email != 'aniruddhas387@gmail.com' %}
                                         <form method="POST" action="{{ url_for('admin_delete_doctor', doc_id=doc.id) }}" class="d-inline" onsubmit="return confirm('Purge user and all patient data permanently?');">
