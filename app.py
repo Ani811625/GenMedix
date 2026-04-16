@@ -990,7 +990,14 @@ def download_archived_report(report_id):
 @login_required
 def download_report():
     form_data = request.form
-    patient_info, clinical_info, safety_info, results = process_prediction_data(form_data)
+    drug_name = form_data.get('drug_name', '')
+    
+    # Dynamically route the data to the correct AI processor
+    if drug_name == 'Vancomycin':
+        patient_info, clinical_info, safety_info, results = process_vancomycin_data(form_data)
+    else:
+        patient_info, clinical_info, safety_info, results = process_prediction_data(form_data)
+        
     doctor_name = form_data.get('doctor_name', current_user.full_name)
     html_string = render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=None)
     pdf_file = HTML(string=html_string).write_pdf()

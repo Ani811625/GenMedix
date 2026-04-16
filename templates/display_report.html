@@ -65,17 +65,35 @@
                 <div class="col-md-6">
                     <h5 class="fw-bold border-bottom pb-2 text-secondary">Clinical Input</h5>
                     <table class="table table-sm table-borderless mt-2">
-                        <tr><th style="width: 120px;">Weight/Height:</th><td>{{ clinical_info.Weight__kg_ }} kg / {{ clinical_info.Height__cm_ }} cm</td></tr>
-                        <tr><th>CYP2C9:</th><td><span class="badge bg-info text-dark">{{ clinical_info.CYP2C9_Display }}</span></td></tr>
-                        <tr><th>VKORC1:</th><td><span class="badge bg-warning text-dark">{{ clinical_info.VKORC1_Display }}</span></td></tr>
+                        {% if 'Vancomycin' in results.model_used %}
+                            <tr><th style="width: 120px;">Weight/CrCl:</th><td>{{ clinical_info.get('Weight (kg)') }} kg / {{ clinical_info.get('Est. CrCl') }}</td></tr>
+                            <tr><th>HLA-A*32:01:</th><td><span class="badge {% if 'Positive' in clinical_info.get('HLA-A*32:01', '') %}bg-danger{% else %}bg-secondary{% endif %}">{{ clinical_info.get('HLA-A*32:01') }}</span></td></tr>
+                            <tr><th>agr Group II:</th><td><span class="badge {% if 'Detected' in clinical_info.get('agr Group II', '') and 'Not' not in clinical_info.get('agr Group II', '') %}bg-warning text-dark{% else %}bg-secondary{% endif %}">{{ clinical_info.get('agr Group II') }}</span></td></tr>
+                        {% else %}
+                            <tr><th style="width: 120px;">Weight/Height:</th><td>{{ clinical_info.Weight__kg_ }} kg / {{ clinical_info.Height__cm_ }} cm</td></tr>
+                            <tr><th>CYP2C9:</th><td><span class="badge bg-info text-dark">{{ clinical_info.CYP2C9_Display }}</span></td></tr>
+                            <tr><th>VKORC1:</th><td><span class="badge bg-warning text-dark">{{ clinical_info.VKORC1_Display }}</span></td></tr>
+                        {% endif %}
                     </table>
                 </div>
             </div>
 
             <div class="p-4 bg-light rounded text-center mb-5 border shadow-sm">
-                <h6 class="text-uppercase text-muted fw-bold">Recommended Warfarin Dose</h6>
+                <h6 class="text-uppercase text-muted fw-bold">
+                    {% if 'Vancomycin' in results.model_used %}
+                        Recommended Vancomycin Target
+                    {% else %}
+                        Recommended Warfarin Dose
+                    {% endif %}
+                </h6>
                 <h1 class="display-4 fw-bold text-primary my-2">{{ results.predicted_dose_mg_per_week }}</h1>
-                <h6 class="text-secondary fw-bold">mg / week</h6>
+                <h6 class="text-secondary fw-bold">
+                    {% if 'Vancomycin' in results.model_used %}
+                        mg / day
+                    {% else %}
+                        mg / week
+                    {% endif %}
+                </h6>
                 <div class="mt-3">
                     <span class="badge {% if results.confidence_score == 'High' %}bg-success{% elif results.confidence_score == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %} px-3 py-2 fs-6 shadow-sm">
                         Confidence: {{ results.confidence_score }}
@@ -88,7 +106,7 @@
             <div class="alert alert-danger border-danger border-2 mb-5 shadow-sm">
                 <h5 class="fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Clinical Warnings</h5>
                 <ul class="mb-0 mt-2">
-                    {% if safety_info.is_pregnant == 'Yes' %}<li><strong>Pregnancy Alert:</strong> Warfarin is strictly contraindicated.</li>{% endif %}
+                    {% if safety_info.is_pregnant == 'Yes' %}<li><strong>Pregnancy Alert:</strong> Medication may be contraindicated.</li>{% endif %}
                     {% if safety_info.active_bleeding == 'Yes' %}<li><strong>Bleeding Alert:</strong> Active bleeding detected.</li>{% endif %}
                     {% for warning in interaction_warnings %}
                         <li>{{ warning | safe }}</li>
