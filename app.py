@@ -270,7 +270,7 @@ try:
 except: pass 
 
 # =======================================================
-# 4. ML LOGIC (Warfarin & Diabetes)
+# 4. ML LOGIC (Warfarin, Diabetes, Vancomycin)
 # =======================================================
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
@@ -302,7 +302,15 @@ def get_confidence_score(std_dev):
 def get_human_explanation(shap_dict):
     explanations = []
     for feature, value in shap_dict.items():
-        display_name = "Weight" if feature == "Weight__kg_" else "Height" if feature == "Height__cm_" else "CYP2C9 Genotype" if feature.startswith("CYP2C9") else "VKORC1 Genotype" if feature.startswith("VKORC1") else feature.replace("Race_", "")
+        if feature in ["Weight__kg_", "Weight_kg"]: display_name = "Weight"
+        elif feature in ["Height__cm_", "Height_cm"]: display_name = "Height"
+        elif feature == "Serum_Creatinine": display_name = "Serum Creatinine"
+        elif feature == "Calculated_CrCl": display_name = "Est. Creatinine Clearance"
+        elif feature == "HLA_A_32_01_Risk": display_name = "HLA Toxicity Risk"
+        elif feature == "agr_Group_II_Mutation": display_name = "agr Resistance Mutation"
+        elif feature.startswith("CYP2C9"): display_name = "CYP2C9 Genotype"
+        elif feature.startswith("VKORC1"): display_name = "VKORC1 Genotype"
+        else: display_name = feature.replace("Race_", "").replace("_", " ")
         explanations.append(f"<strong>{display_name}</strong> {'increased' if value > 0 else 'decreased'} the dose recommendation.")
     return explanations
 
@@ -367,6 +375,66 @@ def process_diabetes_data(form_data):
     clinical_info_display = {"Age": form_data.get('Age'), "BMI": form_data.get('BMI'), "Fasting Glucose": f"{form_data.get('Glucose')} mg/dL", "Blood Pressure": f"{form_data.get('BloodPressure')} mmHg", "Family History Pedigree": form_data.get('DiabetesPedigree'), "TCF7L2 Variant": "Detected (High Risk)" if clinical_data_dict['TCF7L2_Risk_Variant'] == 1 else "Not Detected"}
     pred_data = run_diabetes_prediction(clinical_data_dict)
     results_dict = {"predicted_dose_mg_per_week": pred_data['prediction'], "probability_score": pred_data['probability'], "model_used": pred_data['model_name'], "confidence_score": pred_data['confidence_score'], "confidence_explanation": f"The AI model predicts a {pred_data['probability']}% probability of pathology.", "clinical_suggestions": get_diabetes_clinical_suggestions(pred_data['shap_explanation'], pred_data['prediction']), "shap_explanation": pred_data['shap_explanation'], "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "report_id": f"DIA-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"}
+    return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
+
+# --- ADD VANCOMYCIN LOGIC ---
+def run_vancomycin_prediction(patient_data_dict):
+    patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=vancomycin_model_columns, fill_value=0)
+    prediction_array = vancomycin_model.predict(patient_df)
+    predicted_dose = round(float(prediction_array[0]))
+    
+    shap_values = vancomycin_explainer.shap_values(patient_df)
+    if isinstance(shap_values, list): shap_values_for_instance = shap_values[0][0]
+    elif len(shap_values.shape) == 3: shap_values_for_instance = shap_values[0, :, 0]
+    else: shap_values_for_instance = shap_values[0]
+        
+    top_indices = np.argsort(np.abs(shap_values_for_instance))[-5:]
+    shap_explanation = {patient_df.columns[i]: round(float(shap_values_for_instance[i]), 2) for i in reversed(top_indices) if abs(float(shap_values_for_instance[i])) > 0.01}
+    
+    crcl = patient_data_dict.get('Calculated_CrCl', 100)
+    confidence_score = "High" if 30 <= crcl <= 120 else "Medium"
+    
+    return {"prediction": predicted_dose, "model_name": "Vancomycin XGBoost (Beta)", "shap_explanation": shap_explanation, "confidence_score": confidence_score}
+
+def process_vancomycin_data(form_data):
+    patient_info_dict = {"patient_name": form_data.get('patient_name'), "patient_dob": form_data.get('patient_dob'), "patient_gender": form_data.get('Gender'), "patient_country": "N/A", "patient_address": "N/A"}
+    safety_data_dict = {"is_pregnant": "Not Applicable", "active_bleeding": "Not Applicable", "platelet_count": "Not Applicable", "baseline_inr": "Not Applicable"}
+    
+    age = float(form_data.get('Age', 30))
+    weight = float(form_data.get('Weight_kg', 70))
+    scr = float(form_data.get('Serum_Creatinine', 1.0))
+    gender = form_data.get('Gender', 'Male')
+    hla = 1.0 if form_data.get('hla_risk') == 'Yes' else 0.0
+    agr = 1.0 if form_data.get('agr_mutation') == 'Yes' else 0.0
+    
+    crcl = ((140 - age) * weight) / (72 * scr)
+    if gender == 'Female': crcl *= 0.85
+    crcl = round(crcl, 1)
+
+    clinical_data_dict = {
+        "Age": age, "Weight_kg": weight, "Height_cm": float(form_data.get('Height_cm', 170)),
+        "Serum_Creatinine": scr, "Calculated_CrCl": crcl,
+        "HLA_A_32_01_Risk": hla, "agr_Group_II_Mutation": agr,
+        "Gender_Male": 1.0 if gender == 'Male' else 0.0
+    }
+    
+    clinical_info_display = {
+        "Age": age, "Weight (kg)": weight, "Serum Creatinine": f"{scr} mg/dL",
+        "Est. CrCl": f"{crcl} mL/min",
+        "HLA-A*32:01": "Positive (High Risk)" if hla == 1.0 else "Negative",
+        "agr Group II": "Detected" if agr == 1.0 else "Not Detected"
+    }
+    
+    pred_data = run_vancomycin_prediction(clinical_data_dict)
+    
+    suggestions = []
+    if hla == 1.0: suggestions.append("<strong>CRITICAL WARNING:</strong> HLA-A*32:01 risk allele detected. High risk of DRESS syndrome. AI reduced recommended dose. Proceed with caution.")
+    if agr == 1.0: suggestions.append("<strong>EFFICACY WARNING:</strong> agr Group II mutation detected in bacteria. Potential vancomycin tolerance. AI increased recommended dose.")
+    if crcl < 30: suggestions.append("<strong>RENAL IMPAIRMENT:</strong> Est. CrCl < 30 mL/min. Pulse dosing by levels is recommended over continuous standard dosing.")
+    if not suggestions: suggestions.append("Parameters indicate standard clearance. Monitor trough levels before the 4th dose.")
+    
+    results_dict = {"predicted_dose_mg_per_week": pred_data['prediction'], "model_used": pred_data['model_name'], "confidence_score": pred_data['confidence_score'], "confidence_explanation": "Model evaluated pharmacokinetic CrCl and genome markers.", "human_explanation": get_human_explanation(pred_data['shap_explanation']), "clinical_suggestions": suggestions, "shap_explanation": pred_data['shap_explanation'], "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "report_id": f"VANC-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"}
+    
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
 # =======================================================
@@ -742,7 +810,9 @@ def select_drug(patient_id): return render_template('select_drug.html', patient=
 @app.route('/patient/<int:patient_id>/redirect_form', methods=['POST'])
 @login_required
 def redirect_to_drug_form(patient_id):
-    if request.form.get('drug_name') == 'warfarin': return redirect(url_for('warfarin_form', patient_id=patient_id))
+    drug = request.form.get('drug_name')
+    if drug == 'warfarin': return redirect(url_for('warfarin_form', patient_id=patient_id))
+    if drug == 'vancomycin': return redirect(url_for('vancomycin_form', patient_id=patient_id))
     return redirect(url_for('dashboard'))
 
 @app.route('/patient/<int:patient_id>/warfarin_form', methods=['GET'])
@@ -828,6 +898,61 @@ def generate_diabetes_report(patient_id):
     db.session.add(new_report)
     db.session.commit()
     return make_response(render_template('display_disease_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, report_obj=new_report))
+
+@app.route('/patient/<int:patient_id>/vancomycin_form', methods=['GET'])
+@login_required
+def vancomycin_form(patient_id):
+    if not current_user.is_beta_tester:
+        flash("Access Denied: The Vancomycin module is currently restricted to Beta Testers.", "danger")
+        return redirect(url_for('dashboard'))
+    patient = Patient.query.get_or_404(patient_id)
+    calculated_age = 0
+    try:
+        dob = datetime.strptime(patient.dob, '%Y-%m-%d')
+        today = datetime.today()
+        calculated_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+    except: pass
+    return render_template('vancomycin_form.html', patient=patient, calculated_age=calculated_age)
+
+@app.route('/patient/<int:patient_id>/generate_vancomycin_report', methods=['POST'])
+@login_required
+def generate_vancomycin_report(patient_id):
+    if not current_user.is_beta_tester: return redirect(url_for('dashboard'))
+    patient = Patient.query.get_or_404(patient_id)
+    patient_info, clinical_info, safety_info, results = process_vancomycin_data(request.form)
+    doctor_name = request.form.get('doctor_name')
+    
+    interacting_drugs = request.form.getlist('interacting_drugs')
+    interaction_warnings = []
+    if "NSAIDs" in interacting_drugs: interaction_warnings.append("<strong>Interaction: NSAIDs</strong>. Concomitant use increases risk of acute kidney injury.")
+    if "Aminoglycosides" in interacting_drugs: interaction_warnings.append("<strong>Severe Interaction: Aminoglycosides</strong>. Highly synergistic nephrotoxicity. Monitor renal function closely.")
+    if "Piperacillin" in interacting_drugs: interaction_warnings.append("<strong>Interaction: Piperacillin-Tazobactam</strong>. Increased risk of nephrotoxicity compared to vancomycin alone.")
+
+    full_report_data = {
+        "patient_info": patient_info, "clinical_info": clinical_info, "safety_info": safety_info, 
+        "results": results, "doctor_name": doctor_name, "interacting_drugs": interacting_drugs
+    }
+
+    html_string = render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=None, interaction_warnings=interaction_warnings)
+    pdf_bytes = HTML(string=html_string).write_pdf()
+
+    pdf_path = None
+    if supabase:
+        try:
+            filename = f"report_vanc_{patient.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+            supabase.storage.from_("medical_reports").upload(path=filename, file=pdf_bytes, file_options={"content-type": "application/pdf"})
+            pdf_path = filename 
+        except Exception as e: pass
+
+    new_report = Report(
+        drug_name="Vancomycin", predicted_dose=f"{results['predicted_dose_mg_per_week']} mg Daily Target",
+        model_used=results['model_used'], confidence=results['confidence_score'],
+        doctor_name=doctor_name, report_data_json=json.dumps(full_report_data),
+        patient_id=patient.id, pdf_storage_path=pdf_path 
+    )
+    db.session.add(new_report)
+    db.session.commit()
+    return make_response(render_template('display_report.html', patient_info=patient_info, clinical_info=clinical_info, safety_info=safety_info, results=results, doctor_name=doctor_name, request=request, interaction_warnings=interaction_warnings, report_obj=new_report))
 
 @app.route('/report/<int:report_id>')
 @login_required
@@ -915,6 +1040,7 @@ def admin_dashboard():
     
     warfarin_count = Report.query.filter_by(drug_name='Warfarin').count()
     diabetes_count = Report.query.filter_by(drug_name='Type 2 Diabetes Assessment').count()
+    vancomycin_count = Report.query.filter_by(drug_name='Vancomycin').count()
     
     basedir = os.path.abspath(os.path.dirname(__file__))
     maintenance_active = os.path.exists(os.path.join(basedir, 'maintenance.json'))
@@ -942,7 +1068,8 @@ def admin_dashboard():
         maintenance_active=maintenance_active, 
         current_broadcast=current_broadcast,
         current_maintenance=current_maintenance,
-        warfarin_count=warfarin_count, diabetes_count=diabetes_count
+        warfarin_count=warfarin_count, diabetes_count=diabetes_count,
+        vancomycin_count=vancomycin_count
     )
 
 # NEW ROUTE: BETA TESTER TOGGLE

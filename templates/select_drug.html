@@ -38,6 +38,30 @@
             </div>
         </div>
 
+        {% if current_user.is_beta_tester %}
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm border-0 border-top border-warning border-4">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3">
+                        <div class="bg-warning bg-opacity-10 text-warning rounded p-2">
+                            <i class="fas fa-flask fs-4"></i>
+                        </div>
+                        <span class="badge bg-warning text-dark align-self-start shadow-sm"><i class="fas fa-star me-1"></i> Beta Access</span>
+                    </div>
+                    <h5 class="fw-bold text-dark">Vancomycin (IV)</h5>
+                    <p class="text-muted small mb-4">Calculates target daily dosage via XGBoost, evaluating renal clearance (CrCl) and <em>HLA/agr</em> genomic risk factors.</p>
+                    
+                    <form action="{{ url_for('redirect_to_drug_form', patient_id=patient.id) }}" method="POST">
+                        <input type="hidden" name="drug_name" value="vancomycin">
+                        <button type="submit" class="btn btn-outline-warning text-dark w-100 fw-bold">
+                            Initialize Beta Module <i class="fas fa-arrow-right ms-1"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="col-md-4">
             <div class="card h-100 shadow-sm border-0 bg-light" style="opacity: 0.6;">
                 <div class="card-body p-4">
@@ -47,8 +71,8 @@
                         </div>
                         <span class="badge bg-secondary text-white align-self-start">In Development</span>
                     </div>
-                    <h5 class="fw-bold text-dark">Clopidogrel (Plavix)</h5>
-                    <p class="text-muted small mb-4">Antiplatelet therapy dosing adjustments based on <em>CYP2C19</em> loss-of-function alleles and metabolic pathways.</p>
+                    <h5 class="fw-bold text-dark">More Drugs</h5>
+                    <!-- <p class="text-muted small mb-4">Antiplatelet therapy dosing adjustments based on <em>CYP2C19</em> loss-of-function alleles and metabolic pathways.</p> -->
                     <button class="btn btn-secondary w-100 fw-bold disabled">Coming Soon</button>
                 </div>
             </div>
