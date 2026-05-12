@@ -379,18 +379,21 @@ def process_diabetes_data(form_data):
 
 # --- ADD VANCOMYCIN LOGIC ---
 def run_vancomycin_prediction(patient_data_dict):
-    # 1. Map data exactly to the columns expected by the model
+    # Map data perfectly
     patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=vancomycin_model_columns, fill_value=0)
     
-    # 2. Get the prediction (Tweedie guarantees this is a positive number)
+    # Get raw prediction
     prediction_array = vancomycin_model.predict(patient_df)
     raw_dose = float(prediction_array[0])
     
-    # 3. Clinical Rounding (Hospital bags only come in 250mg increments)
-    # Even if Tweedie outputs 712mg, we round it safely to 750mg
-    final_clinical_dose = round(raw_dose / 250.0) * 250.0
+    # --- CLINICAL SAFETY GUARDRAILS ---
+    # 1. Round to nearest 250mg bag
+    rounded_dose = round(raw_dose / 250.0) * 250.0
     
-    # 4. SHAP Explainability
+    # 2. Hard clamp: Never allow <500mg or >4000mg
+    final_clinical_dose = max(500.0, min(4000.0, rounded_dose))
+    
+    # SHAP Explainability
     shap_values = vancomycin_explainer.shap_values(patient_df)
     if isinstance(shap_values, list): shap_values_for_instance = shap_values[0][0]
     elif len(shap_values.shape) == 3: shap_values_for_instance = shap_values[0, :, 0]
@@ -404,7 +407,7 @@ def run_vancomycin_prediction(patient_data_dict):
     
     return {
         "prediction": int(final_clinical_dose), 
-        "model_name": "Vancomycin XGBoost (Tweedie Dist.)", 
+        "model_name": "Vancomycin XGBoost (Clinical Guardrails)", 
         "shap_explanation": shap_explanation, 
         "confidence_score": confidence_score
     }
