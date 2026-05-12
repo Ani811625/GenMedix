@@ -379,10 +379,18 @@ def process_diabetes_data(form_data):
 
 # --- ADD VANCOMYCIN LOGIC ---
 def run_vancomycin_prediction(patient_data_dict):
+    # 1. Map data exactly to the columns expected by the model
     patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=vancomycin_model_columns, fill_value=0)
-    prediction_array = vancomycin_model.predict(patient_df)
-    predicted_dose = round(float(prediction_array[0]))
     
+    # 2. Get the prediction (Tweedie guarantees this is a positive number)
+    prediction_array = vancomycin_model.predict(patient_df)
+    raw_dose = float(prediction_array[0])
+    
+    # 3. Clinical Rounding (Hospital bags only come in 250mg increments)
+    # Even if Tweedie outputs 712mg, we round it safely to 750mg
+    final_clinical_dose = round(raw_dose / 250.0) * 250.0
+    
+    # 4. SHAP Explainability
     shap_values = vancomycin_explainer.shap_values(patient_df)
     if isinstance(shap_values, list): shap_values_for_instance = shap_values[0][0]
     elif len(shap_values.shape) == 3: shap_values_for_instance = shap_values[0, :, 0]
@@ -394,28 +402,42 @@ def run_vancomycin_prediction(patient_data_dict):
     crcl = patient_data_dict.get('Calculated_CrCl', 100)
     confidence_score = "High" if 30 <= crcl <= 120 else "Medium"
     
-    return {"prediction": predicted_dose, "model_name": "Vancomycin XGBoost (Beta)", "shap_explanation": shap_explanation, "confidence_score": confidence_score}
+    return {
+        "prediction": int(final_clinical_dose), 
+        "model_name": "Vancomycin XGBoost (Tweedie Dist.)", 
+        "shap_explanation": shap_explanation, 
+        "confidence_score": confidence_score
+    }
 
 def process_vancomycin_data(form_data):
     patient_info_dict = {"patient_name": form_data.get('patient_name'), "patient_dob": form_data.get('patient_dob'), "patient_gender": form_data.get('Gender'), "patient_country": "N/A", "patient_address": "N/A"}
     safety_data_dict = {"is_pregnant": "Not Applicable", "active_bleeding": "Not Applicable", "platelet_count": "Not Applicable", "baseline_inr": "Not Applicable"}
     
+    # Parse inputs cleanly
     age = float(form_data.get('Age', 30))
     weight = float(form_data.get('Weight_kg', 70))
+    height = float(form_data.get('Height_cm', 170))
     scr = float(form_data.get('Serum_Creatinine', 1.0))
     gender = form_data.get('Gender', 'Male')
     hla = 1.0 if form_data.get('hla_risk') == 'Yes' else 0.0
     agr = 1.0 if form_data.get('agr_mutation') == 'Yes' else 0.0
+    gender_male = 1.0 if gender == 'Male' else 0.0
     
+    # Calculate Creatinine Clearance (Cockcroft-Gault)
     crcl = ((140 - age) * weight) / (72 * scr)
     if gender == 'Female': crcl *= 0.85
     crcl = round(crcl, 1)
 
+    # CRITICAL: These dictionary keys MUST match 'expected_columns' exactly!
     clinical_data_dict = {
-        "Age": age, "Weight_kg": weight, "Height_cm": float(form_data.get('Height_cm', 170)),
-        "Serum_Creatinine": scr, "Calculated_CrCl": crcl,
-        "HLA_A_32_01_Risk": hla, "agr_Group_II_Mutation": agr,
-        "Gender_Male": 1.0 if gender == 'Male' else 0.0
+        'Age': age, 
+        'Weight_kg': weight, 
+        'Height_cm': height,
+        'Serum_Creatinine': scr, 
+        'Calculated_CrCl': crcl,
+        'HLA_A_32_01_Risk': hla, 
+        'agr_Group_II_Mutation': agr,
+        'Gender_Male': gender_male
     }
     
     clinical_info_display = {
@@ -433,7 +455,17 @@ def process_vancomycin_data(form_data):
     if crcl < 30: suggestions.append("<strong>RENAL IMPAIRMENT:</strong> Est. CrCl < 30 mL/min. Pulse dosing by levels is recommended over continuous standard dosing.")
     if not suggestions: suggestions.append("Parameters indicate standard clearance. Monitor trough levels before the 4th dose.")
     
-    results_dict = {"predicted_dose_mg_per_week": pred_data['prediction'], "model_used": pred_data['model_name'], "confidence_score": pred_data['confidence_score'], "confidence_explanation": "Model evaluated pharmacokinetic CrCl and genome markers.", "human_explanation": get_human_explanation(pred_data['shap_explanation']), "clinical_suggestions": suggestions, "shap_explanation": pred_data['shap_explanation'], "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "report_id": f"VANC-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"}
+    results_dict = {
+        "predicted_dose_mg_per_week": pred_data['prediction'], 
+        "model_used": pred_data['model_name'], 
+        "confidence_score": pred_data['confidence_score'], 
+        "confidence_explanation": "Model evaluated pharmacokinetic CrCl and genome markers via log-normal distribution.", 
+        "human_explanation": get_human_explanation(pred_data['shap_explanation']), 
+        "clinical_suggestions": suggestions, 
+        "shap_explanation": pred_data['shap_explanation'], 
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+        "report_id": f"VANC-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
+    }
     
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
