@@ -307,9 +307,16 @@ def run_model_prediction(patient_data_dict):
     lime_explanation = {}
     try:
         numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
+        
+        # --- NEW: Translator function for LIME ---
+        def lime_predict_wrapper(numpy_data):
+            # Convert LIME's raw numbers back into a named DataFrame
+            temp_df = pd.DataFrame(numpy_data, columns=columns_to_use)
+            return model_to_use.predict(temp_df)
+            
         lime_exp = base_lime_explainer.explain_instance(
             data_row=numeric_row,
-            predict_fn=model_to_use.predict
+            predict_fn=lime_predict_wrapper # Use the translator here!
         )
         lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
     except Exception as e:
@@ -440,9 +447,16 @@ def run_vancomycin_prediction(patient_data_dict):
     lime_explanation = {}
     try:
         numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
+        
+        # --- NEW: Translator function for LIME ---
+        def vanc_lime_wrapper(numpy_data):
+            # Convert LIME's raw numbers back into a named DataFrame
+            temp_df = pd.DataFrame(numpy_data, columns=vancomycin_model_columns)
+            return vancomycin_model.predict(temp_df)
+            
         lime_exp = vancomycin_lime_explainer.explain_instance(
             data_row=numeric_row,
-            predict_fn=vancomycin_model.predict
+            predict_fn=vanc_lime_wrapper # Use the translator here!
         )
         lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
     except Exception as e:
