@@ -116,47 +116,96 @@
             {% endif %}
 
             {% if results.get('shap_explanation') %}
-                <h5 class="fw-bold border-bottom pb-2 text-secondary mb-4"><i class="fas fa-project-diagram me-2"></i> Explainable AI (Model Insight)</h5>
-                <p class="text-muted small mb-4">The chart below visualizes how the model arrived at the suggested dose. Red bars indicate factors that increased the dose, green bars decreased it.</p>
+                <h5 class="fw-bold border-bottom pb-2 text-secondary mb-4"><i class="fas fa-project-diagram me-2"></i> Explainable AI (SHAP vs. LIME)</h5>
+                <p class="text-muted small mb-4">Dual-framework interpretability. <strong>SHAP</strong> calculates exact marginal contributions via game theory. <strong>LIME</strong> builds a local surrogate model to show which physiological thresholds triggered the decision.</p>
 
-                <div class="mb-5 p-4 border rounded shadow-sm bg-white">
-                    <div class="d-flex justify-content-between text-muted small mb-3 px-2 fw-bold text-uppercase">
-                        <span class="text-success"><i class="fas fa-arrow-left"></i> Decreases Dose</span>
-                        <span class="text-danger">Increases Dose <i class="fas fa-arrow-right"></i></span>
-                    </div>
-                    
-                    <div class="position-relative py-3" style="background: #f8f9fa; border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;">
-                        <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #adb5bd; z-index: 1;"></div>
-
-                        {% set ns = namespace(max_val=0.0001) %}
-                        {% for feat, val in results.get('shap_explanation', {}).items() %}
-                            {% if val|abs > ns.max_val %}{% set ns.max_val = val|abs %}{% endif %}
-                        {% endfor %}
-
-                        {% for feat, val in results.get('shap_explanation', {}).items() %}
-                            {% set abs_val = val|abs %}
-                            {% set width_pct = ((abs_val / ns.max_val) * 45) | round(2) %}
-                            {% set display_name = feat.replace('Weight__kg_', 'Weight').replace('Height__cm_', 'Height').replace('Race_', 'Race: ').replace('CYP2C9_genotypes__', 'CYP2C9 *').replace('VKORC1_genotype_', 'VKORC1 ').replace('__', '/').replace('_', ' ') %}
-
-                            <div class="row align-items-center mb-2 position-relative" style="z-index: 2; margin: 0;">
-                                <div class="col-6 pe-2 d-flex justify-content-end align-items-center">
-                                    {% if val < 0 %}
-                                        <span class="text-muted small fw-bold me-2">-{{ abs_val|round(2) }}</span>
-                                        <div class="bg-success shadow-sm" style="height: 20px; width: {{ width_pct }}%; border-radius: 4px 0 0 4px;"></div>
-                                    {% else %}
-                                        <span class="fw-bold text-dark small" style="font-size: 0.85rem;">{{ display_name }}</span>
-                                    {% endif %}
-                                </div>
-                                <div class="col-6 ps-2 d-flex justify-content-start align-items-center">
-                                    {% if val > 0 %}
-                                        <div class="bg-danger shadow-sm" style="height: 20px; width: {{ width_pct }}%; border-radius: 0 4px 4px 0;"></div>
-                                        <span class="text-muted small fw-bold ms-2">+{{ abs_val|round(2) }}</span>
-                                    {% else %}
-                                        <span class="fw-bold text-dark small" style="font-size: 0.85rem;">{{ display_name }}</span>
-                                    {% endif %}
-                                </div>
+                <div class="row g-4 mb-5">
+                    <div class="col-md-6">
+                        <div class="p-4 border rounded shadow-sm bg-white h-100">
+                            <h6 class="fw-bold text-center mb-3">SHAP Value Attribution</h6>
+                            <div class="d-flex justify-content-between text-muted small mb-3 px-2 fw-bold text-uppercase" style="font-size: 0.7rem;">
+                                <span class="text-success"><i class="fas fa-arrow-left"></i> Decrease</span>
+                                <span class="text-danger">Increase <i class="fas fa-arrow-right"></i></span>
                             </div>
-                        {% endfor %}
+                            
+                            <div class="position-relative py-3" style="background: #f8f9fa; border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;">
+                                <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #adb5bd; z-index: 1;"></div>
+
+                                {% set ns = namespace(max_val=0.0001) %}
+                                {% for feat, val in results.get('shap_explanation', {}).items() %}
+                                    {% if val|abs > ns.max_val %}{% set ns.max_val = val|abs %}{% endif %}
+                                {% endfor %}
+
+                                {% for feat, val in results.get('shap_explanation', {}).items() %}
+                                    {% set abs_val = val|abs %}
+                                    {% set width_pct = ((abs_val / ns.max_val) * 45) | round(2) %}
+                                    {% set display_name = feat.replace('Weight__kg_', 'Weight').replace('Calculated_CrCl', 'CrCl').replace('Serum_Creatinine', 'SCr').replace('Height__cm_', 'Height').replace('Race_', 'Race: ').replace('CYP2C9_genotypes__', 'CYP2C9 *').replace('VKORC1_genotype_', 'VKORC1 ').replace('__', '/').replace('_', ' ') %}
+
+                                    <div class="row align-items-center mb-2 position-relative" style="z-index: 2; margin: 0;">
+                                        <div class="col-6 pe-2 d-flex justify-content-end align-items-center">
+                                            {% if val < 0 %}
+                                                <span class="text-muted small fw-bold me-2">-{{ abs_val|round(1) }}</span>
+                                                <div class="bg-success shadow-sm" style="height: 16px; width: {{ width_pct }}%; border-radius: 4px 0 0 4px;"></div>
+                                            {% else %}
+                                                <span class="fw-bold text-dark small text-truncate" style="font-size: 0.75rem; max-width: 100%;">{{ display_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-6 ps-2 d-flex justify-content-start align-items-center">
+                                            {% if val > 0 %}
+                                                <div class="bg-danger shadow-sm" style="height: 16px; width: {{ width_pct }}%; border-radius: 0 4px 4px 0;"></div>
+                                                <span class="text-muted small fw-bold ms-2">+{{ abs_val|round(1) }}</span>
+                                            {% else %}
+                                                <span class="fw-bold text-dark small text-truncate" style="font-size: 0.75rem; max-width: 100%;">{{ display_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="p-4 border rounded shadow-sm bg-white h-100">
+                            <h6 class="fw-bold text-center mb-3">LIME Local Surrogate</h6>
+                            <div class="d-flex justify-content-between text-muted small mb-3 px-2 fw-bold text-uppercase" style="font-size: 0.7rem;">
+                                <span class="text-success"><i class="fas fa-arrow-left"></i> Decrease</span>
+                                <span class="text-danger">Increase <i class="fas fa-arrow-right"></i></span>
+                            </div>
+                            
+                            <div class="position-relative py-3" style="background: #f8f9fa; border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;">
+                                <div style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #adb5bd; z-index: 1;"></div>
+
+                                {% set ns_lime = namespace(max_val=0.0001) %}
+                                {% for feat, val in results.get('lime_explanation', {}).items() %}
+                                    {% if val|abs > ns_lime.max_val %}{% set ns_lime.max_val = val|abs %}{% endif %}
+                                {% endfor %}
+
+                                {% for feat, val in results.get('lime_explanation', {}).items() %}
+                                    {% set abs_val = val|abs %}
+                                    {% set width_pct = ((abs_val / ns_lime.max_val) * 45) | round(2) %}
+                                    {% set display_name = feat.replace('Weight__kg_', 'Weight').replace('Calculated_CrCl', 'CrCl').replace('Serum_Creatinine', 'SCr').replace('Height__cm_', 'Height').replace('Race_', 'Race: ').replace('CYP2C9_genotypes__', 'CYP2C9 *').replace('VKORC1_genotype_', 'VKORC1 ').replace('__', '/').replace('_', ' ') %}
+
+                                    <div class="row align-items-center mb-2 position-relative" style="z-index: 2; margin: 0;">
+                                        <div class="col-6 pe-2 d-flex justify-content-end align-items-center">
+                                            {% if val < 0 %}
+                                                <span class="text-muted small fw-bold me-2">-{{ abs_val|round(1) }}</span>
+                                                <div class="bg-success shadow-sm" style="height: 16px; width: {{ width_pct }}%; border-radius: 4px 0 0 4px;"></div>
+                                            {% else %}
+                                                <span class="fw-bold text-dark small text-truncate" style="font-size: 0.7rem; max-width: 100%;" title="{{ display_name }}">{{ display_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-6 ps-2 d-flex justify-content-start align-items-center">
+                                            {% if val > 0 %}
+                                                <div class="bg-danger shadow-sm" style="height: 16px; width: {{ width_pct }}%; border-radius: 0 4px 4px 0;"></div>
+                                                <span class="text-muted small fw-bold ms-2">+{{ abs_val|round(1) }}</span>
+                                            {% else %}
+                                                <span class="fw-bold text-dark small text-truncate" style="font-size: 0.7rem; max-width: 100%;" title="{{ display_name }}">{{ display_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
                     </div>
                 </div>
             {% else %}

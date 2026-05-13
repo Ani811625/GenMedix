@@ -4,6 +4,8 @@ import random
 import string
 import smtplib
 import ssl
+import dill
+import lime.lime_tabular
 from datetime import datetime, timedelta
 from threading import Thread
 from email.mime.text import MIMEText
@@ -145,7 +147,6 @@ class User(db.Model, UserMixin):
     password_hash = db.Column(db.String(256))
     medical_reg_id = db.Column(db.String(100), unique=True)
     
-    # NEW: Beta Tester Feature Flag
     is_beta_tester = db.Column(db.Boolean, default=False)
     
     subscription_email = db.Column(db.String(150), db.ForeignKey('subscription.email'))
@@ -202,16 +203,12 @@ def check_maintenance_and_db():
         if not inspector.has_table("user") or not inspector.has_table("admin_email"):
              with app.app_context(): db.create_all()
              
-        
-        # NEW: Auto-add the beta tester column to existing databases safely
         with app.app_context():
             try:
-                # PostgreSQL requires reserved words like "user" to be in double quotes. 
-                # It also expects FALSE instead of 0 for boolean defaults.
                 db.session.execute(text('ALTER TABLE "user" ADD COLUMN is_beta_tester BOOLEAN DEFAULT FALSE'))
                 db.session.commit()
             except Exception:
-                db.session.rollback() # Column already exists, ignore
+                db.session.rollback() 
                 
         with app.app_context():
             if not AdminEmail.query.filter_by(email='aniruddhas387@gmail.com').first():
@@ -252,6 +249,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
 try:
+    # --- Load Prediction Models & SHAP ---
     base_model = joblib.load(os.path.join(MODEL_DIR, 'random_forest_base_v1.pkl'))
     base_model_columns = joblib.load(os.path.join(MODEL_DIR, 'base_model_columns.pkl'))
     enhanced_model = joblib.load(os.path.join(MODEL_DIR, 'random_forest_enhanced_v1.pkl'))
@@ -263,11 +261,20 @@ try:
     diabetes_model_columns = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_columns.pkl'))
     diabetes_explainer = shap.TreeExplainer(diabetes_model)
     
-    # NEW: Prepared for Vancomycin Models
     vancomycin_model = joblib.load(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_xgb_model_v1.pkl'))
     vancomycin_model_columns = joblib.load(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_model_columns.pkl'))
     vancomycin_explainer = shap.TreeExplainer(vancomycin_model)
-except: pass 
+
+    # --- Load LIME Explainers (Dill) ---
+    with open(os.path.join(MODEL_DIR, 'warfarin_lime_explainer.pkl'), 'rb') as f:
+        base_lime_explainer = dill.load(f)
+        
+    with open(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_lime_explainer.pkl'), 'rb') as f:
+        vancomycin_lime_explainer = dill.load(f)
+
+except Exception as e: 
+    print(f"Warning: Model loading issue - {e}")
+    pass 
 
 # =======================================================
 # 4. ML LOGIC (Warfarin, Diabetes, Vancomycin)
@@ -285,14 +292,36 @@ def get_interaction_warnings(checked_drugs_list):
 def run_model_prediction(patient_data_dict):
     is_enhanced = any(key.startswith('CYP2C9') or key.startswith('VKORC1') for key in patient_data_dict.keys())
     model_to_use, columns_to_use, explainer_to_use, model_name = (enhanced_model, enhanced_model_columns, enhanced_explainer, "Enhanced (Clinical + Genome)") if is_enhanced else (base_model, base_model_columns, base_explainer, "Base (Clinical-Only)")
+    
     patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=columns_to_use, fill_value=0)
     prediction_array = model_to_use.predict(patient_df)
     predicted_dose = round(prediction_array[0], 2)
     std_dev = np.std([tree.predict(patient_df) for tree in model_to_use.estimators_])
+    
+    # SHAP Generation
     shap_values = explainer_to_use.shap_values(patient_df)[0]
     top_indices = np.argsort(np.abs(shap_values))[-5:] 
     shap_explanation = {patient_df.columns[i]: round(shap_values[i], 2) for i in reversed(top_indices) if np.abs(shap_values[i]) > 0}
-    return {"prediction": predicted_dose, "model_name": model_name, "shap_explanation": shap_explanation, "std_dev": std_dev}
+    
+    # LIME Generation
+    lime_explanation = {}
+    try:
+        numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
+        lime_exp = base_lime_explainer.explain_instance(
+            data_row=numeric_row,
+            predict_fn=model_to_use.predict
+        )
+        lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
+    except Exception as e:
+        print(f"LIME Error (Warfarin): {e}")
+
+    return {
+        "prediction": predicted_dose, 
+        "model_name": model_name, 
+        "shap_explanation": shap_explanation, 
+        "lime_explanation": lime_explanation,
+        "std_dev": std_dev
+    }
 
 def get_confidence_score(std_dev):
     if std_dev < 0.5: return "High", "Model estimators are in strong agreement."
@@ -338,7 +367,19 @@ def process_prediction_data(form_data):
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     if form_data.get('is_pregnant'): suggestions.append("<strong>CONTRAINDICATION:</strong> Patient marked Pregnant.")
     if form_data.get('active_bleeding'): suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected.")
-    results_dict = {"predicted_dose_mg_per_week": pred_data['prediction'], "model_used": pred_data['model_name'], "confidence_score": confidence, "confidence_explanation": conf_expl, "human_explanation": get_human_explanation(pred_data['shap_explanation']), "clinical_suggestions": suggestions, "shap_explanation": pred_data.get('shap_explanation', {}), "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"}
+    
+    results_dict = {
+        "predicted_dose_mg_per_week": pred_data['prediction'], 
+        "model_used": pred_data['model_name'], 
+        "confidence_score": confidence, 
+        "confidence_explanation": conf_expl, 
+        "human_explanation": get_human_explanation(pred_data['shap_explanation']), 
+        "clinical_suggestions": suggestions, 
+        "shap_explanation": pred_data.get('shap_explanation', {}), 
+        "lime_explanation": pred_data.get('lime_explanation', {}),
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
+        "report_id": f"GM-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
+    }
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
 def run_diabetes_prediction(patient_data_dict):
@@ -377,23 +418,16 @@ def process_diabetes_data(form_data):
     results_dict = {"predicted_dose_mg_per_week": pred_data['prediction'], "probability_score": pred_data['probability'], "model_used": pred_data['model_name'], "confidence_score": pred_data['confidence_score'], "confidence_explanation": f"The AI model predicts a {pred_data['probability']}% probability of pathology.", "clinical_suggestions": get_diabetes_clinical_suggestions(pred_data['shap_explanation'], pred_data['prediction']), "shap_explanation": pred_data['shap_explanation'], "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "report_id": f"DIA-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"}
     return patient_info_dict, clinical_info_display, safety_data_dict, results_dict
 
-# --- ADD VANCOMYCIN LOGIC ---
 def run_vancomycin_prediction(patient_data_dict):
-    # Map data perfectly
     patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=vancomycin_model_columns, fill_value=0)
     
-    # Get raw prediction
     prediction_array = vancomycin_model.predict(patient_df)
     raw_dose = float(prediction_array[0])
     
-    # --- CLINICAL SAFETY GUARDRAILS ---
-    # 1. Round to nearest 250mg bag
     rounded_dose = round(raw_dose / 250.0) * 250.0
-    
-    # 2. Hard clamp: Never allow <500mg or >4000mg
     final_clinical_dose = max(500.0, min(4000.0, rounded_dose))
     
-    # SHAP Explainability
+    # SHAP Generation
     shap_values = vancomycin_explainer.shap_values(patient_df)
     if isinstance(shap_values, list): shap_values_for_instance = shap_values[0][0]
     elif len(shap_values.shape) == 3: shap_values_for_instance = shap_values[0, :, 0]
@@ -402,6 +436,18 @@ def run_vancomycin_prediction(patient_data_dict):
     top_indices = np.argsort(np.abs(shap_values_for_instance))[-5:]
     shap_explanation = {patient_df.columns[i]: round(float(shap_values_for_instance[i]), 2) for i in reversed(top_indices) if abs(float(shap_values_for_instance[i])) > 0.01}
     
+    # LIME Generation
+    lime_explanation = {}
+    try:
+        numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
+        lime_exp = vancomycin_lime_explainer.explain_instance(
+            data_row=numeric_row,
+            predict_fn=vancomycin_model.predict
+        )
+        lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
+    except Exception as e:
+        print(f"LIME Error (Vancomycin): {e}")
+
     crcl = patient_data_dict.get('Calculated_CrCl', 100)
     confidence_score = "High" if 30 <= crcl <= 120 else "Medium"
     
@@ -409,6 +455,7 @@ def run_vancomycin_prediction(patient_data_dict):
         "prediction": int(final_clinical_dose), 
         "model_name": "Vancomycin XGBoost (Clinical Guardrails)", 
         "shap_explanation": shap_explanation, 
+        "lime_explanation": lime_explanation,
         "confidence_score": confidence_score
     }
 
@@ -416,7 +463,6 @@ def process_vancomycin_data(form_data):
     patient_info_dict = {"patient_name": form_data.get('patient_name'), "patient_dob": form_data.get('patient_dob'), "patient_gender": form_data.get('Gender'), "patient_country": "N/A", "patient_address": "N/A"}
     safety_data_dict = {"is_pregnant": "Not Applicable", "active_bleeding": "Not Applicable", "platelet_count": "Not Applicable", "baseline_inr": "Not Applicable"}
     
-    # Parse inputs cleanly
     age = float(form_data.get('Age', 30))
     weight = float(form_data.get('Weight_kg', 70))
     height = float(form_data.get('Height_cm', 170))
@@ -426,20 +472,14 @@ def process_vancomycin_data(form_data):
     agr = 1.0 if form_data.get('agr_mutation') == 'Yes' else 0.0
     gender_male = 1.0 if gender == 'Male' else 0.0
     
-    # Calculate Creatinine Clearance (Cockcroft-Gault)
     crcl = ((140 - age) * weight) / (72 * scr)
     if gender == 'Female': crcl *= 0.85
     crcl = round(crcl, 1)
 
-    # CRITICAL: These dictionary keys MUST match 'expected_columns' exactly!
     clinical_data_dict = {
-        'Age': age, 
-        'Weight_kg': weight, 
-        'Height_cm': height,
-        'Serum_Creatinine': scr, 
-        'Calculated_CrCl': crcl,
-        'HLA_A_32_01_Risk': hla, 
-        'agr_Group_II_Mutation': agr,
+        'Age': age, 'Weight_kg': weight, 'Height_cm': height,
+        'Serum_Creatinine': scr, 'Calculated_CrCl': crcl,
+        'HLA_A_32_01_Risk': hla, 'agr_Group_II_Mutation': agr,
         'Gender_Male': gender_male
     }
     
@@ -465,7 +505,8 @@ def process_vancomycin_data(form_data):
         "confidence_explanation": "Model evaluated pharmacokinetic CrCl and genome markers via log-normal distribution.", 
         "human_explanation": get_human_explanation(pred_data['shap_explanation']), 
         "clinical_suggestions": suggestions, 
-        "shap_explanation": pred_data['shap_explanation'], 
+        "shap_explanation": pred_data['shap_explanation'],
+        "lime_explanation": pred_data.get('lime_explanation', {}),
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), 
         "report_id": f"VANC-{datetime.now().strftime('%Y%m%d')}-{abs(hash(patient_info_dict['patient_name'])) % 10000}"
     }
@@ -668,13 +709,9 @@ def register():
 @app.route('/logout')
 @login_required
 def logout():
-    # 1. Let Flask-Login securely handle the auth state and cookie deletion flags
     logout_user()
-    
-    # 2. Safely pop our custom variables instead of obliterating the whole session dict
     session.pop('reset_email', None)
     session.pop('can_reset_password', None)
-    
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
 
@@ -773,7 +810,7 @@ def add_patient():
     if request.method == 'POST':
         clean_aadhar = request.form.get('aadhar').replace(' ', '')
         if len(clean_aadhar) != 12 or not clean_aadhar.isdigit():
-            flash('Invalid Aadhar: Must be 12 digits.', 'danger')
+            flash('Invalid ID format.', 'danger')
             return render_template('add_patient.html')
         if Patient.query.filter_by(aadhar=clean_aadhar, doctor_id=current_user.id).first():
             flash('You have already registered this patient.', 'warning')
@@ -1027,7 +1064,6 @@ def download_report():
     form_data = request.form
     drug_name = form_data.get('drug_name', '')
     
-    # Dynamically route the data to the correct AI processor
     if drug_name == 'Vancomycin':
         patient_info, clinical_info, safety_info, results = process_vancomycin_data(form_data)
     else:
@@ -1114,7 +1150,6 @@ def admin_dashboard():
         vancomycin_count=vancomycin_count
     )
 
-# NEW ROUTE: BETA TESTER TOGGLE
 @app.route('/admin/doctor/<int:doc_id>/toggle_beta', methods=['POST'])
 @login_required
 @admin_required
@@ -1167,10 +1202,9 @@ def admin_broadcast():
     message = request.form.get('message')
     
     if message and message.strip():
-        # New Enterprise Semantic Broadcast Logic
         data = {
-            "id": str(datetime.now().timestamp()), # Unique ID for dismissal memory
-            "type": request.form.get('broadcast_type', 'info'), # info, warning, danger, success
+            "id": str(datetime.now().timestamp()), 
+            "type": request.form.get('broadcast_type', 'info'),
             "message": message.strip(),
             "is_dismissible": request.form.get('is_dismissible') == 'on',
             "cta_text": request.form.get('cta_text', ''),
