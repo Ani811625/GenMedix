@@ -193,7 +193,7 @@ class Note(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 # =======================================================
-# 3. LOAD AI MODELS & SYSTEM CHECKS
+# 3. ISOLATED MODEL LOADING (Prevents Cascading Failures)
 # =======================================================
 
 @app.before_request
@@ -248,33 +248,52 @@ def add_header(response):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_DIR = os.path.join(BASE_DIR, 'models')
 
+# 1. Base Model Load
 try:
-    # --- Load Prediction Models & SHAP ---
     base_model = joblib.load(os.path.join(MODEL_DIR, 'random_forest_base_v1.pkl'))
     base_model_columns = joblib.load(os.path.join(MODEL_DIR, 'base_model_columns.pkl'))
+    base_explainer = shap.TreeExplainer(base_model)
+except Exception as e: print(f"Base Model Load Error: {e}")
+
+# 2. Enhanced Model Load
+try:
     enhanced_model = joblib.load(os.path.join(MODEL_DIR, 'random_forest_enhanced_v1.pkl'))
     enhanced_model_columns = joblib.load(os.path.join(MODEL_DIR, 'model_columns.pkl'))
     enhanced_explainer = shap.TreeExplainer(enhanced_model)
-    base_explainer = shap.TreeExplainer(base_model)
-    
+except Exception as e: print(f"Enhanced Model Load Error: {e}")
+
+# 3. Diabetes Model Load
+try:
     diabetes_model = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_v1.pkl'))
     diabetes_model_columns = joblib.load(os.path.join(MODEL_DIR, 'diabetes_model_columns.pkl'))
     diabetes_explainer = shap.TreeExplainer(diabetes_model)
-    
+except Exception as e: print(f"Diabetes Model Load Error: {e}")
+
+# 4. Vancomycin Model Load
+try:
     vancomycin_model = joblib.load(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_xgb_model_v1.pkl'))
     vancomycin_model_columns = joblib.load(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_model_columns.pkl'))
     vancomycin_explainer = shap.TreeExplainer(vancomycin_model)
+except Exception as e: print(f"Vancomycin Model Load Error: {e}")
 
-    # --- Load LIME Explainers (Dill) ---
-    with open(os.path.join(MODEL_DIR, 'warfarin_lime_explainer.pkl'), 'rb') as f:
+# 5. Warfarin LIME Explainer Load (With fallback paths)
+base_lime_explainer = None
+try:
+    wf_path = os.path.join(MODEL_DIR, 'warfarin', 'warfarin_lime_explainer.pkl')
+    if not os.path.exists(wf_path): wf_path = os.path.join(MODEL_DIR, 'warfarin_lime_explainer.pkl')
+    with open(wf_path, 'rb') as f:
         base_lime_explainer = dill.load(f)
-        
-    with open(os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_lime_explainer.pkl'), 'rb') as f:
-        vancomycin_lime_explainer = dill.load(f)
+except Exception as e: print(f"Warfarin LIME Load Error: {e}")
 
-except Exception as e: 
-    print(f"Warning: Model loading issue - {e}")
-    pass 
+# 6. Vancomycin LIME Explainer Load (With fallback paths)
+vancomycin_lime_explainer = None
+try:
+    v_path = os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_lime_explainer.pkl')
+    if not os.path.exists(v_path): v_path = os.path.join(MODEL_DIR, 'vancomycin_lime_explainer.pkl')
+    with open(v_path, 'rb') as f:
+        vancomycin_lime_explainer = dill.load(f)
+except Exception as e: print(f"Vancomycin LIME Load Error: {e}")
+
 
 # =======================================================
 # 4. ML LOGIC (Warfarin, Diabetes, Vancomycin)
@@ -303,24 +322,23 @@ def run_model_prediction(patient_data_dict):
     top_indices = np.argsort(np.abs(shap_values))[-5:] 
     shap_explanation = {patient_df.columns[i]: round(shap_values[i], 2) for i in reversed(top_indices) if np.abs(shap_values[i]) > 0}
     
-    # LIME Generation
+    # LIME Generation with Wrapper
     lime_explanation = {}
-    try:
-        numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
-        
-        # --- NEW: Translator function for LIME ---
-        def lime_predict_wrapper(numpy_data):
-            # Convert LIME's raw numbers back into a named DataFrame
-            temp_df = pd.DataFrame(numpy_data, columns=columns_to_use)
-            return model_to_use.predict(temp_df)
+    if base_lime_explainer is not None:
+        try:
+            numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
             
-        lime_exp = base_lime_explainer.explain_instance(
-            data_row=numeric_row,
-            predict_fn=lime_predict_wrapper # Use the translator here!
-        )
-        lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
-    except Exception as e:
-        print(f"LIME Error (Warfarin): {e}")
+            def lime_predict_wrapper(numpy_data):
+                temp_df = pd.DataFrame(numpy_data, columns=columns_to_use)
+                return model_to_use.predict(temp_df)
+                
+            lime_exp = base_lime_explainer.explain_instance(
+                data_row=numeric_row,
+                predict_fn=lime_predict_wrapper
+            )
+            lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
+        except Exception as e:
+            print(f"LIME Execution Error (Warfarin): {e}")
 
     return {
         "prediction": predicted_dose, 
@@ -443,24 +461,23 @@ def run_vancomycin_prediction(patient_data_dict):
     top_indices = np.argsort(np.abs(shap_values_for_instance))[-5:]
     shap_explanation = {patient_df.columns[i]: round(float(shap_values_for_instance[i]), 2) for i in reversed(top_indices) if abs(float(shap_values_for_instance[i])) > 0.01}
     
-    # LIME Generation
+    # LIME Generation with Wrapper
     lime_explanation = {}
-    try:
-        numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
-        
-        # --- NEW: Translator function for LIME ---
-        def vanc_lime_wrapper(numpy_data):
-            # Convert LIME's raw numbers back into a named DataFrame
-            temp_df = pd.DataFrame(numpy_data, columns=vancomycin_model_columns)
-            return vancomycin_model.predict(temp_df)
+    if vancomycin_lime_explainer is not None:
+        try:
+            numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values
             
-        lime_exp = vancomycin_lime_explainer.explain_instance(
-            data_row=numeric_row,
-            predict_fn=vanc_lime_wrapper # Use the translator here!
-        )
-        lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
-    except Exception as e:
-        print(f"LIME Error (Vancomycin): {e}")
+            def vanc_lime_wrapper(numpy_data):
+                temp_df = pd.DataFrame(numpy_data, columns=vancomycin_model_columns)
+                return vancomycin_model.predict(temp_df)
+                
+            lime_exp = vancomycin_lime_explainer.explain_instance(
+                data_row=numeric_row,
+                predict_fn=vanc_lime_wrapper
+            )
+            lime_explanation = {feat: round(weight, 2) for feat, weight in lime_exp.as_list()[:4]}
+        except Exception as e:
+            print(f"LIME Execution Error (Vancomycin): {e}")
 
     crcl = patient_data_dict.get('Calculated_CrCl', 100)
     confidence_score = "High" if 30 <= crcl <= 120 else "Medium"
@@ -1329,7 +1346,6 @@ def admin_edit_doctor(doc_id):
     db.session.commit()
     flash(f"Profile updated successfully.", "success")
     return redirect(url_for('admin_dashboard'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
