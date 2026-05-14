@@ -276,7 +276,7 @@ try:
     vancomycin_explainer = shap.TreeExplainer(vancomycin_model)
 except Exception as e: print(f"Vancomycin Model Load Error: {e}")
 
-# 5. Warfarin LIME Explainer Load (With fallback paths)
+# 5. Warfarin LIME Explainer Load
 base_lime_explainer = None
 try:
     wf_path = os.path.join(MODEL_DIR, 'warfarin', 'warfarin_lime_explainer.pkl')
@@ -285,7 +285,7 @@ try:
         base_lime_explainer = dill.load(f)
 except Exception as e: print(f"Warfarin LIME Load Error: {e}")
 
-# 6. Vancomycin LIME Explainer Load (With fallback paths)
+# 6. Vancomycin LIME Explainer Load
 vancomycin_lime_explainer = None
 try:
     v_path = os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_lime_explainer.pkl')
@@ -294,10 +294,78 @@ try:
         vancomycin_lime_explainer = dill.load(f)
 except Exception as e: print(f"Vancomycin LIME Load Error: {e}")
 
+# 7. Warfarin Bayesian Network Load
+base_bayesian_net = None
+try:
+    w_bgm_path = os.path.join(MODEL_DIR, 'warfarin', 'warfarin_bayesian_net.pkl')
+    if not os.path.exists(w_bgm_path): w_bgm_path = os.path.join(MODEL_DIR, 'warfarin_bayesian_net.pkl')
+    base_bayesian_net = joblib.load(w_bgm_path)
+except Exception as e: print(f"Warfarin Bayesian Load Error: {e}")
+
+# 8. Vancomycin Bayesian Network Load
+vancomycin_bayesian_net = None
+try:
+    v_bgm_path = os.path.join(MODEL_DIR, 'vancomycin', 'vancomycin_bayesian_net.pkl')
+    if not os.path.exists(v_bgm_path): v_bgm_path = os.path.join(MODEL_DIR, 'vancomycin_bayesian_net.pkl')
+    vancomycin_bayesian_net = joblib.load(v_bgm_path)
+except Exception as e: print(f"Vancomycin Bayesian Load Error: {e}")
+
 
 # =======================================================
 # 4. ML LOGIC (Warfarin, Diabetes, Vancomycin)
 # =======================================================
+def run_monte_carlo_simulation(model, patient_df, iterations=100):
+    """Runs Monte Carlo simulation by applying 2% biological variance to inputs."""
+    predictions = []
+    numeric_cols = [col for col in patient_df.columns if patient_df[col].nunique() > 2] # Ignore binary flags
+    
+    for _ in range(iterations):
+        noisy_df = patient_df.copy()
+        for col in numeric_cols:
+            # Inject random normal noise (mu=0, sigma=2% of value)
+            sigma = 0.02 * (abs(noisy_df[col].iloc[0]) + 1e-5)
+            noisy_df[col] += np.random.normal(0, sigma)
+            
+        predictions.append(float(model.predict(noisy_df)[0]))
+        
+    mc_mean = np.mean(predictions)
+    mc_std = np.std(predictions)
+    # Calculate Coefficient of Variation (CV) for stability
+    mc_cv = (mc_std / mc_mean) if mc_mean != 0 else 0
+    return mc_cv
+
+def get_hybrid_confidence_score(mc_cv, bayesian_net, patient_df):
+    """Combines Monte Carlo variance and Bayesian probability into a single score."""
+    confidence_explanation = []
+    score_value = 3 # 3 = High, 2 = Medium, 1 = Low
+    
+    # 1. Evaluate Monte Carlo Stability
+    if mc_cv > 0.15: # >15% variance when inputs shift slightly
+        score_value -= 1
+        confidence_explanation.append("Monte Carlo simulation detected high dosage volatility against physiological variance.")
+    else:
+        confidence_explanation.append("Monte Carlo simulation confirms strong prediction stability.")
+
+    # 2. Evaluate Bayesian Out-of-Distribution (OOD)
+    if bayesian_net is not None:
+        numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values.reshape(1, -1)
+        log_likelihood = bayesian_net.score_samples(numeric_row)[0]
+        
+        # If log-likelihood is severely negative, patient is highly unusual compared to training data
+        if log_likelihood < -50.0: 
+            score_value -= 1
+            confidence_explanation.append("Bayesian Network flagged patient parameters as statistically rare (Out-of-Distribution).")
+        else:
+            confidence_explanation.append("Bayesian Network verified patient parameters are highly aligned with clinical training distributions.")
+
+    # 3. Final Determination
+    if score_value == 3:
+        return "High", " ".join(confidence_explanation)
+    elif score_value == 2:
+        return "Medium", " ".join(confidence_explanation)
+    else:
+        return "Low", "Warning: " + " ".join(confidence_explanation)
+
 def get_interaction_warnings(checked_drugs_list):
     warnings = []
     if not checked_drugs_list: return warnings
@@ -315,7 +383,10 @@ def run_model_prediction(patient_data_dict):
     patient_df = pd.DataFrame([patient_data_dict]).reindex(columns=columns_to_use, fill_value=0)
     prediction_array = model_to_use.predict(patient_df)
     predicted_dose = round(prediction_array[0], 2)
-    std_dev = np.std([tree.predict(patient_df) for tree in model_to_use.estimators_])
+    
+    # NEW: Monte Carlo & Bayesian Confidence
+    mc_cv = run_monte_carlo_simulation(model_to_use, patient_df)
+    conf_score, conf_expl = get_hybrid_confidence_score(mc_cv, base_bayesian_net, patient_df)
     
     # SHAP Generation
     shap_values = explainer_to_use.shap_values(patient_df)[0]
@@ -345,13 +416,9 @@ def run_model_prediction(patient_data_dict):
         "model_name": model_name, 
         "shap_explanation": shap_explanation, 
         "lime_explanation": lime_explanation,
-        "std_dev": std_dev
+        "confidence_score": conf_score,
+        "confidence_explanation": conf_expl
     }
-
-def get_confidence_score(std_dev):
-    if std_dev < 0.5: return "High", "Model estimators are in strong agreement."
-    elif std_dev < 1.0: return "Medium", "Model estimators show variance. Use with caution."
-    else: return "Low", "Significant disagreement in estimators. Proceed with caution."
 
 def get_human_explanation(shap_dict):
     explanations = []
@@ -388,7 +455,8 @@ def process_prediction_data(form_data):
     if vkorc1: clinical_data_dict[vkorc1] = 1.0
     clinical_info_display = {"Age": form_data.get('Age'), "Height__cm_": form_data.get('Height__cm_'), "Weight__kg_": form_data.get('Weight__kg_'), "Race_Display": race.split('_')[-1] if race else "N/A", "CYP2C9_Display": cyp2c9.split('__')[-1].replace('_', '/*') if cyp2c9 else "N/A", "VKORC1_Display": vkorc1.split('_')[-1] if vkorc1 else "N/A"}
     pred_data = run_model_prediction(clinical_data_dict) 
-    confidence, conf_expl = get_confidence_score(pred_data['std_dev'])
+    confidence = pred_data.get('confidence_score', 'Medium')
+    conf_expl = pred_data.get('confidence_explanation', 'Standard estimation applied.')
     suggestions = get_clinical_suggestions(pred_data['shap_explanation'], confidence)
     if form_data.get('is_pregnant'): suggestions.append("<strong>CONTRAINDICATION:</strong> Patient marked Pregnant.")
     if form_data.get('active_bleeding'): suggestions.append("<strong>CONTRAINDICATION:</strong> Active bleeding detected.")
@@ -452,6 +520,10 @@ def run_vancomycin_prediction(patient_data_dict):
     rounded_dose = round(raw_dose / 250.0) * 250.0
     final_clinical_dose = max(500.0, min(4000.0, rounded_dose))
     
+    # NEW: Monte Carlo & Bayesian Confidence
+    mc_cv = run_monte_carlo_simulation(vancomycin_model, patient_df)
+    conf_score, conf_expl = get_hybrid_confidence_score(mc_cv, vancomycin_bayesian_net, patient_df)
+    
     # SHAP Generation
     shap_values = vancomycin_explainer.shap_values(patient_df)
     if isinstance(shap_values, list): shap_values_for_instance = shap_values[0][0]
@@ -479,15 +551,13 @@ def run_vancomycin_prediction(patient_data_dict):
         except Exception as e:
             print(f"LIME Execution Error (Vancomycin): {e}")
 
-    crcl = patient_data_dict.get('Calculated_CrCl', 100)
-    confidence_score = "High" if 30 <= crcl <= 120 else "Medium"
-    
     return {
         "prediction": int(final_clinical_dose), 
         "model_name": "Vancomycin XGBoost (Clinical Guardrails)", 
         "shap_explanation": shap_explanation, 
         "lime_explanation": lime_explanation,
-        "confidence_score": confidence_score
+        "confidence_score": conf_score,
+        "confidence_explanation": conf_expl
     }
 
 def process_vancomycin_data(form_data):
@@ -533,7 +603,7 @@ def process_vancomycin_data(form_data):
         "predicted_dose_mg_per_week": pred_data['prediction'], 
         "model_used": pred_data['model_name'], 
         "confidence_score": pred_data['confidence_score'], 
-        "confidence_explanation": "Model evaluated pharmacokinetic CrCl and genome markers via log-normal distribution.", 
+        "confidence_explanation": pred_data['confidence_explanation'], 
         "human_explanation": get_human_explanation(pred_data['shap_explanation']), 
         "clinical_suggestions": suggestions, 
         "shap_explanation": pred_data['shap_explanation'],
