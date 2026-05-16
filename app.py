@@ -318,7 +318,7 @@ def run_monte_carlo_simulation(model, patient_df, iterations=100):
     """Runs Monte Carlo simulation by applying 5% biological variance to inputs."""
     predictions = []
     
-    # CORRECTED: Find continuous columns by ignoring binary flags
+    # Find continuous columns by ignoring binary flags
     numeric_cols = [col for col in patient_df.select_dtypes(include=np.number).columns if patient_df[col].iloc[0] not in [0.0, 1.0]]
     
     for _ in range(iterations):
@@ -332,6 +332,17 @@ def run_monte_carlo_simulation(model, patient_df, iterations=100):
     mc_mean = np.mean(predictions)
     mc_std = np.std(predictions)
     mc_cv = (mc_std / mc_mean) if mc_mean != 0 else 0
+    
+    # --- TERMINAL LOGGING FOR MENTOR ---
+    print("\n" + "="*50)
+    print("📊 MONTE CARLO SIMULATION RESULTS")
+    print("="*50)
+    print(f"Iterations Run       : {iterations}")
+    print(f"Mean Predicted Dose  : {mc_mean:.2f}")
+    print(f"Standard Deviation   : {mc_std:.2f}")
+    print(f"Volatility (CV)      : {mc_cv:.4%} (Threshold: 15.00%)")
+    print("="*50)
+    
     return mc_cv
 
 def get_hybrid_confidence_score(mc_cv, bayesian_net, patient_df):
@@ -351,12 +362,22 @@ def get_hybrid_confidence_score(mc_cv, bayesian_net, patient_df):
         numeric_row = patient_df.iloc[0].apply(pd.to_numeric, errors='coerce').fillna(0).values.reshape(1, -1)
         log_likelihood = bayesian_net.score_samples(numeric_row)[0]
         
+        # --- TERMINAL LOGGING FOR MENTOR ---
+        print("\n" + "="*50)
+        print("🧠 BAYESIAN NETWORK ANALYSIS")
+        print("="*50)
+        print(f"Log-Likelihood Score : {log_likelihood:.4f}")
+        
         # If log-likelihood is severely negative, patient is highly unusual compared to training data
         if log_likelihood < -50.0: 
             score_value -= 1
             confidence_explanation.append("Bayesian Network flagged patient parameters as statistically rare (Out-of-Distribution).")
+            print("Status               : OUT-OF-DISTRIBUTION (Rare Patient)") 
         else:
             confidence_explanation.append("Bayesian Network verified patient parameters are highly aligned with clinical training distributions.")
+            print("Status               : IN-DISTRIBUTION (Common Patient)") 
+            
+        print("="*50 + "\n")
 
     # 3. Final Determination
     if score_value == 3:
@@ -384,7 +405,7 @@ def run_model_prediction(patient_data_dict):
     prediction_array = model_to_use.predict(patient_df)
     predicted_dose = round(prediction_array[0], 2)
     
-    # NEW: Monte Carlo & Bayesian Confidence
+    # Monte Carlo & Bayesian Confidence
     mc_cv = run_monte_carlo_simulation(model_to_use, patient_df)
     conf_score, conf_expl = get_hybrid_confidence_score(mc_cv, base_bayesian_net, patient_df)
     
@@ -520,7 +541,7 @@ def run_vancomycin_prediction(patient_data_dict):
     rounded_dose = round(raw_dose / 250.0) * 250.0
     final_clinical_dose = max(500.0, min(4000.0, rounded_dose))
     
-    # NEW: Monte Carlo & Bayesian Confidence
+    # Monte Carlo & Bayesian Confidence
     mc_cv = run_monte_carlo_simulation(vancomycin_model, patient_df)
     conf_score, conf_expl = get_hybrid_confidence_score(mc_cv, vancomycin_bayesian_net, patient_df)
     
@@ -1075,9 +1096,6 @@ def generate_diabetes_report(patient_id):
 @app.route('/patient/<int:patient_id>/vancomycin_form', methods=['GET'])
 @login_required
 def vancomycin_form(patient_id):
-    if not current_user.is_beta_tester:
-        flash("Access Denied: The Vancomycin module is currently restricted to Beta Testers.", "danger")
-        return redirect(url_for('dashboard'))
     patient = Patient.query.get_or_404(patient_id)
     calculated_age = 0
     try:
@@ -1090,7 +1108,6 @@ def vancomycin_form(patient_id):
 @app.route('/patient/<int:patient_id>/generate_vancomycin_report', methods=['POST'])
 @login_required
 def generate_vancomycin_report(patient_id):
-    if not current_user.is_beta_tester: return redirect(url_for('dashboard'))
     patient = Patient.query.get_or_404(patient_id)
     patient_info, clinical_info, safety_info, results = process_vancomycin_data(request.form)
     doctor_name = request.form.get('doctor_name')

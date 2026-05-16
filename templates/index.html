@@ -22,6 +22,21 @@
         letter-spacing: 0.5px;
         text-transform: uppercase;
     }
+    .announcement-banner {
+        background: linear-gradient(90deg, #e0eafc 0%, #cfdef3 100%);
+        border: 1px solid #c2d4ee;
+        color: #1e3a8a;
+        border-radius: 50px;
+        padding: 10px 20px;
+        display: inline-flex;
+        align-items: center;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+        margin-bottom: 25px;
+        transition: transform 0.2s ease;
+    }
+    .announcement-banner:hover {
+        transform: translateY(-2px);
+    }
     .feature-card {
         border-radius: 16px;
         border: 1px solid #edf2f7;
@@ -55,12 +70,19 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5">
+                
+                <div class="announcement-banner">
+                    <span class="badge bg-primary rounded-pill me-3 px-3 py-2 shadow-sm">NEW RELEASE</span>
+                    <span class="fw-bold fs-6 mb-0">The Vancomycin Pharmacogenomic module is now fully public!</span>
+                </div>
+                <br>
+                
                 <span class="hero-badge"><i class="fas fa-shield-alt me-1"></i> Enterprise Grade CDSS</span>
                 <h1 class="display-4 fw-bolder text-dark mb-4" style="line-height: 1.2;">
                     Precision Dosing Powered by <span class="text-primary">Explainable AI</span>
                 </h1>
                 <p class="lead text-secondary mb-5" style="font-size: 1.25rem; line-height: 1.6;">
-                    GenMedix integrates clinical data with Pharmacogenomics (CYP2C9 & VKORC1) to provide highly accurate, statistically verified Warfarin dosage recommendations.
+                    GenMedix integrates clinical data with Pharmacogenomics to provide highly accurate, statistically verified Warfarin and Vancomycin dosage recommendations, validated by Monte Carlo volatility modeling.
                 </p>
                 <div class="d-flex flex-column flex-sm-row gap-3">
                     {% if current_user.is_authenticated %}
@@ -90,13 +112,13 @@
                     <div class="card-body p-0 bg-white">
                         <div class="p-4 border-bottom text-start bg-light">
                             <h5 class="fw-bold mb-1 text-primary"><i class="fas fa-microchip me-2"></i> Analyzing Genomic Markers</h5>
-                            <p class="text-muted small mb-0">Processing CYP2C9 *2/*3 variance...</p>
+                            <p class="text-muted small mb-0">Processing HLA-A*32:01 risk variance...</p>
                         </div>
                         <div class="p-5">
-                            <h2 class="display-2 fw-bold text-dark mb-0">4.25 <span class="fs-4 text-muted">mg/week</span></h2>
+                            <h2 class="display-2 fw-bold text-dark mb-0">1500 <span class="fs-4 text-muted">mg/day</span></h2>
                             <span class="badge bg-success mt-2 px-3 py-2">High Statistical Confidence</span>
                             <div class="mt-4 pt-4 border-top text-start">
-                                <p class="text-muted small fw-bold text-uppercase mb-2">SHAP Explainability</p>
+                                <p class="text-muted small fw-bold text-uppercase mb-2">SHAP & LIME Interpretability</p>
                                 <div class="progress mb-2" style="height: 10px;"><div class="progress-bar bg-danger" style="width: 75%"></div></div>
                                 <div class="progress" style="height: 10px;"><div class="progress-bar bg-success" style="width: 40%"></div></div>
                             </div>
@@ -122,7 +144,7 @@
                         <i class="fas fa-dna"></i>
                     </div>
                     <h4 class="fw-bold mb-3">Pharmacogenomic AI</h4>
-                    <p class="text-muted mb-0">Our Hybrid Random Forest model analyzes patient demographics alongside critical <em>VKORC1</em> and <em>CYP2C9</em> genetic markers to prevent toxic over-dosing.</p>
+                    <p class="text-muted mb-0">Our Hybrid ML models analyze patient demographics alongside critical genetic markers (like <em>VKORC1</em>, <em>CYP2C9</em>, and <em>HLA-A</em>) to prevent toxic over-dosing.</p>
                 </div>
             </div>
             
@@ -131,18 +153,18 @@
                     <div class="icon-wrapper bg-success bg-opacity-10 text-success">
                         <i class="fas fa-project-diagram"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Explainable AI (SHAP)</h4>
-                    <p class="text-muted mb-0">No more "black box" algorithms. Every prediction generates a visual SHAP graph proving exactly which patient factors influenced the suggested dose.</p>
+                    <h4 class="fw-bold mb-3">Dual Explainable AI</h4>
+                    <p class="text-muted mb-0">No more "black box" algorithms. Every prediction generates dual visual graphs (<strong>SHAP</strong> globally & <strong>LIME</strong> locally) proving exactly which factors influenced the dose.</p>
                 </div>
             </div>
             
             <div class="col-md-4">
                 <div class="card feature-card p-4 shadow-sm">
                     <div class="icon-wrapper bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
+                        <i class="fas fa-shield-alt"></i>
                     </div>
-                    <h4 class="fw-bold mb-3">Live DDI Alerts</h4>
-                    <p class="text-muted mb-0">Our UI features instant Drug-Drug Interaction (DDI) badges. Get severe risk warnings for interacting medications like Amiodarone before generating reports.</p>
+                    <h4 class="fw-bold mb-3">Hybrid Safety Checks</h4>
+                    <p class="text-muted mb-0">Built-in Monte Carlo simulations detect biological volatility, while a Bayesian Distribution Network verifies if a patient falls safely within clinical training parameters.</p>
                 </div>
             </div>
         </div>
