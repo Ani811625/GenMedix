@@ -99,6 +99,14 @@
                         Overall Confidence: {{ results.confidence_score }}
                     </span>
                 </div>
+
+                {% if 'Vancomycin' in results.model_used %}
+                <div class="mt-4 mx-auto text-start" style="max-width: 650px;">
+                    <div class="alert alert-info py-2 px-3 small mb-0 shadow-sm border-info" style="background-color: #e9f7fe;">
+                        <strong><i class="fas fa-info-circle me-1 text-info"></i> Clinical Rounding Protocol:</strong> The AI's raw continuous prediction is mathematically rounded to the nearest <strong>250 mg</strong> increment. This standardizes the output to align with standard pharmacy compounding constraints and commercial vial sizes, ensuring the recommended dose is both therapeutically optimal and practically administrable.
+                    </div>
+                </div>
+                {% endif %}
             </div>
 
             {% set has_hybrid = 'Monte Carlo' in results.confidence_explanation %}

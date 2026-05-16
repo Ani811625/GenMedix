@@ -315,22 +315,22 @@ except Exception as e: print(f"Vancomycin Bayesian Load Error: {e}")
 # 4. ML LOGIC (Warfarin, Diabetes, Vancomycin)
 # =======================================================
 def run_monte_carlo_simulation(model, patient_df, iterations=100):
-    """Runs Monte Carlo simulation by applying 2% biological variance to inputs."""
+    """Runs Monte Carlo simulation by applying 5% biological variance to inputs."""
     predictions = []
-    numeric_cols = [col for col in patient_df.columns if patient_df[col].nunique() > 2] # Ignore binary flags
+    
+    # CORRECTED: Find continuous columns by ignoring binary flags
+    numeric_cols = [col for col in patient_df.select_dtypes(include=np.number).columns if patient_df[col].iloc[0] not in [0.0, 1.0]]
     
     for _ in range(iterations):
         noisy_df = patient_df.copy()
         for col in numeric_cols:
-            # Inject random normal noise (mu=0, sigma=2% of value)
-            sigma = 0.02 * (abs(noisy_df[col].iloc[0]) + 1e-5)
+            sigma = 0.05 * (abs(noisy_df[col].iloc[0]) + 1e-5)
             noisy_df[col] += np.random.normal(0, sigma)
             
         predictions.append(float(model.predict(noisy_df)[0]))
         
     mc_mean = np.mean(predictions)
     mc_std = np.std(predictions)
-    # Calculate Coefficient of Variation (CV) for stability
     mc_cv = (mc_std / mc_mean) if mc_mean != 0 else 0
     return mc_cv
 
