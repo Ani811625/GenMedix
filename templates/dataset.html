@@ -224,7 +224,7 @@
                             <tr>
                                 {% for header in v_headers %}
                                     <td>
-                                        {% if type(row[header]) == 'float' %}
+                                        {% if row[header] is float %}
                                             {{ "%.2f"|format(row[header]) }}
                                         {% else %}
                                             {{ row[header] }}
