@@ -644,13 +644,25 @@ def home(): return render_template('index.html')
 
 @app.route('/dataset')
 def dataset():
+    # 1. Load Warfarin Data
     try:
-        df = pd.read_csv('data/warfarin.csv')
-        headers = df.columns.tolist()
-        rows = df.head(200).to_dict('records')
-        row_count = len(df)
-    except: headers, rows, row_count = [], [], 0
-    return render_template('dataset.html', headers=headers, rows=rows, row_count=row_count, showing_count=len(rows))
+        df_w = pd.read_csv('data/warfarin.csv')
+        w_headers = df_w.columns.tolist()
+        w_rows = df_w.head(150).to_dict('records')
+        w_count = len(df_w)
+    except: w_headers, w_rows, w_count = [], [], 0
+    
+    # 2. Load Vancomycin Data
+    try:
+        df_v = pd.read_csv('data/vancomycin_genomic_dataset.csv')
+        v_headers = df_v.columns.tolist()
+        v_rows = df_v.head(150).to_dict('records')
+        v_count = len(df_v)
+    except: v_headers, v_rows, v_count = [], [], 0
+
+    return render_template('dataset.html', 
+                           w_headers=w_headers, w_rows=w_rows, w_count=w_count, w_showing=len(w_rows),
+                           v_headers=v_headers, v_rows=v_rows, v_count=v_count, v_showing=len(v_rows))
 
 @app.route('/about')
 def about(): return render_template('about.html')
