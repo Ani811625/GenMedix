@@ -1,171 +1,152 @@
 {% extends "base.html" %}
+{% block title %}Patient File - {{ patient.full_name }}{% endblock %}
+
 {% block content %}
-<div class="container mt-4 mb-5">
-    
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    .patient-header-card {
+        background: url('https://www.transparenttextures.com/patterns/cubes.png'), linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+</style>
+
+<div class="container py-4 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-user-injured text-primary"></i> Patient Record</h2>
-        <div>
-            <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary fw-bold shadow-sm me-2">
-                <i class="fas fa-edit"></i> Edit Details
-            </a>
-            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary shadow-sm">← Back</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary rounded-pill fw-bold shadow-sm"><i class="fas fa-arrow-left me-2"></i> Back</a>
+        <a href="{{ url_for('new_assessment', patient_id=patient.id) }}" class="btn btn-success rounded-pill fw-bold shadow-sm"><i class="fas fa-plus me-2"></i> New AI Assessment</a>
+    </div>
+
+    <div class="patient-header-card mb-4 position-relative overflow-hidden">
+        <div class="row align-items-center position-relative" style="z-index: 2;">
+            <div class="col-md-8">
+                <h2 class="fw-bolder mb-1">{{ patient.full_name }}</h2>
+                <p class="text-info mb-3 fw-bold">Aadhar: {{ patient.aadhar[:4] }} {{ patient.aadhar[4:8] }} {{ patient.aadhar[8:] }}</p>
+                <div class="d-flex flex-wrap gap-3">
+                    <span class="badge bg-light text-dark"><i class="fas fa-calendar text-muted me-1"></i> DOB: {{ patient.dob }}</span>
+                    <span class="badge bg-light text-dark"><i class="fas fa-venus-mars text-muted me-1"></i> {{ patient.gender }}</span>
+                    <span class="badge bg-light text-dark"><i class="fas fa-tint text-danger me-1"></i> Blood: {{ patient.blood_group or 'N/A' }}</span>
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{{ url_for('edit_patient', patient_id=patient.id) }}" class="btn btn-outline-light rounded-pill btn-sm fw-bold"><i class="fas fa-edit"></i> Edit Details</a>
+            </div>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 border-top border-primary border-4" style="position: sticky; top: 20px;">
-                <div class="card-body text-center mt-3">
-                    <div class="bg-primary text-white rounded-circle d-inline-flex justify-content-center align-items-center shadow" style="width: 80px; height: 80px; font-size: 2rem;">
-                        {{ patient.full_name[0] | upper }}
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <h5 class="fw-bold text-secondary mb-3"><i class="fas fa-chart-line text-primary me-2"></i> Longitudinal Dosage History</h5>
+        {% if reports|length > 0 %}
+            <div style="height: 300px; width: 100%;">
+                <canvas id="historicalChart"></canvas>
+            </div>
+        {% else %}
+            <div class="text-center py-5 text-muted bg-light rounded-3 border-dashed">
+                <i class="fas fa-chart-bar fs-1 mb-3 opacity-50"></i>
+                <p class="mb-0">No dosage reports available to graph yet.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+        <li class="nav-item"><button class="nav-link active fw-bold rounded-pill px-4" data-bs-toggle="pill" data-bs-target="#reports">AI Reports ({{ reports|length }})</button></li>
+        <li class="nav-item"><button class="nav-link fw-bold rounded-pill px-4 ms-2" data-bs-toggle="pill" data-bs-target="#notes">Clinical Notes</button></li>
+    </ul>
+
+    <div class="tab-content bg-white p-4 rounded-4 shadow-sm border" id="pills-tabContent">
+        <div class="tab-pane fade show active" id="reports">
+            <div class="list-group list-group-flush">
+                {% for report in reports %}
+                <a href="{{ url_for('view_report', report_id=report.id) }}" class="list-group-item list-group-item-action py-3 border-bottom">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1 fw-bold text-primary">{{ report.drug_name }} Recommendation</h6>
+                            <p class="mb-0 text-muted small"><i class="fas fa-clock me-1"></i> Generated: {{ report.generated_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-dark fs-6">{{ report.predicted_dose }}</span>
+                            <div class="mt-1">
+                                {% if report.confidence == 'High' %}<span class="badge bg-success small">High Confidence</span>
+                                {% elif report.confidence == 'Medium' %}<span class="badge bg-warning text-dark small">Medium Confidence</span>
+                                {% else %}<span class="badge bg-danger small">Low Confidence</span>{% endif %}
+                            </div>
+                        </div>
                     </div>
-                    <h4 class="mt-3 fw-bold">{{ patient.full_name }}</h4>
-                    <span class="badge bg-danger mb-3 px-3 py-2">Blood Group: {{ patient.blood_group or 'Unknown' }}</span>
-                </div>
-                
-                <ul class="list-group list-group-flush text-muted">
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-id-card me-2"></i> Aadhar</strong> 
-                        <span>{{ patient.aadhar[:4] }} **** ****</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-calendar me-2"></i> DOB</strong> 
-                        <span>{{ patient.dob }}</span>
-                    </li>
-                    <li class="list-group-item d-flex justify-content-between">
-                        <strong><i class="fas fa-venus-mars me-2"></i> Gender</strong> 
-                        <span>{{ patient.gender }}</span>
-                    </li>
-                    <li class="list-group-item">
-                        <strong><i class="fas fa-phone me-2"></i> Contact</strong><br>
-                        {{ patient.phone or 'Not provided' }}
-                    </li>
-                    <li class="list-group-item bg-light">
-                        <strong><i class="fas fa-ambulance text-danger me-2"></i> Emergency</strong><br>
-                        {{ patient.emergency_contact or 'Not provided' }}
-                    </li>
-                </ul>
-                
-                <div class="card-body d-grid">
-                    <form method="POST" action="{{ url_for('delete_patient', patient_id=patient.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete this patient and all their reports?');">
-                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm"><i class="fas fa-trash"></i> Delete Patient</button>
-                    </form>
-                </div>
+                </a>
+                {% else %}
+                <p class="text-center text-muted my-4">No AI reports generated for this patient.</p>
+                {% endfor %}
             </div>
         </div>
 
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white pt-3 pb-0 border-bottom-0">
-                    <ul class="nav nav-tabs fw-bold" id="patientTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active text-primary" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab"><i class="fas fa-file-medical"></i> AI Dosage Reports</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link text-secondary" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab"><i class="fas fa-clipboard-list"></i> Clinical Notes</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link text-secondary" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab"><i class="fas fa-history"></i> Medical History</button>
-                        </li>
-                    </ul>
+        <div class="tab-pane fade" id="notes">
+            <form action="{{ url_for('add_note', patient_id=patient.id) }}" method="POST" class="mb-4">
+                <div class="form-floating mb-3">
+                    <textarea class="form-control bg-light" name="note_text" id="floatingTextarea" style="height: 100px" required></textarea>
+                    <label for="floatingTextarea">Add a new clinical note...</label>
                 </div>
-                
-                <div class="card-body p-4 tab-content" id="patientTabsContent">
-                    
-                    <div class="tab-pane fade show active" id="reports" role="tabpanel">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold text-secondary">AI Clinical Reports</h5>
-                            <a href="{{ url_for('new_assessment', patient_id=patient.id) }}" class="btn btn-success btn-sm fw-bold shadow-sm">
-                                <i class="fas fa-stethoscope"></i> Run New Assessment
-                            </a>
-                        </div>
-                        
-                        {% if reports %}
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle border">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Date Generated</th>
-                                            <th>Assessment / Output</th>
-                                            <th>Confidence</th>
-                                            <th class="text-end">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for report in reports %}
-                                        <tr>
-                                            <td>{{ report.generated_at.strftime('%Y-%m-%d') }}</td>
-                                            <td class="fw-bold text-primary">{{ report.predicted_dose }}</td>
-                                            <td>
-                                                {% if report.confidence == 'High' %} <span class="badge bg-success">High</span>
-                                                {% elif report.confidence == 'Medium' %} <span class="badge bg-warning text-dark">Medium</span>
-                                                {% else %} <span class="badge bg-danger">Low</span>
-                                                {% endif %}
-                                            </td>
-                                            <td class="text-end">
-                                                <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                            </td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% else %}
-                            <div class="alert alert-secondary text-center p-4">
-                                <i class="fas fa-folder-open fs-2 text-muted mb-2"></i>
-                                <h6>No AI Reports Generated</h6>
-                                <p class="text-muted small">Run your first AI assessment to see it here.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-
-                    <div class="tab-pane fade" id="notes" role="tabpanel">
-                        <form method="POST" action="{{ url_for('add_note', patient_id=patient.id) }}" class="mb-4">
-                            <div class="input-group shadow-sm">
-                                <textarea name="note_text" class="form-control bg-light" placeholder="Type a new clinical note..." required rows="2"></textarea>
-                                <button type="submit" class="btn btn-primary fw-bold px-4">Save</button>
-                            </div>
-                        </form>
-
-                        {% if notes %}
-                            <div class="timeline">
-                                {% for note in notes %}
-                                <div class="card mb-3 border-start border-4 border-info shadow-sm">
-                                    <div class="card-body py-2">
-                                        <div class="d-flex justify-content-between text-muted small mb-1">
-                                            <span><i class="fas fa-clock"></i> {{ note.created_at.strftime('%b %d, %Y - %H:%M') }}</span>
-                                            <span>Dr. {{ current_user.full_name }}</span>
-                                        </div>
-                                        <p class="mb-0 text-dark">{{ note.note_text }}</p>
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            <p class="text-muted text-center italic mt-4">No clinical notes recorded.</p>
-                        {% endif %}
-                    </div>
-
-                    <div class="tab-pane fade" id="history" role="tabpanel">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <h6 class="fw-bold text-danger"><i class="fas fa-allergies"></i> Known Allergies</h6>
-                                <div class="p-3 bg-light rounded border">{{ patient.allergies or 'None reported' }}</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="fw-bold text-primary"><i class="fas fa-pills"></i> Current Medications</h6>
-                                <div class="p-3 bg-light rounded border">{{ patient.current_medications or 'None reported' }}</div>
-                            </div>
-                            <div class="col-12 mt-2">
-                                <h6 class="fw-bold text-secondary"><i class="fas fa-file-medical-alt"></i> General Medical History</h6>
-                                <div class="p-3 bg-light rounded border" style="min-height: 100px;">{{ patient.medical_history or 'No significant history provided.' }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
+                <div class="text-end">
+                    <button type="submit" class="btn btn-primary rounded-pill fw-bold shadow-sm px-4">Save Note</button>
                 </div>
+            </form>
+            
+            <div class="list-group">
+                {% for note in notes %}
+                <div class="list-group-item border-0 bg-light mb-2 rounded-3">
+                    <p class="mb-1 text-dark">{{ note.note_text }}</p>
+                    <small class="text-muted"><i class="fas fa-user-md me-1"></i> Dr. {{ current_user.full_name }} • {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                </div>
+                {% else %}
+                <p class="text-center text-muted my-3">No clinical notes recorded.</p>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // Longitudinal Graphing Logic
+    document.addEventListener("DOMContentLoaded", function() {
+        const rawReports = [
+            {% for r in reports|reverse %}
+                {"date": "{{ r.generated_at.strftime('%b %d, %Y') }}", "drug": "{{ r.drug_name }}", "dose": "{{ r.predicted_dose }}"},
+            {% endfor %}
+        ];
+
+        if (rawReports.length > 0) {
+            // Separate data by drug
+            const dates = rawReports.map(r => r.date);
+            const vancDoses = [];
+            const warfDoses = [];
+
+            rawReports.forEach(r => {
+                // Extract just the number using regex (e.g., "1500 mg Daily" -> 1500)
+                let num = parseFloat(r.dose.replace(/[^0-9.]/g, ''));
+                if (r.drug === 'Vancomycin') { vancDoses.push(num); warfDoses.push(null); }
+                else if (r.drug === 'Warfarin') { warfDoses.push(num); vancDoses.push(null); }
+                else { vancDoses.push(null); warfDoses.push(null); }
+            });
+
+            new Chart(document.getElementById('historicalChart'), {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        { label: 'Vancomycin (mg/day)', data: vancDoses, borderColor: '#198754', backgroundColor: 'rgba(25, 135, 84, 0.1)', tension: 0.3, fill: true, spanGaps: true, pointRadius: 5 },
+                        { label: 'Warfarin (mg/week)', data: warfDoses, borderColor: '#0d6efd', backgroundColor: 'rgba(13, 110, 253, 0.1)', tension: 0.3, fill: true, spanGaps: true, pointRadius: 5 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { tooltip: { mode: 'index', intersect: false } },
+                    scales: { y: { beginAtZero: true, title: { display: true, text: 'Dosage Amount' } } }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

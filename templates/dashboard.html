@@ -1,170 +1,165 @@
 {% extends "base.html" %}
+{% block title %}GenMedix - Clinical Dashboard{% endblock %}
+
 {% block content %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-chart-line text-primary"></i> Clinical Dashboard</h2>
-        <a href="{{ url_for('add_patient') }}" class="btn btn-primary fw-bold shadow-sm">
-            <i class="fas fa-plus"></i> Add New Patient
-        </a>
-    </div>
+<style>
+    /* Glassmorphism UI Elements */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
+        border-radius: 16px;
+        transition: transform 0.2s ease;
+    }
+    .glass-card:hover { transform: translateY(-4px); }
+    
+    .dashboard-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        color: white;
+        padding: 40px 0 60px 0;
+        border-radius: 0 0 30px 30px;
+        margin-bottom: -30px;
+    }
+    .stat-number { font-size: 2.5rem; font-weight: 800; color: #0d6efd; }
+</style>
 
-    <div class="row mb-4">
+<div class="dashboard-header shadow-sm">
+    <div class="container">
+        <h2 class="fw-bolder mb-1">Welcome, Dr. {{ current_user.full_name }}</h2>
+        <p class="opacity-75 mb-0">GenMedix Clinical Overview & Analytics</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="row g-4 mb-5 position-relative" style="z-index: 10;">
         <div class="col-md-6">
-            <div class="card shadow-sm border-0 border-start border-primary border-4">
-                <div class="card-body">
-                    <h5 class="text-muted mb-1">Total Patients</h5>
-                    <h2 class="fw-bold mb-0 text-dark">{{ total_patients }}</h2>
+            <div class="glass-card p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted fw-bold text-uppercase mb-1">Total Patients</h6>
+                    <div class="stat-number">{{ total_patients }}</div>
+                </div>
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle text-primary fs-3">
+                    <i class="fas fa-users"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card shadow-sm border-0 border-start border-success border-4">
-                <div class="card-body">
-                    <h5 class="text-muted mb-1">Total AI Reports Generated</h5>
-                    <h2 class="fw-bold mb-0 text-dark">{{ total_reports }}</h2>
+            <div class="glass-card p-4 d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="text-muted fw-bold text-uppercase mb-1">AI Reports Generated</h6>
+                    <div class="stat-number text-success">{{ total_reports }}</div>
+                </div>
+                <div class="bg-success bg-opacity-10 p-3 rounded-circle text-success fs-3">
+                    <i class="fas fa-file-medical-alt"></i>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row mb-5">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white fw-bold text-secondary">Patient Demographics</div>
-                <div class="card-body d-flex justify-content-center">
-                    <canvas id="genderChart" style="max-height: 250px;"></canvas>
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h5 class="fw-bold text-secondary mb-4"><i class="fas fa-chart-pie me-2"></i>Patient Demographics</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="genderChart"></canvas>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white fw-bold text-secondary">Blood Group Distribution</div>
-                <div class="card-body d-flex justify-content-center">
-                    <canvas id="bloodChart" style="max-height: 250px;"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-white fw-bold text-secondary">AI Model Confidence</div>
-                <div class="card-body d-flex justify-content-center">
-                    <canvas id="confidenceChart" style="max-height: 250px;"></canvas>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h5 class="fw-bold text-secondary mb-4"><i class="fas fa-robot me-2"></i>AI Confidence Distribution</h5>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="confidenceChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center p-3">
-            <div><i class="fas fa-users me-2"></i> Patient Directory</div>
-            <div style="max-width: 300px; width: 100%;">
-                <input type="text" id="patientSearchInput" class="form-control form-control-sm" placeholder="🔍 Search by Name or Aadhar...">
-            </div>
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-4">
+        <h4 class="fw-bold text-dark"><i class="fas fa-clipboard-list text-primary me-2"></i>Patient Roster</h4>
+        <div>
+            <a href="{{ url_for('export_patients_csv') }}" class="btn btn-outline-secondary rounded-pill me-2 fw-bold shadow-sm"><i class="fas fa-download me-1"></i> Export</a>
+            <a href="{{ url_for('add_patient') }}" class="btn btn-primary rounded-pill fw-bold shadow-sm"><i class="fas fa-plus me-1"></i> Register Patient</a>
         </div>
-        <div class="card-body p-0">
-            {% if patients %}
-            <div class="table-responsive">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Patient Name</th>
-                            <th>Aadhar ID</th>
-                            <th>DOB</th>
-                            <th>Blood Group</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for patient in patients %}
-                        <tr>
-                            <td class="fw-bold text-primary">{{ patient.full_name }}</td>
-                            <td>{{ patient.aadhar[:4] }} **** ****</td>
-                            <td>{{ patient.dob }}</td>
-                            <td><span class="badge bg-danger">{{ patient.blood_group or 'N/A' }}</span></td>
-                            <td class="text-end">
-                                <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-sm btn-outline-primary">View Record</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="p-5 text-center text-muted">
-                <h4>No patients registered yet.</h4>
-                <p>Click "Add New Patient" to begin building your clinical database.</p>
-            </div>
-            {% endif %}
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="py-3 px-4 text-secondary">Patient Name</th>
+                        <th class="py-3 text-secondary">Aadhar ID</th>
+                        <th class="py-3 text-secondary">Gender</th>
+                        <th class="py-3 text-secondary text-end px-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td class="py-3 px-4 fw-bold text-dark">{{ patient.full_name }}</td>
+                        <td class="py-3 text-muted">{{ patient.aadhar[:4] }} **** ****</td>
+                        <td class="py-3"><span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ patient.gender }}</span></td>
+                        <td class="py-3 text-end px-4">
+                            <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">View File</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5 text-muted">No patients registered yet. Click 'Register Patient' to begin.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <script>
-    // Data passed from Flask
-    const genderData = {{ gender_data | tojson | safe }};
-    const bloodData = {{ blood_data | tojson | safe }};
-    const confidenceData = {{ confidence_data | tojson | safe }};
+    document.addEventListener("DOMContentLoaded", function() {
+        // Parse data from Flask Backend
+        const genderData = {{ gender_data | tojson | safe }};
+        const confidenceData = {{ confidence_data | tojson | safe }};
+        
+        // 1. Gender Doughnut Chart
+        new Chart(document.getElementById('genderChart'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(genderData),
+                datasets: [{
+                    data: Object.values(genderData),
+                    backgroundColor: ['#0d6efd', '#f64e60', '#ffc107'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right' } },
+                cutout: '70%'
+            }
+        });
 
-    // 1. Gender Doughnut Chart
-    new Chart(document.getElementById('genderChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(genderData),
-            datasets: [{
-                data: Object.values(genderData),
-                backgroundColor: ['#0056b3', '#4dabf7', '#e9ecef'],
-                borderWidth: 0
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-    });
-
-    // 2. Blood Group Bar Chart
-    new Chart(document.getElementById('bloodChart'), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(bloodData),
-            datasets: [{
-                label: 'Patients',
-                data: Object.values(bloodData),
-                backgroundColor: '#dc3545',
-                borderRadius: 4
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-
-    // 3. AI Confidence Pie Chart
-    new Chart(document.getElementById('confidenceChart'), {
-        type: 'pie',
-        data: {
-            labels: Object.keys(confidenceData),
-            datasets: [{
-                data: Object.values(confidenceData),
-                backgroundColor: ['#198754', '#ffc107', '#dc3545'],
-                borderWidth: 0
-            }]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-    });
-
-    // --- FEATURE 5: Real-Time Patient Search ---
-    document.getElementById('patientSearchInput').addEventListener('keyup', function() {
-        let searchQuery = this.value.toLowerCase();
-        let tableRows = document.querySelectorAll('tbody tr'); // Gets all patient rows
-
-        tableRows.forEach(row => {
-            // Get the text from the Name column and Aadhar column
-            let patientName = row.cells[0].textContent.toLowerCase();
-            let aadhar = row.cells[1].textContent.toLowerCase();
-
-            // If the search matches the name or Aadhar, show it. Otherwise, hide it.
-            if (patientName.includes(searchQuery) || aadhar.includes(searchQuery)) {
-                row.style.display = '';
-            } else {
-                row.style.display = 'none';
+        // 2. Confidence Bar Chart
+        new Chart(document.getElementById('confidenceChart'), {
+            type: 'bar',
+            data: {
+                labels: ['High', 'Medium', 'Low'],
+                datasets: [{
+                    label: 'Reports Generated',
+                    data: [confidenceData.High || 0, confidenceData.Medium || 0, confidenceData.Low || 0],
+                    backgroundColor: ['rgba(25, 135, 84, 0.8)', 'rgba(255, 193, 7, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
             }
         });
     });
