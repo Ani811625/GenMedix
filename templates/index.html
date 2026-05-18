@@ -4,195 +4,269 @@
 
 {% block content %}
 <style>
-    /* Custom Homepage CSS */
-    .hero-section {
-        background: linear-gradient(135deg, #ffffff 0%, #f0f4f8 100%);
-        padding: 90px 0 100px 0;
-        border-bottom: 1px solid #e2e8f0;
+    /* =========================================================
+       1. HERO SECTION: Animated Background & Glassmorphism
+       ========================================================= */
+    .hero-container {
+        position: relative;
+        overflow: hidden;
+        background: #0f172a; /* Deep Navy Tech Background */
+        padding: 120px 0 140px 0;
+        color: #f8fafc;
     }
+
+    /* Ambient Animated Orbs */
+    .hero-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.5;
+        z-index: 1;
+        animation: float 20s infinite alternate ease-in-out;
+    }
+    .orb-1 { width: 400px; height: 400px; background: #3b82f6; top: -100px; left: -100px; }
+    .orb-2 { width: 500px; height: 500px; background: #10b981; bottom: -150px; right: -100px; animation-delay: -5s; }
+    .orb-3 { width: 300px; height: 300px; background: #6366f1; top: 20%; left: 40%; animation-delay: -10s; }
+
+    @keyframes float {
+        0% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(30px, 50px) scale(1.1); }
+        100% { transform: translate(-20px, 20px) scale(0.9); }
+    }
+
+    /* Glassmorphism Hero Panel */
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .glass-panel {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        padding: 40px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
     .hero-badge {
-        background-color: rgba(0, 86, 179, 0.1);
-        color: #0056b3;
+        background: linear-gradient(90deg, rgba(59,130,246,0.2) 0%, rgba(16,185,129,0.2) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #e0f2fe;
         font-weight: 700;
-        padding: 8px 16px;
+        padding: 8px 20px;
         border-radius: 50px;
         font-size: 0.85rem;
         display: inline-block;
         margin-bottom: 25px;
-        letter-spacing: 0.5px;
+        letter-spacing: 1px;
         text-transform: uppercase;
     }
-    .announcement-banner {
-        background: linear-gradient(90deg, #e0eafc 0%, #cfdef3 100%);
-        border: 1px solid #c2d4ee;
-        color: #1e3a8a;
-        border-radius: 50px;
-        padding: 10px 20px;
-        display: inline-flex;
-        align-items: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
-        margin-bottom: 25px;
-        transition: transform 0.2s ease;
+
+    /* =========================================================
+       2. SIMULATED LIVE TERMINAL
+       ========================================================= */
+    .terminal-window {
+        background: #000;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        overflow: hidden;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.85rem;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        transform: perspective(1000px) rotateY(-5deg) translateY(10px);
+        transition: transform 0.5s ease;
     }
-    .announcement-banner:hover {
-        transform: translateY(-2px);
+    .terminal-window:hover {
+        transform: perspective(1000px) rotateY(0deg) translateY(0px);
     }
-    .feature-card {
-        border-radius: 16px;
-        border: 1px solid #edf2f7;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        background: #ffffff;
-        height: 100%;
-    }
-    .feature-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 30px rgba(0,0,0,0.08) !important;
-        border-color: #cce5ff;
-    }
-    .icon-wrapper {
-        width: 65px;
-        height: 65px;
-        border-radius: 14px;
+    .terminal-header {
+        background: #1e293b;
+        padding: 10px 15px;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        margin-bottom: 20px;
+        gap: 8px;
+        border-bottom: 1px solid #334155;
     }
-    .trust-banner {
-        background-color: #0f172a;
-        color: #f8fafc;
-        padding: 60px 0;
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red { background: #ef4444; }
+    .dot-yel { background: #f59e0b; }
+    .dot-grn { background: #10b981; }
+    .terminal-body { padding: 20px; color: #a3e635; min-height: 250px; }
+    .term-line { display: block; margin-bottom: 8px; opacity: 0; animation: typeIn 0.1s forwards; }
+    .term-muted { color: #64748b; }
+    .term-highlight { color: #38bdf8; font-weight: bold; }
+    .term-danger { color: #f87171; }
+
+    @keyframes typeIn { to { opacity: 1; } }
+
+    /* =========================================================
+       3. BENTO BOX FEATURE LAYOUT
+       ========================================================= */
+    .bento-section {
+        background: #f8fafc;
+        padding: 100px 0;
+    }
+    .bento-card {
+        background: #ffffff;
+        border-radius: 24px;
+        padding: 30px;
+        border: 1px solid #e2e8f0;
+        height: 100%;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    .bento-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px -5px rgba(13, 110, 253, 0.1);
+        border-color: #bfdbfe;
+    }
+    .bento-icon {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+        display: inline-block;
+    }
+    
+    /* Scroll Animation Utility */
+    .reveal {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: all 0.8s ease-out;
+    }
+    .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
     }
 </style>
 
-<section class="hero-section">
-    <div class="container">
+<section class="hero-container">
+    <div class="hero-orb orb-1"></div>
+    <div class="hero-orb orb-2"></div>
+    <div class="hero-orb orb-3"></div>
+
+    <div class="container hero-content">
         <div class="row align-items-center">
-            <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5">
-                
-                <div class="announcement-banner">
-                    <span class="badge bg-primary rounded-pill me-3 px-3 py-2 shadow-sm">NEW RELEASE</span>
-                    <span class="fw-bold fs-6 mb-0">The Vancomycin Pharmacogenomic module is now fully public!</span>
-                </div>
-                <br>
-                
-                <span class="hero-badge"><i class="fas fa-shield-alt me-1"></i> Enterprise Grade CDSS</span>
-                <h1 class="display-4 fw-bolder text-dark mb-4" style="line-height: 1.2;">
-                    Precision Dosing Powered by <span class="text-primary">Explainable AI</span>
+            
+            <div class="col-lg-6 mb-5 mb-lg-0 pe-lg-5 reveal active">
+                <span class="hero-badge"><i class="fas fa-satellite-dish me-2 text-warning"></i> Now Live: Vancomycin v1.0</span>
+                <h1 class="display-3 fw-bolder mb-4" style="line-height: 1.1; letter-spacing: -1px;">
+                    Next-Gen <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(90deg, #60a5fa, #34d399); -webkit-background-clip: text; color: transparent;">Pharmacogenomics</span>
                 </h1>
-                <p class="lead text-secondary mb-5" style="font-size: 1.25rem; line-height: 1.6;">
-                    GenMedix integrates clinical data with Pharmacogenomics to provide highly accurate, statistically verified Warfarin and Vancomycin dosage recommendations, validated by Monte Carlo volatility modeling.
+                <p class="lead mb-5" style="color: #cbd5e1; font-size: 1.25rem; line-height: 1.7;">
+                    GenMedix fuses clinical demographics with genetic markers (VKORC1, CYP2C9, HLA-A*32) to compute highly accurate, statistically verified drug dosages.
                 </p>
                 <div class="d-flex flex-column flex-sm-row gap-3">
                     {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg fw-bold shadow-sm px-4 py-3" style="border-radius: 10px;">
-                            Go to Clinical Dashboard <i class="fas fa-arrow-right ms-2"></i>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg fw-bold px-4 py-3 shadow-lg" style="border-radius: 12px; background: #2563eb; border: none;">
+                            Launch Clinical Dashboard <i class="fas fa-rocket ms-2"></i>
                         </a>
                     {% else %}
-                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg fw-bold shadow-sm px-4 py-3" style="border-radius: 10px;">
-                            Get Started for Free <i class="fas fa-arrow-right ms-2"></i>
+                        <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg fw-bold px-4 py-3 shadow-lg" style="border-radius: 12px; background: #2563eb; border: none;">
+                            Initialize System Free <i class="fas fa-arrow-right ms-2"></i>
                         </a>
-                        <a href="{{ url_for('pricing') }}" class="btn btn-outline-secondary btn-lg fw-bold bg-white px-4 py-3" style="border-radius: 10px;">
-                            View Enterprise Plans
+                        <a href="{{ url_for('pricing') }}" class="btn btn-outline-light btn-lg fw-bold px-4 py-3" style="border-radius: 12px; backdrop-filter: blur(5px);">
+                            Enterprise Architecture
                         </a>
                     {% endif %}
                 </div>
             </div>
             
-            <div class="col-lg-6 text-center">
-                <div class="card border-0 shadow-lg" style="border-radius: 20px; overflow: hidden; transform: perspective(1000px) rotateY(-5deg); transition: transform 0.5s;">
-                    <div class="card-header bg-dark text-start border-0 py-3">
-                        <div class="d-flex gap-2">
-                            <div class="rounded-circle bg-danger" style="width: 12px; height: 12px;"></div>
-                            <div class="rounded-circle bg-warning" style="width: 12px; height: 12px;"></div>
-                            <div class="rounded-circle bg-success" style="width: 12px; height: 12px;"></div>
+            <div class="col-lg-6 reveal active" style="transition-delay: 0.2s;">
+                <div class="glass-panel p-2 p-md-4">
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <div class="terminal-dot dot-red"></div>
+                            <div class="terminal-dot dot-yel"></div>
+                            <div class="terminal-dot dot-grn"></div>
+                            <span class="ms-3 text-muted" style="font-size: 0.7rem;">genmedix_engine_v2.exe</span>
                         </div>
-                    </div>
-                    <div class="card-body p-0 bg-white">
-                        <div class="p-4 border-bottom text-start bg-light">
-                            <h5 class="fw-bold mb-1 text-primary"><i class="fas fa-microchip me-2"></i> Analyzing Genomic Markers</h5>
-                            <p class="text-muted small mb-0">Processing HLA-A*32:01 risk variance...</p>
-                        </div>
-                        <div class="p-5">
-                            <h2 class="display-2 fw-bold text-dark mb-0">1500 <span class="fs-4 text-muted">mg/day</span></h2>
-                            <span class="badge bg-success mt-2 px-3 py-2">High Statistical Confidence</span>
-                            <div class="mt-4 pt-4 border-top text-start">
-                                <p class="text-muted small fw-bold text-uppercase mb-2">SHAP & LIME Interpretability</p>
-                                <div class="progress mb-2" style="height: 10px;"><div class="progress-bar bg-danger" style="width: 75%"></div></div>
-                                <div class="progress" style="height: 10px;"><div class="progress-bar bg-success" style="width: 40%"></div></div>
-                            </div>
+                        <div class="terminal-body" id="term-output">
+                            <span class="term-line term-muted">> INITIATING GENMEDIX CORE...</span>
+                            <span class="term-line" style="animation-delay: 0.5s">> Loading Patient Profile: 4269-XXXX-XXXX</span>
+                            <span class="term-line" style="animation-delay: 1.0s">> Ingesting Clinical Vitals (Age, Weight, CrCl)... <span class="term-highlight">OK</span></span>
+                            <span class="term-line" style="animation-delay: 1.5s">> Ingesting Genomic Data (HLA-A*32:01, agr Group II)... <span class="term-highlight">OK</span></span>
+                            <span class="term-line" style="animation-delay: 2.0s">> RUNNING XGBOOST PREDICTION MODEL...</span>
+                            <span class="term-line term-danger" style="animation-delay: 3.5s">> WARNING: Active DDI Detected (Aminoglycosides)</span>
+                            <span class="term-line" style="animation-delay: 4.0s">> Simulating 100 Monte Carlo Variations...</span>
+                            <span class="term-line" style="animation-delay: 5.0s">> <span class="term-highlight">TARGET VANCOMYCIN DOSE: 1000 mg/day</span></span>
+                            <span class="term-line" style="animation-delay: 5.5s">> Bayesian Confidence: High (In-Distribution)</span>
+                            <span class="term-line term-muted" style="animation-delay: 6.0s">> Awaiting next command_</span>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
 </section>
 
-<section class="py-5 bg-white" id="how-it-works">
-    <div class="container py-5">
-        <div class="text-center mb-5 pb-3">
-            <h2 class="fw-bolder text-dark">Why Hospitals Choose GenMedix</h2>
-            <p class="text-muted lead">Bridging the gap between raw data and actionable clinical insights.</p>
-        </div>
-        
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card feature-card p-4 shadow-sm">
-                    <div class="icon-wrapper bg-primary bg-opacity-10 text-primary">
-                        <i class="fas fa-dna"></i>
-                    </div>
-                    <h4 class="fw-bold mb-3">Pharmacogenomic AI</h4>
-                    <p class="text-muted mb-0">Our Hybrid ML models analyze patient demographics alongside critical genetic markers (like <em>VKORC1</em>, <em>CYP2C9</em>, and <em>HLA-A</em>) to prevent toxic over-dosing.</p>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card feature-card p-4 shadow-sm">
-                    <div class="icon-wrapper bg-success bg-opacity-10 text-success">
-                        <i class="fas fa-project-diagram"></i>
-                    </div>
-                    <h4 class="fw-bold mb-3">Dual Explainable AI</h4>
-                    <p class="text-muted mb-0">No more "black box" algorithms. Every prediction generates dual visual graphs (<strong>SHAP</strong> globally & <strong>LIME</strong> locally) proving exactly which factors influenced the dose.</p>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="card feature-card p-4 shadow-sm">
-                    <div class="icon-wrapper bg-warning bg-opacity-10 text-warning">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <h4 class="fw-bold mb-3">Hybrid Safety Checks</h4>
-                    <p class="text-muted mb-0">Built-in Monte Carlo simulations detect biological volatility, while a Bayesian Distribution Network verifies if a patient falls safely within clinical training parameters.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="trust-banner text-center">
+<section class="bento-section">
     <div class="container">
-        <h3 class="fw-bolder mb-4"><i class="fas fa-lock text-info me-2"></i> Architected for Healthcare Security</h3>
-        <p class="lead mb-5 mx-auto" style="max-width: 700px; color: #cbd5e1;">
-            As a dual-focus project on Computer Science & Cyber Security, GenMedix protects Patient Health Information (PHI) at every layer.
-        </p>
-        
-        <div class="row justify-content-center text-start gap-3">
-            <div class="col-md-3">
-                <h6 class="text-info fw-bold"><i class="fas fa-check-circle me-1"></i> OTP Authentication</h6>
-                <p class="small text-muted mb-0">Powered by Supabase secure email token verification.</p>
+        <div class="text-center mb-5 pb-4 reveal">
+            <h6 class="text-primary fw-bold text-uppercase tracking-wider">The GenMedix Advantage</h6>
+            <h2 class="display-5 fw-bolder text-dark">Built for the Modern Hospital</h2>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-lg-7 reveal">
+                <div class="bento-card bg-white">
+                    <div class="bento-icon text-primary"><i class="fas fa-project-diagram"></i></div>
+                    <h3 class="fw-bold mb-3">Dual Explainable AI (XAI)</h3>
+                    <p class="text-muted fs-5 mb-0">We eliminate "black box" algorithms. GenMedix utilizes dual-framework interpretability, generating both global <strong>SHAP</strong> values and local <strong>LIME</strong> surrogate models to prove exactly which physiological thresholds triggered every dosage recommendation.</p>
+                </div>
             </div>
-            <div class="col-md-3">
-                <h6 class="text-info fw-bold"><i class="fas fa-check-circle me-1"></i> Anti-Caching</h6>
-                <p class="small text-muted mb-0">Browser caching disabled to prevent unauthorized back-button access.</p>
+            <div class="col-lg-5 reveal" style="transition-delay: 0.2s;">
+                <div class="bento-card" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); color: white;">
+                    <div class="bento-icon text-success"><i class="fas fa-shield-alt"></i></div>
+                    <h3 class="fw-bold mb-3 text-white">Hybrid Safety Engines</h3>
+                    <p class="text-light opacity-75 mb-0">Every output is stress-tested. <strong>Monte Carlo simulations</strong> verify volatility against measurement errors, while a <strong>Bayesian Network</strong> ensures the patient matches training distributions.</p>
+                </div>
             </div>
-            <div class="col-md-3">
-                <h6 class="text-info fw-bold"><i class="fas fa-check-circle me-1"></i> Signed Storage URLs</h6>
-                <p class="small text-muted mb-0">PDF reports utilize temporary, 60-second cryptographic tokens.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4 reveal">
+                <div class="bento-card">
+                    <div class="bento-icon text-danger"><i class="fas fa-exclamation-triangle"></i></div>
+                    <h4 class="fw-bold mb-3">Live DDI Alerts</h4>
+                    <p class="text-muted mb-0">Instant drug-drug interaction warnings for severe risks like Amiodarone or Aminoglycosides before generating reports.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 reveal" style="transition-delay: 0.1s;">
+                <div class="bento-card">
+                    <div class="bento-icon text-warning"><i class="fas fa-dna"></i></div>
+                    <h4 class="fw-bold mb-3">Genomic Targeting</h4>
+                    <p class="text-muted mb-0">Hybrid models dynamically scale dosing logic based on critical genomic markers, preventing severe nephrotoxicity or bleeding.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 reveal" style="transition-delay: 0.2s;">
+                <div class="bento-card">
+                    <div class="bento-icon text-info"><i class="fas fa-lock"></i></div>
+                    <h4 class="fw-bold mb-3">Zero-Trust Security</h4>
+                    <p class="text-muted mb-0">Built with OTP authentication, anti-caching architecture, and cryptographically signed PDF URLs to secure all PHI.</p>
+                </div>
             </div>
         </div>
     </div>
 </section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Intersection Observer for scroll animations
+        const reveals = document.querySelectorAll(".reveal");
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add("active");
+                }
+            });
+        }, { threshold: 0.1 });
+        
+        reveals.forEach(reveal => {
+            observer.observe(reveal);
+        });
+    });
+</script>
 
 {% endblock %}
