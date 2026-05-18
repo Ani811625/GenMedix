@@ -998,6 +998,41 @@ def delete_patient(patient_id):
     flash("Patient deleted.", "success")
     return redirect(url_for('dashboard'))
 
+@app.route('/patient/<int:patient_id>/export_history')
+@login_required
+def export_patient_history(patient_id):
+    patient = Patient.query.get_or_404(patient_id)
+    if patient.doctor_id != current_user.id: return redirect(url_for('dashboard'))
+
+    si = io.StringIO()
+    cw = csv.writer(si)
+
+    # Write Demographics
+    cw.writerow(['--- PATIENT DEMOGRAPHICS ---'])
+    cw.writerow(['Name', 'Aadhar ID', 'DOB', 'Gender', 'Blood Group', 'Phone', 'Allergies', 'Medical History'])
+    cw.writerow([patient.full_name, patient.aadhar, patient.dob, patient.gender, patient.blood_group, patient.phone, patient.allergies, patient.medical_history])
+    cw.writerow([])
+
+    # Write AI Reports
+    cw.writerow(['--- AI DOSAGE REPORTS ---'])
+    cw.writerow(['Date Generated', 'Pharmacology Model', 'Predicted Dose', 'Statistical Confidence'])
+    reports = Report.query.filter_by(patient_id=patient.id).order_by(Report.generated_at.desc()).all()
+    for r in reports:
+        cw.writerow([r.generated_at.strftime('%Y-%m-%d %H:%M'), r.drug_name, r.predicted_dose, r.confidence])
+    cw.writerow([])
+
+    # Write Clinical Notes
+    cw.writerow(['--- CLINICAL NOTES ---'])
+    cw.writerow(['Date', 'Attending Physician', 'Clinical Note Content'])
+    notes = Note.query.filter_by(patient_id=patient.id).order_by(Note.created_at.desc()).all()
+    for n in notes:
+        cw.writerow([n.created_at.strftime('%Y-%m-%d %H:%M'), current_user.full_name, n.note_text])
+
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename={patient.full_name.replace(' ', '_')}_Clinical_History.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
 @app.route('/patient/<int:patient_id>/new_assessment', methods=['GET'])
 @login_required
 def new_assessment(patient_id):

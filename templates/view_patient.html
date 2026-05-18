@@ -12,12 +12,48 @@
         padding: 30px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
     }
+    /* New Styles for Reports & Notes */
+    .report-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        border-radius: 12px;
+        border-left: 5px solid #0d6efd;
+    }
+    .report-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+    }
+    .report-card.vanc-card { border-left-color: #198754; }
+    
+    .timeline-note {
+        border-left: 2px solid #e2e8f0;
+        padding-left: 20px;
+        position: relative;
+        margin-bottom: 25px;
+    }
+    .timeline-note::before {
+        content: '';
+        position: absolute;
+        left: -6px;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #0d6efd;
+    }
+    .smart-action-bar button { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.5px; }
 </style>
 
 <div class="container py-4 mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary rounded-pill fw-bold shadow-sm"><i class="fas fa-arrow-left me-2"></i> Back</a>
-        <a href="{{ url_for('new_assessment', patient_id=patient.id) }}" class="btn btn-success rounded-pill fw-bold shadow-sm"><i class="fas fa-plus me-2"></i> New AI Assessment</a>
+        <div>
+            <a href="{{ url_for('export_patient_history', patient_id=patient.id) }}" class="btn btn-dark rounded-pill fw-bold shadow-sm me-2">
+                <i class="fas fa-file-csv me-2 text-info"></i> Download Patient CSV
+            </a>
+            <a href="{{ url_for('new_assessment', patient_id=patient.id) }}" class="btn btn-success rounded-pill fw-bold shadow-sm">
+                <i class="fas fa-plus me-2"></i> New AI Assessment
+            </a>
+        </div>
     </div>
 
     <div class="patient-header-card mb-4 position-relative overflow-hidden">
@@ -57,50 +93,84 @@
     </ul>
 
     <div class="tab-content bg-white p-4 rounded-4 shadow-sm border" id="pills-tabContent">
+        
         <div class="tab-pane fade show active" id="reports">
-            <div class="list-group list-group-flush">
+            <div class="row g-3">
                 {% for report in reports %}
-                <a href="{{ url_for('view_report', report_id=report.id) }}" class="list-group-item list-group-item-action py-3 border-bottom">
-                    <div class="d-flex w-100 justify-content-between align-items-center">
-                        <div>
-                            <h6 class="mb-1 fw-bold text-primary">{{ report.drug_name }} Recommendation</h6>
-                            <p class="mb-0 text-muted small"><i class="fas fa-clock me-1"></i> Generated: {{ report.generated_at.strftime('%Y-%m-%d') }}</p>
-                        </div>
-                        <div class="text-end">
-                            <span class="badge bg-dark fs-6">{{ report.predicted_dose }}</span>
-                            <div class="mt-1">
-                                {% if report.confidence == 'High' %}<span class="badge bg-success small">High Confidence</span>
-                                {% elif report.confidence == 'Medium' %}<span class="badge bg-warning text-dark small">Medium Confidence</span>
-                                {% else %}<span class="badge bg-danger small">Low Confidence</span>{% endif %}
+                <div class="col-12">
+                    <div class="card report-card shadow-sm border-0 border-end border-top border-bottom {% if report.drug_name == 'Vancomycin' %}vanc-card{% endif %} p-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <div class="d-flex align-items-center mb-1">
+                                    {% if report.drug_name == 'Vancomycin' %}
+                                        <i class="fas fa-vial text-success fs-4 me-3"></i>
+                                    {% else %}
+                                        <i class="fas fa-prescription-bottle-alt text-primary fs-4 me-3"></i>
+                                    {% endif %}
+                                    <div>
+                                        <h5 class="mb-0 fw-bold text-dark">{{ report.drug_name }} Recommendation</h5>
+                                        <small class="text-muted"><i class="fas fa-clock me-1"></i> {{ report.generated_at.strftime('%b %d, %Y - %H:%M') }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center px-4 border-start border-end d-none d-md-block">
+                                <h4 class="mb-0 fw-bolder {% if report.drug_name == 'Vancomycin' %}text-success{% else %}text-primary{% endif %}">{{ report.predicted_dose }}</h4>
+                                {% if report.confidence == 'High' %}<span class="badge bg-success bg-opacity-10 text-success border border-success"><i class="fas fa-check-circle me-1"></i>High Confidence</span>
+                                {% elif report.confidence == 'Medium' %}<span class="badge bg-warning bg-opacity-10 text-dark border border-warning"><i class="fas fa-exclamation-circle me-1"></i>Medium Confidence</span>
+                                {% else %}<span class="badge bg-danger bg-opacity-10 text-danger border border-danger"><i class="fas fa-times-circle me-1"></i>Low Confidence</span>{% endif %}
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('view_report', report_id=report.id) }}" class="btn btn-outline-dark btn-sm fw-bold rounded-pill px-3 shadow-sm">View Full PDF</a>
+                                <form action="{{ url_for('delete_report', report_id=report.id) }}" method="POST" onsubmit="return confirm('Delete this clinical report permanently?');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle shadow-sm" title="Delete Report"><i class="fas fa-trash"></i></button>
+                                </form>
                             </div>
                         </div>
                     </div>
-                </a>
+                </div>
                 {% else %}
-                <p class="text-center text-muted my-4">No AI reports generated for this patient.</p>
+                <div class="col-12 text-center py-5">
+                    <i class="fas fa-folder-open fs-1 text-muted opacity-50 mb-3"></i>
+                    <p class="text-muted fw-bold">No AI dosage predictions have been generated for this patient yet.</p>
+                </div>
                 {% endfor %}
             </div>
         </div>
 
         <div class="tab-pane fade" id="notes">
-            <form action="{{ url_for('add_note', patient_id=patient.id) }}" method="POST" class="mb-4">
-                <div class="form-floating mb-3">
-                    <textarea class="form-control bg-light" name="note_text" id="floatingTextarea" style="height: 100px" required></textarea>
-                    <label for="floatingTextarea">Add a new clinical note...</label>
+            
+            <div class="smart-action-bar d-flex flex-wrap gap-2 mb-3 p-2 bg-light rounded-3 border">
+                <span class="text-muted small fw-bold mt-1 ms-2 me-2"><i class="fas fa-bolt text-warning"></i> Quick Templates:</span>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill bg-white shadow-sm" onclick="insertTemplate('SOAP')">SOAP Note</button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill bg-white shadow-sm" onclick="insertTemplate('Vitals')">Add Vitals Grid</button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill bg-white shadow-sm" onclick="insertTemplate('DoseAdjustment')">Dose Adjustment</button>
+                <button type="button" class="btn btn-outline-primary btn-sm rounded-pill bg-white shadow-sm" onclick="insertTemplate('FollowUp')">Follow-Up Plan</button>
+            </div>
+
+            <form action="{{ url_for('add_note', patient_id=patient.id) }}" method="POST" class="mb-5">
+                <div class="form-floating mb-3 shadow-sm">
+                    <textarea class="form-control bg-white border-primary" name="note_text" id="clinicalNoteBox" style="height: 150px; font-family: monospace; font-size: 0.95rem;" required></textarea>
+                    <label for="clinicalNoteBox" class="text-muted"><i class="fas fa-pen-alt me-1"></i> Official Clinical Observations...</label>
                 </div>
                 <div class="text-end">
-                    <button type="submit" class="btn btn-primary rounded-pill fw-bold shadow-sm px-4">Save Note</button>
+                    <button type="submit" class="btn btn-primary rounded-pill fw-bold shadow px-5"><i class="fas fa-save me-2"></i> Commit to Patient Record</button>
                 </div>
             </form>
             
-            <div class="list-group">
+            <h5 class="fw-bold text-secondary mb-4 border-bottom pb-2">Historical Records</h5>
+            <div class="ps-3 mt-4">
                 {% for note in notes %}
-                <div class="list-group-item border-0 bg-light mb-2 rounded-3">
-                    <p class="mb-1 text-dark">{{ note.note_text }}</p>
-                    <small class="text-muted"><i class="fas fa-user-md me-1"></i> Dr. {{ current_user.full_name }} • {{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                <div class="timeline-note">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge bg-secondary"><i class="fas fa-user-md me-1"></i> Dr. {{ current_user.full_name }}</span>
+                        <small class="text-muted fw-bold">{{ note.created_at.strftime('%b %d, %Y - %H:%M') }}</small>
+                    </div>
+                    <div class="p-3 bg-light rounded-3 border" style="white-space: pre-wrap; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 0.95rem;">{{ note.note_text }}</div>
                 </div>
                 {% else %}
-                <p class="text-center text-muted my-3">No clinical notes recorded.</p>
+                <p class="text-center text-muted my-3">No historical notes recorded for this patient.</p>
                 {% endfor %}
             </div>
         </div>
@@ -108,7 +178,24 @@
 </div>
 
 <script>
-    // Longitudinal Graphing Logic
+    // --- SMART NOTE TEMPLATE LOGIC ---
+    function insertTemplate(type) {
+        const textArea = document.getElementById('clinicalNoteBox');
+        let currentText = textArea.value;
+        if (currentText.length > 0 && !currentText.endsWith('\n')) currentText += '\n\n';
+        
+        const templates = {
+            'SOAP': "S (Subjective): Patient reports...\nO (Objective): Examination reveals...\nA (Assessment): Condition is...\nP (Plan): Will proceed with...",
+            'Vitals': "--- VITALS UPDATE ---\nBP: ___/___ mmHg\nHR: ___ bpm\nTemp: ___ °C\nSpO2: ___ %\nWeight: ___ kg",
+            'DoseAdjustment': "DOSAGE ADJUSTMENT RATIONALE:\nPrior Dose: \nNew Target Dose: \nReasoning: INR out of range / Renal clearance change / Drug interaction (specify):",
+            'FollowUp': "FOLLOW-UP REQUIREMENTS:\nNext Appointment: [Date]\nLabs Required: [INR / SCr / Trough Levels]\nPatient Instructions Given: Yes/No"
+        };
+        
+        textArea.value = currentText + templates[type];
+        textArea.focus();
+    }
+
+    // --- UNCHANGED: Longitudinal Graphing Logic ---
     document.addEventListener("DOMContentLoaded", function() {
         const rawReports = [
             {% for r in reports|reverse %}
@@ -117,13 +204,11 @@
         ];
 
         if (rawReports.length > 0) {
-            // Separate data by drug
             const dates = rawReports.map(r => r.date);
             const vancDoses = [];
             const warfDoses = [];
 
             rawReports.forEach(r => {
-                // Extract just the number using regex (e.g., "1500 mg Daily" -> 1500)
                 let num = parseFloat(r.dose.replace(/[^0-9.]/g, ''));
                 if (r.drug === 'Vancomycin') { vancDoses.push(num); warfDoses.push(null); }
                 else if (r.drug === 'Warfarin') { warfDoses.push(num); vancDoses.push(null); }
