@@ -2,26 +2,92 @@
 {% block content %}
 
 <style>
+    /* Modern Skeleton Loader Overlay */
     #aiLoadingOverlay {
         display: none; /* Hidden by default */
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(244, 247, 246, 0.95); /* Clean clinical background */
+        background: rgba(248, 249, 250, 0.97); /* Very clean, light background */
         z-index: 9999;
-        justify-content: center;
-        align-items: center;
         flex-direction: column;
-        backdrop-filter: blur(5px);
+        align-items: center;
+        padding-top: 6vh;
+        backdrop-filter: blur(8px);
     }
-    .spinner-border { width: 4rem; height: 4rem; border-width: 0.4em; }
-    .loading-text { font-size: 1.5rem; font-weight: bold; color: #0056b3; margin-top: 25px; letter-spacing: 1px;}
-    .loading-subtext { font-size: 0.9rem; color: #6c757d; margin-top: 10px; font-family: monospace;}
+    
+    .loading-status-text {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0d6efd;
+        margin-bottom: 25px;
+        letter-spacing: 0.5px;
+        text-align: center;
+    }
+
+    /* Skeleton Card mimicking the final PDF */
+    .skeleton-card {
+        width: 90%;
+        max-width: 850px;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+        padding: 40px;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* The Pulsing Animation */
+    .skeleton-box {
+        background: #e2e8f0;
+        border-radius: 6px;
+        animation: pulse 1.5s infinite ease-in-out;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 0.5; }
+        50% { opacity: 1; }
+        100% { opacity: 0.5; }
+    }
+
+    /* Specific Skeleton Shapes */
+    .skel-header { height: 35px; width: 35%; margin-bottom: 40px; }
+    .skel-row { display: flex; gap: 30px; margin-bottom: 30px; }
+    .skel-col { flex: 1; }
+    .skel-text { height: 16px; width: 100%; margin-bottom: 15px; }
+    .skel-text-short { height: 16px; width: 60%; margin-bottom: 15px; }
+    .skel-dosage-box { height: 140px; width: 100%; margin-bottom: 40px; border-radius: 12px; }
+    .skel-chart-box { height: 220px; width: 100%; border-radius: 12px; }
 </style>
 
 <div id="aiLoadingOverlay">
-    <div class="spinner-border text-primary" role="status"></div>
-    <div class="loading-text" id="loadingText">Initializing AI Engine...</div>
-    <div class="loading-subtext">Compiling secure PDF report</div>
+    <div class="loading-status-text" id="loadingText">Initializing AI Engine...</div>
+    
+    <div class="skeleton-card">
+        <div class="skeleton-box skel-header"></div>
+        
+        <div class="skel-row">
+            <div class="skel-col">
+                <div class="skeleton-box skel-text"></div>
+                <div class="skeleton-box skel-text"></div>
+                <div class="skeleton-box skel-text-short"></div>
+            </div>
+            <div class="skel-col">
+                <div class="skeleton-box skel-text"></div>
+                <div class="skeleton-box skel-text"></div>
+                <div class="skeleton-box skel-text-short"></div>
+            </div>
+        </div>
+        
+        <div class="skeleton-box skel-dosage-box"></div>
+        
+        <div class="skel-row mb-0">
+            <div class="skel-col">
+                <div class="skeleton-box skel-chart-box"></div>
+            </div>
+            <div class="skel-col">
+                <div class="skeleton-box skel-chart-box"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="container mt-4 mb-5">
