@@ -40,6 +40,27 @@
 
     .feature-list li { margin-bottom: 15px; display: flex; align-items: center; color: var(--text-muted); }
     .feature-list i { font-size: 1.1rem; margin-right: 12px; }
+    
+    /* Discount Styling */
+    .original-price {
+        font-size: 1.25rem;
+        text-decoration: line-through;
+        opacity: 0.6;
+        margin-bottom: -10px;
+        display: block;
+    }
+    .discount-badge {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: rgba(16, 185, 129, 0.15); /* Green tint */
+        color: #10b981;
+        font-weight: 800;
+        margin-bottom: 15px;
+        display: inline-block;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
 </style>
 
 <div class="container py-5 mb-5">
@@ -53,15 +74,21 @@
         <div class="col-lg-4">
             <div class="pricing-card text-center">
                 <h4 class="fw-bold text-dark mb-1">Standard</h4>
-                <p class="text-muted small">For independent clinics</p>
-                <h1 class="display-4 fw-bolder text-dark my-4">$499<span class="fs-6 text-muted fw-normal">/mo</span></h1>
-                <ul class="list-unstyled feature-list text-start mb-5">
+                <p class="text-muted small mb-4">For independent clinics</p>
+                
+                <div>
+                    <span class="discount-badge">Save 62%</span>
+                    <span class="text-muted original-price">$40</span>
+                    <h1 class="display-4 fw-bolder text-dark my-2">$15<span class="fs-6 text-muted fw-normal">/mo</span></h1>
+                </div>
+
+                <ul class="list-unstyled feature-list text-start mb-5 mt-4">
                     <li><i class="fas fa-check-circle text-success"></i> Up to 500 predictions/mo</li>
                     <li><i class="fas fa-check-circle text-success"></i> Warfarin & Vancomycin Models</li>
                     <li><i class="fas fa-check-circle text-success"></i> Basic Clinical Notes</li>
                     <li><i class="fas fa-times-circle text-danger opacity-50"></i> No API Access</li>
                 </ul>
-                <button onclick="startCheckout('Individual')" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-3 mt-auto">Start Free Trial</button>
+                <button onclick="startCheckout('Individual', this)" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-3 mt-auto">Start Free Trial</button>
             </div>
         </div>
         
@@ -69,15 +96,21 @@
             <div class="pricing-card popular text-center">
                 <div class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-primary px-3 py-2">Most Popular</div>
                 <h4 class="fw-bold text-dark mb-1">Hospital Network</h4>
-                <p class="text-muted small">For mid-to-large medical centers</p>
-                <h1 class="display-4 fw-bolder text-dark my-4">$1,299<span class="fs-6 text-muted fw-normal">/mo</span></h1>
-                <ul class="list-unstyled feature-list text-start mb-5">
+                <p class="text-muted small mb-4">For mid-to-large medical centers</p>
+                
+                <div>
+                    <span class="discount-badge">Save $50</span>
+                    <span class="text-muted original-price" style="color: var(--text-muted) !important;">$300</span>
+                    <h1 class="display-4 fw-bolder text-dark my-2">$250<span class="fs-6 text-muted fw-normal">/mo</span></h1>
+                </div>
+
+                <ul class="list-unstyled feature-list text-start mb-5 mt-4">
                     <li><i class="fas fa-check-circle text-primary"></i> Unlimited AI Predictions</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Batch CSV Triage Processing</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Advanced SHAP/LIME Explainability</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Full FHIR/Epic Integration API</li>
                 </ul>
-                <button onclick="startCheckout('Enterprise')" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-auto shadow">Deploy Network</button>
+                <button onclick="startCheckout('Enterprise', this)" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-auto shadow">Deploy Network</button>
             </div>
         </div>
 
@@ -85,8 +118,8 @@
             <div class="pricing-card text-center">
                 <h4 class="fw-bold text-dark mb-1">Research Hub</h4>
                 <p class="text-muted small">For universities & clinical trials</p>
-                <h1 class="display-4 fw-bolder text-dark my-4">Custom</h1>
-                <ul class="list-unstyled feature-list text-start mb-5">
+                <h1 class="display-4 fw-bolder text-dark my-4 text-uppercase fs-2 mt-5">Custom</h1>
+                <ul class="list-unstyled feature-list text-start mb-5 mt-5">
                     <li><i class="fas fa-check-circle text-success"></i> Access to Raw Model Weights</li>
                     <li><i class="fas fa-check-circle text-success"></i> Federated Learning Setup</li>
                     <li><i class="fas fa-check-circle text-success"></i> Custom Genomic Parameter Training</li>
@@ -98,49 +131,86 @@
     </div>
 </div>
 
+<div class="modal fade" id="emailModal" tabindex="-1" aria-labelledby="emailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); box-shadow: var(--shadow-soft);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="emailModalLabel"><i class="fas fa-envelope text-primary me-2"></i>Institutional License</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: var(--bs-btn-close-color);"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="text-muted small mb-4">Please enter the institutional email address that will be associated with this subscription.</p>
+                <div style="position: relative;" class="mb-3">
+                    <i class="fas fa-hospital text-muted" style="position: absolute; top: 50%; left: 15px; transform: translateY(-50%); z-index: 10;"></i>
+                    <input type="email" class="form-control" id="institutionalEmail" placeholder="admin@hospital.org" style="padding-left: 45px; height: 50px; border-radius: 12px; background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color);" required>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill fw-bold px-4" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill fw-bold px-4 shadow-sm" id="confirmEmailBtn">Proceed to Checkout <i class="fas fa-arrow-right ms-1"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://js.stripe.com/v3/"></script>
 <script>
-    // Initialize Stripe with the publishable key passed from app.py
     const stripe = Stripe('{{ key }}');
+    let selectedPlan = '';
+    let triggerButton = null;
+    let emailModalInstance = null;
 
-    function startCheckout(planType) {
-        // Your backend requires an email to link the subscription
-        const userEmail = prompt("Please enter the institutional email for this license:");
+    document.addEventListener('DOMContentLoaded', function() {
+        emailModalInstance = new bootstrap.Modal(document.getElementById('emailModal'));
+    });
+
+    function startCheckout(planType, btnElement) {
+        selectedPlan = planType;
+        triggerButton = btnElement;
+        document.getElementById('institutionalEmail').value = '';
+        emailModalInstance.show();
+    }
+
+    document.getElementById('confirmEmailBtn').addEventListener('click', function() {
+        const userEmail = document.getElementById('institutionalEmail').value.trim();
         
-        if (!userEmail) {
-            return; // Exit if the user clicks cancel or enters nothing
+        if (!userEmail || !userEmail.includes('@')) {
+            alert("Please enter a valid institutional email.");
+            return;
         }
 
-        // Change button text to show loading state
-        event.target.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting to Secure Portal...';
-        event.target.disabled = true;
+        emailModalInstance.hide();
 
-        // Send POST request to your app.py route
+        const originalText = triggerButton.innerHTML;
+        triggerButton.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting...';
+        triggerButton.disabled = true;
+
         fetch("{{ url_for('create_checkout_session') }}", {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                plan_type: planType,
+                plan_type: selectedPlan,
                 email: userEmail
             })
         })
         .then(response => response.json())
         .then(data => {
             if (data.id) {
-                // Redirect to Stripe's secure checkout page
                 return stripe.redirectToCheckout({ sessionId: data.id });
             } else {
                 alert("Error initializing checkout: " + (data.error || "Unknown error"));
-                window.location.reload();
+                triggerButton.innerHTML = originalText;
+                triggerButton.disabled = false;
             }
         })
         .catch(error => {
             console.error("Error:", error);
             alert("A network error occurred connecting to the payment gateway.");
-            window.location.reload();
+            triggerButton.innerHTML = originalText;
+            triggerButton.disabled = false;
         });
-    }
+    });
 </script>
 {% endblock %}

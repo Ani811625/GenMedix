@@ -38,7 +38,18 @@
     }
     .floating-icon-input { position: relative; }
     .floating-icon-input i { position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-muted); }
-    .floating-icon-input .form-control { padding-left: 45px; height: 55px; border-radius: 12px; }
+    .floating-icon-input .form-control { 
+        padding-left: 45px; 
+        height: 55px; 
+        border-radius: 12px;
+        background-color: var(--input-bg);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+    }
+    .floating-icon-input .form-control:focus {
+        background-color: var(--bg-card);
+        border-color: var(--primary-accent);
+    }
 </style>
 
 <div class="auth-wrapper">
@@ -50,13 +61,13 @@
             <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle text-primary mb-3" style="width: 60px; height: 60px;">
                 <i class="fas fa-user-md fs-3"></i>
             </div>
-            <h3 class="fw-bolder">Physician Portal</h3>
+            <h3 class="fw-bolder text-dark">Physician Portal</h3>
             <p class="text-muted small">Enter your credentials to access the CDSS.</p>
         </div>
 
         <form action="{{ url_for('login') }}" method="POST">
             <div class="mb-3">
-                <label class="form-label fw-bold small">Institutional Email</label>
+                <label class="form-label fw-bold small text-dark">Institutional Email</label>
                 <div class="floating-icon-input">
                     <i class="fas fa-envelope"></i>
                     <input type="email" class="form-control" name="email" placeholder="doctor@hospital.org" required>
@@ -65,8 +76,8 @@
             
             <div class="mb-4">
                 <div class="d-flex justify-content-between">
-                    <label class="form-label fw-bold small">Secure Password</label>
-                    <a href="#" class="small text-primary text-decoration-none fw-bold">Forgot Password?</a>
+                    <label class="form-label fw-bold small text-dark">Secure Password</label>
+                    <a href="{{ url_for('forgot_password') }}" class="small text-primary text-decoration-none fw-bold">Forgot Password?</a>
                 </div>
                 <div class="floating-icon-input">
                     <i class="fas fa-lock"></i>

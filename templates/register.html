@@ -1,78 +1,133 @@
 {% extends "base.html" %}
-{% block title %}Sign Up - GenMedix{% endblock %}
+{% block title %}GenMedix - Create Account{% endblock %}
 
 {% block content %}
 <style>
-    .reg-wrapper { min-height: calc(100vh - 76px); display: flex; align-items: center; justify-content: center; background-color: #f4f7f6; padding: 40px 15px; }
-    .reg-card { max-width: 900px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.08); background: #fff; border: none; }
-    .reg-sidebar { background: linear-gradient(135deg, #0056b3 0%, #003d82 100%); color: white; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
-    .form-floating > .form-control { border-radius: 8px; border-color: #e2e8f0; }
-    .form-floating > .form-control:focus { border-color: #0056b3; box-shadow: 0 0 0 0.2rem rgba(0, 86, 179, 0.1); }
+    .auth-wrapper {
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+    
+    .split-card {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 900px;
+        background: var(--bg-card);
+        border-radius: 24px;
+        box-shadow: var(--shadow-soft);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+    
+    @media (min-width: 768px) {
+        .split-card { flex-direction: row; }
+    }
+
+    /* Left Branding Sidebar */
+    .auth-sidebar {
+        background: #0d6efd; /* Stays blue in both modes */
+        color: white;
+        padding: 40px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* Right Form Container */
+    .auth-form-container {
+        padding: 40px;
+        flex: 1.5;
+    }
+
+    /* FIX: Force placeholders to use the dynamic muted text color */
+    .form-control::placeholder {
+        color: var(--text-muted) !important;
+        opacity: 0.7;
+    }
+    
+    /* Custom Styling for the License Email Input */
+    .license-input-group .form-control {
+        border-color: var(--primary-accent);
+        color: var(--text-main);
+        font-weight: 600;
+    }
+    .license-input-group .form-control:focus {
+        box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+    }
+    
+    /* Subtle blue tint for the license input in dark mode */
+    [data-theme="dark"] .license-input-group .form-control {
+        background: rgba(13, 110, 253, 0.05); 
+        border-color: #3b82f6;
+    }
 </style>
 
-<div class="reg-wrapper">
-    <div class="card reg-card">
-        <div class="row g-0">
-            <div class="col-md-5 reg-sidebar d-none d-md-flex">
-                <div class="mb-4">
-                    <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow" style="width: 60px; height: 60px;">
-                        <i class="fas fa-stethoscope fs-3"></i>
-                    </div>
-                    <h2 class="fw-bolder">Join the Future of Dosing.</h2>
-                    <p class="text-light mt-3" style="opacity: 0.85; line-height: 1.7;">Register your clinical account to access our Pharmacogenomic AI, generate secure PDF reports, and ensure maximum patient safety.</p>
+<div class="auth-wrapper">
+    <div class="split-card">
+        <div class="auth-sidebar">
+            <div>
+                <div class="bg-white text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 60px; height: 60px;">
+                    <i class="fas fa-stethoscope fs-3"></i>
                 </div>
-                <div class="mt-auto border-top border-light border-opacity-25 pt-4">
-                    <p class="small text-light mb-1"><i class="fas fa-check-circle me-2"></i> Evidence-Based Algorithms</p>
-                    <p class="small text-light mb-1"><i class="fas fa-check-circle me-2"></i> SHAP Explainability</p>
-                    <p class="small text-light mb-0"><i class="fas fa-check-circle me-2"></i> HIPAA-Aligned Security</p>
+                <h2 class="fw-bolder mb-3 text-white">Join the Future of Dosing.</h2>
+                <p class="opacity-75 mb-5 text-white" style="font-size: 0.95rem; line-height: 1.6;">
+                    Register your clinical account to access our Pharmacogenomic AI, generate secure PDF reports, and ensure maximum patient safety.
+                </p>
+            </div>
+            
+            <ul class="list-unstyled mb-0 opacity-75 small">
+                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> Evidence-Based Algorithms</li>
+                <li class="mb-2"><i class="fas fa-check-circle me-2"></i> SHAP Explainability</li>
+                <li><i class="fas fa-check-circle me-2"></i> HIPAA-Aligned Security</li>
+            </ul>
+        </div>
+
+        <div class="auth-form-container">
+            <h3 class="fw-bolder mb-1 text-dark">Create an Account</h3>
+            <p class="text-muted small mb-4">Please fill in your professional details to proceed.</p>
+
+            <form action="{{ url_for('register') }}" method="POST">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control form-control-lg" name="full_name" placeholder="Full Name (with Title)" required style="font-size: 0.95rem;">
+                    </div>
+                    <div class="col-sm-6">
+                        <input type="text" class="form-control form-control-lg" name="medical_reg_id" placeholder="Medical Reg. ID" required style="font-size: 0.95rem;">
+                    </div>
                 </div>
-            </div>
 
-            <div class="col-md-7 p-4 p-lg-5">
-                <h3 class="fw-bold text-dark mb-1">Create an Account</h3>
-                <p class="text-muted small mb-4">Please fill in your professional details to proceed.</p>
+                <div class="mb-3">
+                    <input type="email" class="form-control form-control-lg" name="email" placeholder="Personal Login Email" required style="font-size: 0.95rem;">
+                </div>
 
-                <form method="POST" action="{{ url_for('register') }}">
-                    <div class="row g-3 mb-3">
-                        <div class="col-sm-6 form-floating">
-                            <input type="text" class="form-control bg-light" id="full_name" name="full_name" placeholder="Dr. John Doe" required>
-                            <label for="full_name" class="ms-2">Full Name (with Title)</label>
-                        </div>
-                        <div class="col-sm-6 form-floating">
-                            <input type="text" class="form-control bg-light" id="medical_reg_id" name="medical_reg_id" placeholder="Reg ID" required>
-                            <label for="medical_reg_id" class="ms-2">Medical Reg. ID</label>
-                        </div>
+                <div class="mb-4 license-input-group position-relative">
+                    <i class="fas fa-key position-absolute" style="top: 15px; left: 15px; color: var(--primary-accent); z-index: 5;"></i>
+                    <input type="email" class="form-control form-control-lg" name="license_email" placeholder="Subscribed License Email" required style="padding-left: 45px; font-size: 0.95rem;">
+                    <div class="form-text text-muted small mt-1">The email used during Stripe checkout.</div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-sm-6">
+                        <input type="password" class="form-control form-control-lg" name="password" placeholder="Password" required style="font-size: 0.95rem;">
                     </div>
-
-                    <div class="form-floating mb-3">
-                        <input type="email" class="form-control bg-light" id="email" name="email" placeholder="name@hospital.com" required>
-                        <label for="email">Personal Login Email</label>
+                    <div class="col-sm-6">
+                        <input type="password" class="form-control form-control-lg" name="password_confirm" placeholder="Confirm Password" required style="font-size: 0.95rem;">
                     </div>
+                </div>
 
-                    <div class="form-floating mb-3 position-relative">
-                        <input type="email" class="form-control bg-light border-primary" id="license_email" name="license_email" placeholder="Subscribed Email" required>
-                        <label for="license_email" class="text-primary fw-bold"><i class="fas fa-key me-1"></i> Subscribed License Email</label>
-                        <small class="text-muted ms-1" style="font-size: 0.75rem;">The email used during Stripe checkout.</small>
-                    </div>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6 form-floating">
-                            <input type="password" class="form-control bg-light" id="password" name="password" placeholder="Password" required>
-                            <label for="password" class="ms-2">Password</label>
-                        </div>
-                        <div class="col-sm-6 form-floating">
-                            <input type="password" class="form-control bg-light" id="password_confirm" name="password_confirm" placeholder="Confirm" required>
-                            <label for="password_confirm" class="ms-2">Confirm Password</label>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm" style="border-radius: 8px;">Register Account</button>
-                    
-                    <p class="text-center text-muted small mt-4 mb-0">
-                        Already have an account? <a href="{{ url_for('login') }}" class="fw-bold text-primary text-decoration-none">Log in</a>
-                    </p>
-                </form>
-            </div>
+                <button type="submit" class="btn btn-primary w-100 btn-lg rounded-3 fw-bold mb-3 shadow-sm">
+                    Register Account
+                </button>
+                
+                <div class="text-center">
+                    <p class="text-muted small mb-0">Already have an account? <a href="{{ url_for('login') }}" class="fw-bold text-primary text-decoration-none">Log in</a></p>
+                </div>
+            </form>
         </div>
     </div>
 </div>
