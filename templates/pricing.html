@@ -21,7 +21,7 @@
         box-shadow: var(--shadow-soft);
     }
     
-    /* Highlighted Middle Tier - Now adapts to Light/Dark mode natively */
+    /* Highlighted Middle Tier */
     .pricing-card.popular {
         border: 2px solid var(--primary-accent);
         box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
@@ -29,7 +29,6 @@
         z-index: 2;
     }
     
-    /* Slight scale up for the popular card on larger screens */
     @media (min-width: 992px) {
         .pricing-card.popular {
             transform: scale(1.05);
@@ -62,7 +61,7 @@
                     <li><i class="fas fa-check-circle text-success"></i> Basic Clinical Notes</li>
                     <li><i class="fas fa-times-circle text-danger opacity-50"></i> No API Access</li>
                 </ul>
-                <a href="{{ url_for('stripe_webhook', plan='standard') }}" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-3 mt-auto">Start Free Trial</a>
+                <button onclick="startCheckout('Individual')" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-3 mt-auto">Start Free Trial</button>
             </div>
         </div>
         
@@ -78,7 +77,7 @@
                     <li><i class="fas fa-check-circle text-primary"></i> Advanced SHAP/LIME Explainability</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Full FHIR/Epic Integration API</li>
                 </ul>
-                <a href="{{ url_for('stripe_webhook', plan='hospital') }}" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-auto shadow">Deploy Network</a>
+                <button onclick="startCheckout('Enterprise')" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-auto shadow">Deploy Network</button>
             </div>
         </div>
 
@@ -98,4 +97,50 @@
         </div>
     </div>
 </div>
+
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Initialize Stripe with the publishable key passed from app.py
+    const stripe = Stripe('{{ key }}');
+
+    function startCheckout(planType) {
+        // Your backend requires an email to link the subscription
+        const userEmail = prompt("Please enter the institutional email for this license:");
+        
+        if (!userEmail) {
+            return; // Exit if the user clicks cancel or enters nothing
+        }
+
+        // Change button text to show loading state
+        event.target.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting to Secure Portal...';
+        event.target.disabled = true;
+
+        // Send POST request to your app.py route
+        fetch("{{ url_for('create_checkout_session') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                plan_type: planType,
+                email: userEmail
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                // Redirect to Stripe's secure checkout page
+                return stripe.redirectToCheckout({ sessionId: data.id });
+            } else {
+                alert("Error initializing checkout: " + (data.error || "Unknown error"));
+                window.location.reload();
+            }
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            alert("A network error occurred connecting to the payment gateway.");
+            window.location.reload();
+        });
+    }
+</script>
 {% endblock %}
