@@ -4,23 +4,42 @@
 {% block content %}
 <style>
     .pricing-header { padding: 80px 0 60px 0; }
+    
     .pricing-card {
+        background: var(--bg-card);
         border-radius: 24px;
         padding: 40px;
         height: 100%;
         border: 1px solid var(--border-color);
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        flex-direction: column;
     }
-    .pricing-card:hover { transform: translateY(-10px); }
+    
+    .pricing-card:hover { 
+        transform: translateY(-10px); 
+        box-shadow: var(--shadow-soft);
+    }
+    
+    /* Highlighted Middle Tier - Now adapts to Light/Dark mode natively */
     .pricing-card.popular {
-        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-        color: white !important;
-        border-color: #3b82f6;
-        box-shadow: 0 25px 50px rgba(59, 130, 246, 0.2);
+        border: 2px solid var(--primary-accent);
+        box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+        position: relative;
+        z-index: 2;
     }
-    .pricing-card.popular .text-muted { color: #94a3b8 !important; }
-    .pricing-card.popular .text-dark { color: white !important; }
-    .feature-list li { margin-bottom: 15px; display: flex; align-items: center; }
+    
+    /* Slight scale up for the popular card on larger screens */
+    @media (min-width: 992px) {
+        .pricing-card.popular {
+            transform: scale(1.05);
+        }
+        .pricing-card.popular:hover {
+            transform: scale(1.05) translateY(-10px);
+        }
+    }
+
+    .feature-list li { margin-bottom: 15px; display: flex; align-items: center; color: var(--text-muted); }
     .feature-list i { font-size: 1.1rem; margin-right: 12px; }
 </style>
 
@@ -33,48 +52,48 @@
 
     <div class="row g-4 align-items-center">
         <div class="col-lg-4">
-            <div class="pricing-card card bg-card text-center">
+            <div class="pricing-card text-center">
                 <h4 class="fw-bold text-dark mb-1">Standard</h4>
                 <p class="text-muted small">For independent clinics</p>
                 <h1 class="display-4 fw-bolder text-dark my-4">$499<span class="fs-6 text-muted fw-normal">/mo</span></h1>
-                <ul class="list-unstyled feature-list text-start text-muted mb-5">
+                <ul class="list-unstyled feature-list text-start mb-5">
                     <li><i class="fas fa-check-circle text-success"></i> Up to 500 predictions/mo</li>
                     <li><i class="fas fa-check-circle text-success"></i> Warfarin & Vancomycin Models</li>
                     <li><i class="fas fa-check-circle text-success"></i> Basic Clinical Notes</li>
                     <li><i class="fas fa-times-circle text-danger opacity-50"></i> No API Access</li>
                 </ul>
-                <a href="{{ url_for('register') }}" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-3 mt-auto">Start Free Trial</a>
+                <a href="{{ url_for('stripe_webhook', plan='standard') }}" class="btn btn-outline-primary w-100 rounded-pill fw-bold py-3 mt-auto">Start Free Trial</a>
             </div>
         </div>
         
         <div class="col-lg-4">
-            <div class="pricing-card popular text-center position-relative">
+            <div class="pricing-card popular text-center">
                 <div class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-primary px-3 py-2">Most Popular</div>
-                <h4 class="fw-bold mb-1">Hospital Network</h4>
+                <h4 class="fw-bold text-dark mb-1">Hospital Network</h4>
                 <p class="text-muted small">For mid-to-large medical centers</p>
-                <h1 class="display-4 fw-bolder my-4">$1,299<span class="fs-6 text-muted fw-normal">/mo</span></h1>
-                <ul class="list-unstyled feature-list text-start mb-5 text-white">
+                <h1 class="display-4 fw-bolder text-dark my-4">$1,299<span class="fs-6 text-muted fw-normal">/mo</span></h1>
+                <ul class="list-unstyled feature-list text-start mb-5">
                     <li><i class="fas fa-check-circle text-primary"></i> Unlimited AI Predictions</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Batch CSV Triage Processing</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Advanced SHAP/LIME Explainability</li>
                     <li><i class="fas fa-check-circle text-primary"></i> Full FHIR/Epic Integration API</li>
                 </ul>
-                <a href="{{ url_for('register') }}" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-auto shadow">Deploy Network</a>
+                <a href="{{ url_for('stripe_webhook', plan='hospital') }}" class="btn btn-primary w-100 rounded-pill fw-bold py-3 mt-auto shadow">Deploy Network</a>
             </div>
         </div>
 
         <div class="col-lg-4">
-            <div class="pricing-card card bg-card text-center">
+            <div class="pricing-card text-center">
                 <h4 class="fw-bold text-dark mb-1">Research Hub</h4>
                 <p class="text-muted small">For universities & clinical trials</p>
                 <h1 class="display-4 fw-bolder text-dark my-4">Custom</h1>
-                <ul class="list-unstyled feature-list text-start text-muted mb-5">
+                <ul class="list-unstyled feature-list text-start mb-5">
                     <li><i class="fas fa-check-circle text-success"></i> Access to Raw Model Weights</li>
                     <li><i class="fas fa-check-circle text-success"></i> Federated Learning Setup</li>
                     <li><i class="fas fa-check-circle text-success"></i> Custom Genomic Parameter Training</li>
                     <li><i class="fas fa-check-circle text-success"></i> Dedicated Support Engineer</li>
                 </ul>
-                <a href="#" class="btn btn-dark w-100 rounded-pill fw-bold py-3 mt-auto">Contact Sales</a>
+                <a href="mailto:sales@genmedix.com" class="btn btn-dark w-100 rounded-pill fw-bold py-3 mt-auto">Contact Sales</a>
             </div>
         </div>
     </div>
