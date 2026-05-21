@@ -1,265 +1,132 @@
 {% extends "base.html" %}
+{% block title %}Vancomycin AI Assessment{% endblock %}
+
 {% block content %}
-
 <style>
-    /* Modern Skeleton Loader Overlay */
-    #aiLoadingOverlay {
-        display: none; /* Hidden by default */
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(248, 249, 250, 0.97); /* Very clean, light background */
-        z-index: 9999;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 6vh;
-        backdrop-filter: blur(8px);
+    .assessment-header {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        padding: 40px 0;
+        border-radius: 16px;
+        margin-bottom: -50px;
+        position: relative;
+        z-index: 1;
     }
-    
-    .loading-status-text {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #0d6efd;
+    .form-container {
+        position: relative;
+        z-index: 2;
+    }
+    .section-title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+        border-bottom: 2px solid var(--border-color);
+        padding-bottom: 10px;
         margin-bottom: 25px;
-        letter-spacing: 0.5px;
-        text-align: center;
     }
-
-    /* Skeleton Card mimicking the final PDF */
-    .skeleton-card {
-        width: 90%;
-        max-width: 850px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.06);
-        padding: 40px;
-        border: 1px solid #e2e8f0;
+    .floating-icon-input {
+        position: relative;
     }
-
-    /* The Pulsing Animation */
-    .skeleton-box {
-        background: #e2e8f0;
-        border-radius: 6px;
-        animation: pulse 1.5s infinite ease-in-out;
+    .floating-icon-input i {
+        position: absolute;
+        top: 50%;
+        left: 15px;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        z-index: 10;
     }
-    
-    @keyframes pulse {
-        0% { opacity: 0.5; }
-        50% { opacity: 1; }
-        100% { opacity: 0.5; }
+    .floating-icon-input .form-control {
+        padding-left: 40px;
     }
-
-    /* Specific Skeleton Shapes */
-    .skel-header { height: 35px; width: 35%; margin-bottom: 40px; }
-    .skel-row { display: flex; gap: 30px; margin-bottom: 30px; }
-    .skel-col { flex: 1; }
-    .skel-text { height: 16px; width: 100%; margin-bottom: 15px; }
-    .skel-text-short { height: 16px; width: 60%; margin-bottom: 15px; }
-    .skel-dosage-box { height: 140px; width: 100%; margin-bottom: 40px; border-radius: 12px; }
-    .skel-chart-box { height: 220px; width: 100%; border-radius: 12px; }
 </style>
 
-<div id="aiLoadingOverlay">
-    <div class="loading-status-text" id="loadingText">Initializing AI Engine...</div>
+<div class="container py-4 mb-5" style="max-width: 1000px;">
     
-    <div class="skeleton-card">
-        <div class="skeleton-box skel-header"></div>
-        
-        <div class="skel-row">
-            <div class="skel-col">
-                <div class="skeleton-box skel-text"></div>
-                <div class="skeleton-box skel-text"></div>
-                <div class="skeleton-box skel-text-short"></div>
-            </div>
-            <div class="skel-col">
-                <div class="skeleton-box skel-text"></div>
-                <div class="skeleton-box skel-text"></div>
-                <div class="skeleton-box skel-text-short"></div>
-            </div>
-        </div>
-        
-        <div class="skeleton-box skel-dosage-box"></div>
-        
-        <div class="skel-row mb-0">
-            <div class="skel-col">
-                <div class="skeleton-box skel-chart-box"></div>
-            </div>
-            <div class="skel-col">
-                <div class="skeleton-box skel-chart-box"></div>
-            </div>
-        </div>
+    <div class="assessment-header text-center text-white shadow-sm">
+        <h2 class="fw-bolder mb-1"><i class="fas fa-vial me-2"></i> Vancomycin Predictive Engine</h2>
+        <p class="opacity-75 mb-0">Patient: <strong>{{ patient.full_name }}</strong> | ID: {{ patient.aadhar[-4:] }}</p>
     </div>
-</div>
 
-<div class="container mt-4 mb-5">
-    <div class="card shadow border-0" style="border-radius: 12px; max-width: 900px; margin: auto;">
-        <div class="card-header bg-primary text-white p-4" style="border-radius: 12px 12px 0 0;">
-            <h3 class="mb-0"><i class="fas fa-brain"></i> AI Vancomycin Dosing Model</h3>
-            <p class="mb-0 text-light opacity-75">Patient: <strong>{{ patient.full_name }}</strong> | Aadhar: {{ patient.aadhar }}</p>
-        </div>
-        
-        <div class="card-body p-5">
-            <form id="vancomycinForm" method="POST" action="{{ url_for('generate_vancomycin_report', patient_id=patient.id) }}">
+    <div class="form-container">
+        <form action="{{ url_for('generate_vancomycin_report', patient_id=patient.id) }}" method="POST" id="aiForm">
+            <div class="card border-0 rounded-4 p-4 p-md-5">
                 
-                <input type="hidden" name="patient_name" value="{{ patient.full_name }}">
-                <input type="hidden" name="patient_dob" value="{{ patient.dob }}">
-                <input type="hidden" name="doctor_name" value="{{ current_user.full_name }}">
-                <input type="hidden" name="drug_name" value="Vancomycin">
-
-                <div class="row">
-                    <div class="col-md-6 mb-4 pe-md-4">
-                        <h5 class="text-secondary fw-bold border-bottom pb-2 mb-4">Pharmacokinetic Drivers</h5>
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <div class="section-title"><i class="fas fa-heartbeat me-2 text-danger"></i> Pharmacokinetic Drivers</div>
                         
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Age (Years)</label>
-                            <input type="number" class="form-control bg-light" name="Age" value="{{ calculated_age }}" required readonly>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Current Age (Years)</label>
+                            <div class="floating-icon-input">
+                                <i class="fas fa-calendar-alt"></i>
+                                <input type="number" class="form-control form-control-lg" name="age" value="{{ patient.age }}" required>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Gender</label>
-                            <select name="Gender" class="form-select" required>
-                                <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
-                                <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
-                            </select>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Actual Body Weight (kg)</label>
+                            <div class="floating-icon-input">
+                                <i class="fas fa-weight"></i>
+                                <input type="number" step="0.1" class="form-control form-control-lg" name="weight" placeholder="e.g. 75.5" required>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Weight (kg)</label>
-                            <input type="number" step="0.1" class="form-control" name="Weight_kg" placeholder="e.g. 75.5" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Height (cm)</label>
-                            <input type="number" step="0.1" class="form-control" name="Height_cm" placeholder="e.g. 175.0" required>
-                        </div>
-                        <div class="mb-3">
+
+                        <div class="mb-4">
                             <label class="form-label fw-bold">Serum Creatinine (mg/dL)</label>
-                            <input type="number" step="0.01" class="form-control" name="Serum_Creatinine" placeholder="e.g. 1.2" required>
+                            <div class="floating-icon-input">
+                                <i class="fas fa-tint text-info"></i>
+                                <input type="number" step="0.01" class="form-control form-control-lg" name="serum_creatinine" placeholder="e.g. 1.2" required>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="col-md-6 mb-4 ps-md-4 border-md-start">
-                        <h5 class="text-secondary fw-bold border-bottom pb-2 mb-4">Pharmacogenomic Filters</h5>
+                    <div class="col-md-6">
+                        <div class="section-title"><i class="fas fa-dna me-2 text-warning"></i> Pharmacogenomic Filters</div>
                         
                         <div class="mb-4">
-                            <label class="form-label fw-bold">HLA-A*32:01 Variant <span class="badge bg-danger ms-2">Toxicity Risk</span></label>
-                            <select class="form-select" name="hla_risk" required>
-                                <option value="No" selected>Negative / Not Detected</option>
-                                <option value="Yes">Positive (High DRESS Risk)</option>
+                            <label class="form-label fw-bold d-flex justify-content-between align-items-center">
+                                HLA-A*32:01 Variant 
+                                <span class="badge bg-danger rounded-pill px-2 py-1" style="font-size: 0.65rem;">Toxicity Risk</span>
+                            </label>
+                            <select class="form-select form-select-lg" name="hla_a3201">
+                                <option value="0">Negative / Not Detected</option>
+                                <option value="1">Positive / Detected</option>
                             </select>
                         </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">agr Group II Mutation <span class="badge bg-warning text-dark ms-2">Tolerance Risk</span></label>
-                            <select class="form-select" name="agr_mutation" required>
-                                <option value="No" selected>Negative / Not Detected</option>
-                                <option value="Yes">Positive (Thickened Cell Wall)</option>
+
+                        <div class="mb-5">
+                            <label class="form-label fw-bold d-flex justify-content-between align-items-center">
+                                agr Group II Mutation
+                                <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.65rem;">Tolerance Risk</span>
+                            </label>
+                            <select class="form-select form-select-lg" name="agr_group_ii">
+                                <option value="0">Negative / Not Detected</option>
+                                <option value="1">Positive / Detected</option>
                             </select>
+                        </div>
+                        
+                        <div class="alert bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-4 p-4 mt-auto">
+                            <h6 class="text-danger fw-bold mb-3"><i class="fas fa-exclamation-triangle me-2"></i> Clinical Safety Checks</h6>
+                            
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" role="switch" id="ddiCheck" name="aminoglycosides_coadmin">
+                                <label class="form-check-label fw-bold text-dark" for="ddiCheck">Coadministering Aminoglycosides?</label>
+                            </div>
+                            <small class="text-muted d-block ms-5">Select if patient is currently taking Tobramycin, Gentamicin, or Amikacin.</small>
                         </div>
                     </div>
                 </div>
 
-                <div class="row mt-3">
-                    <div class="col-12 border rounded p-4 bg-light shadow-sm">
-                        <h5 class="text-secondary fw-bold mb-3"><i class="fas fa-pills"></i> Concomitant Medications (Drug Interactions)</h5>
-                        
-                        <div id="ddiWarnings" class="mb-4 p-2 rounded" style="min-height: 45px; background: #fff; border: 1px dashed #ccc;">
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input ddi-checkbox" type="checkbox" name="interacting_drugs" value="NSAIDs" id="drugNSAIDs" data-risk="moderate">
-                                    <label class="form-check-label fw-bold" for="drugNSAIDs">NSAIDs</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input ddi-checkbox" type="checkbox" name="interacting_drugs" value="Aminoglycosides" id="drugAminoglycosides" data-risk="severe">
-                                    <label class="form-check-label fw-bold" for="drugAminoglycosides">Aminoglycosides</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input ddi-checkbox" type="checkbox" name="interacting_drugs" value="Piperacillin" id="drugPiperacillin" data-risk="moderate">
-                                    <label class="form-check-label fw-bold" for="drugPiperacillin">Piperacillin-Tazobactam</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-grid mt-5">
-                    <button type="submit" class="btn btn-primary btn-lg fw-bold shadow">
-                        <i class="fas fa-microchip me-2"></i> Generate AI Dosage Report
+                <div class="border-top border-secondary mt-5 pt-4 text-end">
+                    <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary btn-lg rounded-pill fw-bold px-4 shadow-sm me-3">Cancel</a>
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold px-5 shadow" onclick="document.getElementById('aiLoadingOverlay').style.display='flex';">
+                        <i class="fas fa-brain me-2"></i> Generate AI Dosage Report
                     </button>
                 </div>
-            </form>
-        </div>
+
+            </div>
+        </form>
     </div>
 </div>
-
-<script>
-    // --- Live Drug Interaction Badges ---
-    const checkboxes = document.querySelectorAll('.ddi-checkbox');
-    const warningContainer = document.getElementById('ddiWarnings');
-
-    function updateWarnings() {
-        warningContainer.innerHTML = ''; 
-        let hasWarnings = false;
-
-        checkboxes.forEach(box => {
-            if (box.checked) {
-                hasWarnings = true;
-                const drugName = box.value;
-                const riskLevel = box.getAttribute('data-risk');
-                
-                // Create the badge visually
-                const badge = document.createElement('span');
-                badge.className = `badge ${riskLevel === 'severe' ? 'bg-danger' : 'bg-warning text-dark'} me-2 p-2 shadow-sm`;
-                badge.style.fontSize = '0.9rem';
-                
-                let icon = riskLevel === 'severe' ? '<i class="fas fa-skull-crossbones me-1"></i>' : '<i class="fas fa-exclamation-triangle me-1"></i>';
-                let riskText = riskLevel === 'severe' ? 'SEVERE RISK' : 'MODERATE RISK';
-                
-                badge.innerHTML = `${icon} ${drugName} (${riskText})`;
-                warningContainer.appendChild(badge);
-            }
-        });
-
-        // Default state if nothing is selected
-        if (!hasWarnings) {
-            warningContainer.innerHTML = '<span class="text-muted" style="line-height: 28px;"><i class="fas fa-check-circle text-success me-1"></i> No major interacting drugs selected.</span>';
-        }
-    }
-
-    // Initialize the warnings area and add listeners to all checkboxes
-    updateWarnings();
-    checkboxes.forEach(box => box.addEventListener('change', updateWarnings));
-
-    // --- Loading AI Overlay ---
-    const form = document.getElementById('vancomycinForm');
-    const overlay = document.getElementById('aiLoadingOverlay');
-    const loadingText = document.getElementById('loadingText');
-
-    // These phrases will cycle to make the AI look like it's "thinking" specifically for Vancomycin
-    const phrases = [
-        "Calculating Pharmacokinetic Clearance...",
-        "Processing Pharmacogenomic Markers...",
-        "Applying XGBoost Clinical Guardrails...",
-        "Simulating Monte Carlo Volatility...",
-        "Validating Bayesian Distribution Match...",
-        "Calculating LIME & SHAP Explainability...",
-        "Generating Encrypted PDF Report..."
-    ];
-
-    form.addEventListener('submit', function() {
-        // 1. Show the full screen overlay
-        overlay.style.display = 'flex';
-        
-        // 2. Cycle the text every 1.5 seconds while the browser waits for Flask/Weasyprint to finish
-        let i = 0;
-        setInterval(() => {
-            if (i < phrases.length) {
-                loadingText.innerText = phrases[i];
-                i++;
-            }
-        }, 1500);
-    });
-</script>
 {% endblock %}

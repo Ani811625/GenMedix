@@ -1,221 +1,91 @@
 {% extends "base.html" %}
-
 {% block title %}GenMedix - AI Training Datasets{% endblock %}
 
 {% block content %}
 <style>
-    .dataset-header {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 60px 0;
-        border-bottom: 1px solid #cbd5e1;
-    }
+    .dataset-header { padding: 60px 0; }
+    
+    /* Modern Pill Tabs matching Global Theme */
     .nav-pills .nav-link {
-        color: #475569;
+        color: var(--text-muted);
         font-weight: 700;
-        border-radius: 50px;
+        border-radius: 12px;
         padding: 12px 30px;
-        margin: 0 10px;
+        margin: 0 5px;
+        background: transparent;
+        border: 1px solid transparent;
         transition: all 0.3s ease;
-        border: 2px solid transparent;
     }
-    .nav-pills .nav-link:hover {
-        background-color: #f1f5f9;
-    }
+    .nav-pills .nav-link:hover { background-color: var(--input-bg); border-color: var(--border-color); }
     .nav-pills .nav-link.active {
-        background-color: #0d6efd;
-        color: white;
-        box-shadow: 0 8px 15px rgba(13, 110, 253, 0.3);
+        background-color: var(--primary-accent);
+        color: white !important;
+        box-shadow: 0 8px 20px rgba(13, 110, 253, 0.3);
     }
-    .data-summary-card {
-        background: #ffffff;
-        border-radius: 16px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02);
-        padding: 25px;
-        height: 100%;
-    }
-    .stat-box {
-        background: #f8fafc;
-        border-radius: 12px;
-        padding: 15px;
-        border: 1px solid #f1f5f9;
-        text-align: center;
-    }
-    .stat-value {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 0;
-    }
-    .stat-label {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
+    
     .table-container {
-        max-height: 650px;
-        overflow-y: auto;
-        overflow-x: auto;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        background: white;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        max-height: 600px;
+        overflow: auto;
+        border-radius: 16px;
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-soft);
     }
-    .table { margin-bottom: 0; }
     .table thead th {
         position: sticky;
         top: 0;
-        background: #0f172a;
-        color: #f8fafc;
-        font-weight: 600;
-        font-size: 0.85rem;
+        background: var(--input-bg);
+        color: var(--text-main);
+        font-weight: 700;
+        font-size: 0.8rem;
+        text-transform: uppercase;
         letter-spacing: 0.5px;
-        white-space: nowrap;
-        padding: 15px 20px;
+        padding: 18px 20px;
         z-index: 1;
-        border: none;
+        border-bottom: 2px solid var(--border-color);
     }
-    .table tbody td {
-        white-space: nowrap;
-        font-size: 0.85rem;
-        color: #334155;
-        padding: 12px 20px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f1f5f9;
-    }
-    .table tbody tr:hover { background-color: #f8fafc; }
-    /* Custom Scrollbar */
-    .table-container::-webkit-scrollbar { width: 8px; height: 8px; }
-    .table-container::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
-    .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 </style>
 
 <div class="dataset-header text-center">
     <div class="container">
-        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-bold shadow-sm"><i class="fas fa-database me-2"></i> Clinical Data Repository</span>
-        <h1 class="display-5 fw-bolder text-dark mb-3">AI Training Datasets</h1>
-        <p class="lead text-muted mx-auto" style="max-width: 700px;">Explore the anonymized clinical and pharmacogenomic data pools used to train, validate, and test the GenMedix CDSS machine learning algorithms.</p>
+        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill mb-3 fw-bold border border-primary border-opacity-25"><i class="fas fa-database me-2"></i> Clinical Data Repository</span>
+        <h1 class="display-5 fw-bolder mb-3">AI Training Datasets</h1>
+        <p class="text-muted mx-auto fs-5" style="max-width: 700px;">Explore the anonymized clinical and pharmacogenomic data pools used to train, validate, and test the GenMedix CDSS machine learning algorithms.</p>
     </div>
 </div>
 
-<div class="container py-5 mb-5" style="max-width: 1400px;">
-    
+<div class="container mb-5" style="max-width: 1400px;">
     <ul class="nav nav-pills justify-content-center mb-5" id="datasetTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="warfarin-tab" data-bs-toggle="pill" data-bs-target="#warfarin" type="button" role="tab"><i class="fas fa-prescription-bottle-alt me-2"></i>Warfarin (IWPC Cohort)</button>
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#vancomycin" type="button"><i class="fas fa-vial me-2"></i>Vancomycin (Genomic Cohort)</button>
         </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="vancomycin-tab" data-bs-toggle="pill" data-bs-target="#vancomycin" type="button" role="tab"><i class="fas fa-vial me-2"></i>Vancomycin (Genomic Cohort)</button>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#warfarin" type="button"><i class="fas fa-prescription-bottle-alt me-2"></i>Warfarin (IWPC Cohort)</button>
         </li>
     </ul>
 
     <div class="tab-content" id="datasetTabsContent">
-        
-        <div class="tab-pane fade show active" id="warfarin" role="tabpanel">
-            
-            <div class="row g-4 mb-4">
-                <div class="col-lg-8">
-                    <div class="data-summary-card">
-                        <h4 class="fw-bold mb-3"><i class="fas fa-info-circle text-primary me-2"></i>Dataset Intelligence: Warfarin</h4>
-                        <p class="text-muted mb-4">Sourced from the International Warfarin Pharmacogenetics Consortium (IWPC). This dataset contains global clinical and genetic data used to predict stable therapeutic warfarin doses, preventing adverse bleeding events.</p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-light text-dark border"><i class="fas fa-microchip text-muted me-1"></i> Random Forest Regressor</span>
-                            <span class="badge bg-light text-dark border"><i class="fas fa-dna text-muted me-1"></i> CYP2C9 & VKORC1 Traits</span>
-                            <span class="badge bg-light text-dark border"><i class="fas fa-bullseye text-muted me-1"></i> Target: Therapeutic Dose (mg/week)</span>
-                        </div>
+        <div class="tab-pane fade show active" id="vancomycin">
+            <div class="card p-4 mb-4 border-0">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div>
+                        <h5 class="fw-bold text-success mb-2"><i class="fas fa-microchip me-2"></i>XGBoost Model Training Data</h5>
+                        <p class="text-muted mb-0 small">Synthetic cohort modeling severe MRSA infections. Integrating renal clearance and HLA-A*32:01.</p>
                     </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="data-summary-card d-flex align-items-center justify-content-center">
-                        <div class="row w-100 g-3">
-                            <div class="col-6">
-                                <div class="stat-box">
-                                    <p class="stat-value">{{ w_count }}</p>
-                                    <p class="stat-label">Total Records</p>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-box">
-                                    <p class="stat-value text-primary">{{ w_showing }}</p>
-                                    <p class="stat-label">Rows Displayed</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {% if w_count > 0 %}
-            <div class="table-container">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            {% for header in w_headers %}
-                                <th>{{ header }}</th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for row in w_rows %}
-                            <tr>
-                                {% for header in w_headers %}
-                                    <td>{{ row[header] }}</td>
-                                {% endfor %}
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-warning text-center fw-bold py-4 rounded-4 shadow-sm border-warning"><i class="fas fa-exclamation-triangle fs-4 d-block mb-2"></i>Warfarin dataset could not be loaded. Check data directory.</div>
-            {% endif %}
-
-        </div>
-
-        <div class="tab-pane fade" id="vancomycin" role="tabpanel">
-            
-            <div class="row g-4 mb-4">
-                <div class="col-lg-8">
-                    <div class="data-summary-card">
-                        <h4 class="fw-bold mb-3"><i class="fas fa-info-circle text-success me-2"></i>Dataset Intelligence: Vancomycin</h4>
-                        <p class="text-muted mb-4">A targeted synthetic cohort modeling severe MRSA/bacterial infection treatments. It integrates renal clearance metrics with specific genetic risk factors that dictate nephrotoxicity and drug tolerance.</p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-light text-dark border"><i class="fas fa-microchip text-muted me-1"></i> XGBoost Predictor</span>
-                            <span class="badge bg-light text-dark border"><i class="fas fa-dna text-muted me-1"></i> HLA-A*32:01 & agr Group II</span>
-                            <span class="badge bg-light text-dark border"><i class="fas fa-bullseye text-muted me-1"></i> Target: Daily Dose (mg/day)</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="data-summary-card d-flex align-items-center justify-content-center">
-                        <div class="row w-100 g-3">
-                            <div class="col-6">
-                                <div class="stat-box">
-                                    <p class="stat-value">{{ v_count }}</p>
-                                    <p class="stat-label">Total Records</p>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="stat-box">
-                                    <p class="stat-value text-success">{{ v_showing }}</p>
-                                    <p class="stat-label">Rows Displayed</p>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="text-end">
+                        <span class="fs-4 fw-bolder">{{ v_count }}</span><br>
+                        <span class="text-muted small text-uppercase fw-bold tracking-wider">Total Records</span>
                     </div>
                 </div>
             </div>
 
             {% if v_count > 0 %}
-            <div class="table-container" style="border-color: #dcfce7;">
-                <table class="table table-hover">
+            <div class="table-container">
+                <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
                             {% for header in v_headers %}
-                                <th style="background: #064e3b;">{{ header }}</th>
+                                <th>{{ header }}</th>
                             {% endfor %}
                         </tr>
                     </thead>
@@ -223,12 +93,8 @@
                         {% for row in v_rows %}
                             <tr>
                                 {% for header in v_headers %}
-                                    <td>
-                                        {% if row[header] is float %}
-                                            {{ "%.2f"|format(row[header]) }}
-                                        {% else %}
-                                            {{ row[header] }}
-                                        {% endif %}
+                                    <td class="px-4 py-3 text-muted small fw-bold">
+                                        {% if row[header] is float %}{{ "%.2f"|format(row[header]) }}{% else %}{{ row[header] }}{% endif %}
                                     </td>
                                 {% endfor %}
                             </tr>
@@ -236,14 +102,14 @@
                     </tbody>
                 </table>
             </div>
-            {% else %}
-            <div class="alert alert-warning text-center fw-bold py-4 rounded-4 shadow-sm border-warning"><i class="fas fa-exclamation-triangle fs-4 d-block mb-2"></i>Vancomycin dataset could not be loaded. Check data directory.</div>
             {% endif %}
-
         </div>
-
+        
+        <div class="tab-pane fade" id="warfarin">
+            <div class="card p-4 mb-4 border-0">
+                <h5 class="fw-bold text-primary"><i class="fas fa-project-diagram me-2"></i>Warfarin Random Forest Data</h5>
+            </div>
+            </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 {% endblock %}

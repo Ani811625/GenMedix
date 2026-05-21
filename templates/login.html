@@ -1,109 +1,86 @@
 {% extends "base.html" %}
-
-{% block title %}Doctor Login - GenMedix{% endblock %}
+{% block title %}GenMedix - Secure Login{% endblock %}
 
 {% block content %}
 <style>
-    /* Full height minus the navbar */
+    /* Unique Auth Background matching the Homepage */
     .auth-wrapper {
-        min-height: calc(100vh - 76px); 
-        display: flex;
-    }
-    /* The Image Side */
-    .auth-bg {
-        /* Using a high-quality clinical/tech Unsplash image with a dark blue gradient overlay */
-        background: linear-gradient(rgba(0, 86, 179, 0.85), rgba(15, 23, 42, 0.95)), 
-                    url('https://images.unsplash.com/photo-1576091160550-2173ff9e9e9c?q=80&w=2070&auto=format&fit=crop') no-repeat center center;
-        background-size: cover;
+        min-height: 85vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: white;
-        padding: 4rem;
+        position: relative;
+        overflow: hidden;
+        margin-top: -24px; /* Pull up to navbar */
     }
+    .auth-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(100px);
+        opacity: 0.4;
+        z-index: 1;
+    }
+    .orb-left { width: 400px; height: 400px; background: #3b82f6; top: -100px; left: -100px; }
+    .orb-right { width: 500px; height: 500px; background: #10b981; bottom: -100px; right: -100px; }
+    
     .auth-card {
-        max-width: 420px;
+        position: relative;
+        z-index: 2;
         width: 100%;
-        margin: 0 auto;
+        max-width: 450px;
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-color);
+        border-radius: 24px;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.1);
+        padding: 40px;
     }
-    /* Premium Input Styling */
-    .form-floating > .form-control {
-        border-radius: 10px;
-        border: 1px solid #dee2e6;
-    }
-    .form-floating > .form-control:focus {
-        border-color: #0056b3;
-        box-shadow: 0 0 0 0.25rem rgba(0, 86, 179, 0.15);
-    }
-    .form-floating > label {
-        color: #6c757d;
-        font-weight: 500;
-    }
+    .floating-icon-input { position: relative; }
+    .floating-icon-input i { position: absolute; top: 50%; left: 15px; transform: translateY(-50%); color: var(--text-muted); }
+    .floating-icon-input .form-control { padding-left: 45px; height: 55px; border-radius: 12px; }
 </style>
 
-<div class="container-fluid p-0">
-    <div class="row g-0 auth-wrapper">
-        
-        <div class="col-lg-6 d-none d-lg-flex auth-bg">
-            <div style="max-width: 500px;">
-                <span class="badge bg-info text-dark mb-3 px-3 py-2 fw-bold" style="letter-spacing: 1px;">GENMEDIX CDSS</span>
-                <h1 class="display-5 fw-bolder mb-4 text-white">Precision Intelligence.</h1>
-                <p class="text-light mb-0" style="font-size: 1.15rem; line-height: 1.8; opacity: 0.9;">
-                    Access your secure clinical dashboard to generate SHAP-explained, pharmacogenomic dosing recommendations.
-                </p>
-                <div class="mt-5 pt-4 border-top border-light border-opacity-25 d-flex gap-4">
-                    <div>
-                        <i class="fas fa-shield-alt text-info fs-3 mb-2"></i><br>
-                        <span class="small fw-bold text-uppercase" style="letter-spacing: 0.5px;">OTP Security</span>
-                    </div>
-                    <div>
-                        <i class="fas fa-brain text-info fs-3 mb-2"></i><br>
-                        <span class="small fw-bold text-uppercase" style="letter-spacing: 0.5px;">Hybrid AI</span>
-                    </div>
-                </div>
+<div class="auth-wrapper">
+    <div class="auth-orb orb-left"></div>
+    <div class="auth-orb orb-right"></div>
+    
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-opacity-10 rounded-circle text-primary mb-3" style="width: 60px; height: 60px;">
+                <i class="fas fa-user-md fs-3"></i>
             </div>
+            <h3 class="fw-bolder">Physician Portal</h3>
+            <p class="text-muted small">Enter your credentials to access the CDSS.</p>
         </div>
-        
-        <div class="col-lg-6 d-flex align-items-center justify-content-center bg-white p-4 p-md-5">
-            <div class="auth-card">
-                
-                <div class="text-center mb-5">
-                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                        <i class="fas fa-user-md fs-2"></i>
-                    </div>
-                    <h2 class="fw-bolder text-dark">Welcome Back, Doctor</h2>
-                    <p class="text-muted">Enter your credentials to access the CDSS.</p>
+
+        <form action="{{ url_for('login') }}" method="POST">
+            <div class="mb-3">
+                <label class="form-label fw-bold small">Institutional Email</label>
+                <div class="floating-icon-input">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" class="form-control" name="email" placeholder="doctor@hospital.org" required>
                 </div>
-
-                <form method="POST" action="{{ url_for('login') }}">
-                    
-                    <div class="form-floating mb-3">
-                        <input type="email" class="form-control bg-light" id="email" name="email" placeholder="name@example.com" required>
-                        <label for="email"><i class="fas fa-envelope me-2"></i>Email address</label>
-                    </div>
-                    
-                    <div class="form-floating mb-4">
-                        <input type="password" class="form-control bg-light" id="password" name="password" placeholder="Password" required>
-                        <label for="password"><i class="fas fa-lock me-2"></i>Password</label>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" value="" id="rememberMe" checked>
-                            <label class="form-check-label text-muted small" for="rememberMe">Remember me</label>
-                        </div>
-                        <a href="{{ url_for('forgot_password') }}" class="text-primary small fw-bold text-decoration-none">Forgot password?</a>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm mb-4 py-3" style="border-radius: 10px;">
-                        Sign In <i class="fas fa-sign-in-alt ms-2"></i>
-                    </button>
-                    
-                    <p class="text-center text-muted small">
-                        Don't have a clinical account yet? <a href="{{ url_for('register') }}" class="fw-bold text-primary text-decoration-none">Sign up here</a>.
-                    </p>
-                </form>
             </div>
+            
+            <div class="mb-4">
+                <div class="d-flex justify-content-between">
+                    <label class="form-label fw-bold small">Secure Password</label>
+                    <a href="#" class="small text-primary text-decoration-none fw-bold">Forgot Password?</a>
+                </div>
+                <div class="floating-icon-input">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" class="form-control" name="password" placeholder="••••••••" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold shadow-sm" style="height: 55px; border-radius: 12px;">
+                Authenticate <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </form>
+        
+        <div class="text-center mt-4">
+            <p class="text-muted small mb-0">Don't have an account? <a href="{{ url_for('register') }}" class="fw-bold text-primary text-decoration-none">Request Access</a></p>
         </div>
     </div>
 </div>

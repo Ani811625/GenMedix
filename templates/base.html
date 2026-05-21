@@ -8,81 +8,102 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { background-color: var(--bs-body-bg); color: var(--bs-body-color); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; min-height: 100vh; transition: background-color 0.3s ease, color 0.3s ease; }
-        main { flex: 1; }
-        .navbar { background-color: var(--bs-body-bg) !important; backdrop-filter: blur(10px); transition: all 0.3s ease; }
-        .navbar-brand { font-weight: 800; letter-spacing: 0.5px; color: #0056b3 !important; font-size: 1.4rem; }
-        [data-bs-theme="dark"] .navbar-brand { color: #6ea8fe !important; }
-        .nav-link { font-weight: 600; color: var(--bs-body-color) !important; margin: 0 8px; transition: color 0.2s ease-in-out; }
-        .nav-link:hover { color: #0056b3 !important; }
-        [data-bs-theme="dark"] .nav-link:hover { color: #6ea8fe !important; }
-        .btn-nav { font-weight: 600; border-radius: 8px; padding: 8px 20px; letter-spacing: 0.3px; }
-        #themeToggle { background: none; border: none; color: var(--bs-body-color); font-size: 1.2rem; margin-right: 15px; transition: transform 0.3s ease; }
-        #themeToggle:hover { transform: scale(1.1); color: #0056b3; }
-        [data-bs-theme="dark"] #themeToggle:hover { color: #ffc107; }
+    /* =========================================================
+       GLOBAL DESIGN SYSTEM & DARK MODE VARIABLES
+       ========================================================= */
+    :root {
+        /* Light Theme (Default) */
+        --bg-main: #f8fafc;
+        --bg-card: #ffffff;
+        --text-main: #0f172a;
+        --text-muted: #64748b;
+        --border-color: #e2e8f0;
+        --glass-bg: rgba(255, 255, 255, 0.85);
+        --shadow-soft: 0 10px 25px rgba(0,0,0,0.05);
+        --input-bg: #f1f5f9;
+        --primary-accent: #0d6efd;
+    }
 
-        /* ENTERPRISE BROADCAST BANNER STYLES */
-        .broadcast-banner { font-size: 0.95rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-bottom: 1px solid rgba(0,0,0,0.1); position: relative; z-index: 1050; }
-        .broadcast-icon { font-size: 1.2rem; }
-        .broadcast-btn { border-radius: 6px; font-weight: 600; padding: 4px 15px; text-decoration: none; border: 1px solid transparent; transition: all 0.2s; }
-        .broadcast-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.8; transition: opacity 0.2s; }
-        .broadcast-close:hover { opacity: 1; }
-        
-        /* Semantic Types */
-        .type-info { background-color: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
-        .type-info .broadcast-btn { background-color: #0369a1; color: #fff; }
-        .type-info .broadcast-close { color: #0369a1; }
-        
-        .type-warning { background-color: #fffbeb; color: #b45309; border-color: #fde68a; }
-        .type-warning .broadcast-btn { background-color: #b45309; color: #fff; }
-        .type-warning .broadcast-close { color: #b45309; }
-        
-        .type-danger { background-color: #fef2f2; color: #b91c1c; border-color: #fecaca; }
-        .type-danger .broadcast-btn { background-color: #b91c1c; color: #fff; }
-        .type-danger .broadcast-close { color: #b91c1c; }
-        
-        .type-success { background-color: #f0fdf4; color: #047857; border-color: #bbf7d0; }
-        .type-success .broadcast-btn { background-color: #047857; color: #fff; }
-        .type-success .broadcast-close { color: #047857; }
+    [data-theme="dark"] {
+        /* Dark Theme (Enterprise Medical) */
+        --bg-main: #0f172a;
+        --bg-card: #1e293b;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --border-color: #334155;
+        --glass-bg: rgba(30, 41, 59, 0.85);
+        --shadow-soft: 0 10px 25px rgba(0,0,0,0.4);
+        --input-bg: #0f172a;
+        --primary-accent: #3b82f6;
+    }
 
-        [data-bs-theme="dark"] .type-info { background-color: #0c4a6e; color: #e0f2fe; border-color: #0369a1; }
-        [data-bs-theme="dark"] .type-warning { background-color: #78350f; color: #fef3c7; border-color: #b45309; }
-        [data-bs-theme="dark"] .type-danger { background-color: #7f1d1d; color: #fee2e2; border-color: #b91c1c; }
-        [data-bs-theme="dark"] .type-success { background-color: #064e3b; color: #d1fae5; border-color: #047857; }
-        [data-bs-theme="dark"] .broadcast-btn { border-color: rgba(255,255,255,0.2) !important; }
-        [data-bs-theme="dark"] .broadcast-close { filter: invert(1); }
+    /* Apply Variables to Body */
+    body {
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        font-family: 'Inter', -apple-system, sans-serif;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
 
-        /* Floating Frosted Glass Navbar */
-    .glass-navbar {
-        background: rgba(255, 255, 255, 0.85) !important;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+    /* Global Card & Container Styling */
+    .card, .glass-card, .data-summary-card, .bento-card, .patient-header-card {
+        background-color: var(--bg-card) !important;
+        border-color: var(--border-color) !important;
+        box-shadow: var(--shadow-soft) !important;
+        color: var(--text-main) !important;
         transition: all 0.3s ease;
     }
-    .glass-navbar .navbar-brand {
-        font-weight: 800;
-        letter-spacing: -0.5px;
-        color: #0f172a !important;
+
+    /* Global Typography */
+    h1, h2, h3, h4, h5, h6, .text-dark {
+        color: var(--text-main) !important;
     }
-    .glass-navbar .nav-link {
-        font-weight: 600;
-        color: #475569 !important;
-        transition: color 0.2s ease;
+    .text-muted {
+        color: var(--text-muted) !important;
     }
-    .glass-navbar .nav-link:hover { color: #0d6efd !important; }
+
+    /* Global Inputs (Floating Labels & Focus states) */
+    .form-control, .form-select {
+        background-color: var(--input-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+    }
+    .form-control:focus, .form-select:focus {
+        background-color: var(--bg-card);
+        border-color: var(--primary-accent);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        color: var(--text-main);
+    }
     
-    /* Modern Dark Footer */
-    .modern-footer {
-        background-color: #0f172a;
-        color: #94a3b8;
-        padding: 60px 0 30px 0;
-        border-top: 1px solid #1e293b;
+    /* Dark Mode Tables */
+    .table { color: var(--text-main); }
+    .table thead th { background-color: var(--bg-card); border-bottom: 2px solid var(--border-color); color: var(--text-main); }
+    .table tbody td { border-bottom-color: var(--border-color); }
+    .table-hover tbody tr:hover { background-color: rgba(59, 130, 246, 0.05); }
+
+    /* Floating Glass Navbar (Updates for Dark Mode) */
+    .glass-navbar {
+        background: var(--glass-bg) !important;
+        border-bottom: 1px solid var(--border-color);
     }
-    .modern-footer a { color: #cbd5e1; text-decoration: none; transition: color 0.2s; }
-    .modern-footer a:hover { color: #38bdf8; }
-    </style>
+    
+    /* Animated Buttons */
+    .btn {
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:active {
+        transform: scale(0.96);
+    }
+    
+    /* Custom High-End Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-main); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
 
     <script>
         const storedTheme = localStorage.getItem('theme') || 'light';
@@ -106,6 +127,11 @@
                 <li class="nav-item"><a class="nav-link px-3" href="{{ url_for('dataset') }}">AI Dataset</a></li>
                 <li class="nav-item"><a class="nav-link px-3" href="{{ url_for('pricing') }}">Pricing</a></li>
                 <li class="nav-item"><a class="nav-link px-3" href="{{ url_for('about') }}">Security</a></li>
+                <li class="nav-item me-3 d-flex align-items-center">
+                <button id="themeToggle" class="btn btn-link nav-link px-2" style="border: none; background: transparent; font-size: 1.2rem;">
+                <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                </li>
                 
                 {% if is_admin %}
                     <li class="nav-item ms-lg-2"><a class="btn btn-dark rounded-pill fw-bold px-4 shadow-sm" href="{{ url_for('admin_dashboard') }}"><i class="fas fa-shield-alt text-warning me-2"></i>Admin</a></li>
@@ -289,5 +315,35 @@
             }
         });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const body = document.documentElement; // Apply to <html>
+
+        // Check for saved user preference, if any, on load of the website
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        
+        if (currentTheme === 'dark') {
+            body.setAttribute('data-theme', 'dark');
+            themeIcon.classList.replace('fa-moon', 'fa-sun');
+            themeIcon.style.color = '#fbbf24'; // Yellow sun
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                themeIcon.classList.replace('fa-sun', 'fa-moon');
+                themeIcon.style.color = ''; // Reset to default
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                themeIcon.classList.replace('fa-moon', 'fa-sun');
+                themeIcon.style.color = '#fbbf24';
+            }
+        });
+    });
+</script>
 </body>
 </html>
