@@ -1551,4 +1551,7 @@ def admin_edit_doctor(doc_id):
     return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Get the port Render assigned, or default to 5000 for local testing
+    port = int(os.environ.get("PORT", 5000))
+    # host='0.0.0.0' tells Flask to accept public internet traffic
+    app.run(host='0.0.0.0', port=port, debug=False)
