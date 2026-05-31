@@ -13,6 +13,8 @@ from email.mime.multipart import MIMEMultipart
 import csv
 import io
 from functools import wraps
+import torch
+from snncap_model import GenMedixSiameseNetwork
 
 # --- THIRD PARTY IMPORTS ---
 import stripe
@@ -581,6 +583,62 @@ def run_vancomycin_prediction(patient_data_dict):
         "confidence_explanation": conf_expl
     }
 
+def run_snncap_twin_matching(patient_data_dict):
+    """
+    Runs the new patient through the Siamese Capsule Network 
+    to find their closest historical biological match.
+    """
+    # 1. Initialize the model (In a real scenario, you would load pre-trained weights here)
+    # clinical_dim=3 (Age, Wt, CrCl), genomic_dim=2 (HLA, agr)
+    snncap_model = GenMedixSiameseNetwork(clinical_dim=3, genomic_dim=2, vector_dim=8)
+    snncap_model.eval() # Set to evaluation mode (no training happening here)
+    
+    # 2. Extract and format the New Patient's data into PyTorch Tensors
+    clinical_features = [
+        float(patient_data_dict['Age']), 
+        float(patient_data_dict['Weight_kg']), 
+        float(patient_data_dict['Calculated_CrCl'])
+    ]
+    genomic_features = [
+        float(patient_data_dict['HLA_A_32_01_Risk']), 
+        float(patient_data_dict['agr_Group_II_Mutation'])
+    ]
+    
+    # Convert lists to tensors and add a "batch" dimension
+    new_clinical_tensor = torch.tensor([clinical_features], dtype=torch.float32)
+    new_genomic_tensor = torch.tensor([genomic_features], dtype=torch.float32)
+    
+    # 3. Get the New Patient's biological coordinates (The Scanner)
+    with torch.no_grad():
+        new_patient_vector = snncap_model.forward_once(new_clinical_tensor, new_genomic_tensor)
+        
+        # ---------------------------------------------------------
+        # MOCK DATABASE (For implementation demonstration)
+        # In the final version, this will pull from your actual historical dataset.
+        # Let's pretend we found a historical patient who was highly similar
+        # and safely took 1250 mg of Vancomycin.
+        historical_clinical = torch.tensor([[patient_data_dict['Age']+2, patient_data_dict['Weight_kg']-1, patient_data_dict['Calculated_CrCl']+5]], dtype=torch.float32)
+        historical_genomic = torch.tensor([[patient_data_dict['HLA_A_32_01_Risk'], patient_data_dict['agr_Group_II_Mutation']]], dtype=torch.float32)
+        
+        historical_vector = snncap_model.forward_once(historical_clinical, historical_genomic)
+        # ---------------------------------------------------------
+        
+        # 4. Calculate the distance between New Patient and Historical Patient
+        flat_new = new_patient_vector.view(1, -1)
+        flat_historical = historical_vector.view(1, -1)
+        
+        distance = torch.nn.functional.pairwise_distance(flat_new, flat_historical)
+        
+        # 5. Convert distance to a human-readable similarity percentage
+        similarity_score = snncap_model.calculate_similarity_percentage(distance).item()
+        
+    # Return the findings to the Flask backend
+    return {
+        "snncap_recommended_dose": 1250, # The dose the historical twin safely took
+        "similarity_percentage": round(similarity_score, 1),
+        "model_name": "SNNCap (Siamese Capsule Network)"
+    }
+
 def process_vancomycin_data(form_data):
     patient_info_dict = {"patient_name": form_data.get('patient_name'), "patient_dob": form_data.get('patient_dob'), "patient_gender": form_data.get('Gender'), "patient_country": "N/A", "patient_address": "N/A"}
     safety_data_dict = {"is_pregnant": "Not Applicable", "active_bleeding": "Not Applicable", "platelet_count": "Not Applicable", "baseline_inr": "Not Applicable"}
@@ -612,7 +670,11 @@ def process_vancomycin_data(form_data):
         "agr Group II": "Detected" if agr == 1.0 else "Not Detected"
     }
     
+    # 1. Run the standard XGBoost Baseline
     pred_data = run_vancomycin_prediction(clinical_data_dict)
+    
+    # 2. Run the new SNNCap Deep Learning Model
+    snncap_data = run_snncap_twin_matching(clinical_data_dict)
     
     suggestions = []
     if hla == 1.0: suggestions.append("<strong>CRITICAL WARNING:</strong> HLA-A*32:01 risk allele detected. High risk of DRESS syndrome. AI reduced recommended dose. Proceed with caution.")
@@ -620,9 +682,16 @@ def process_vancomycin_data(form_data):
     if crcl < 30: suggestions.append("<strong>RENAL IMPAIRMENT:</strong> Est. CrCl < 30 mL/min. Pulse dosing by levels is recommended over continuous standard dosing.")
     if not suggestions: suggestions.append("Parameters indicate standard clearance. Monitor trough levels before the 4th dose.")
     
+    # 3. Bundle BOTH results into the final dictionary sent to the frontend
     results_dict = {
         "predicted_dose_mg_per_week": pred_data['prediction'], 
         "model_used": pred_data['model_name'], 
+        
+        # Add the new SNNCap variables here:
+        "snncap_dose": snncap_data['snncap_recommended_dose'],
+        "snncap_similarity": snncap_data['similarity_percentage'],
+        "snncap_model_name": snncap_data['model_name'],
+        
         "confidence_score": pred_data['confidence_score'], 
         "confidence_explanation": pred_data['confidence_explanation'], 
         "human_explanation": get_human_explanation(pred_data['shap_explanation']), 

@@ -78,35 +78,61 @@
                 </div>
             </div>
 
-            <div class="p-4 bg-light rounded text-center mb-5 border shadow-sm">
-                <h6 class="text-uppercase text-muted fw-bold">
-                    {% if 'Vancomycin' in results.model_used %}
-                        Recommended Vancomycin Target
-                    {% else %}
-                        Recommended Warfarin Dose
-                    {% endif %}
-                </h6>
-                <h1 class="display-4 fw-bold text-primary my-2">{{ results.predicted_dose_mg_per_week }}</h1>
-                <h6 class="text-secondary fw-bold">
-                    {% if 'Vancomycin' in results.model_used %}
-                        mg / day
-                    {% else %}
-                        mg / week
-                    {% endif %}
-                </h6>
-                <div class="mt-3">
-                    <span class="badge {% if results.confidence_score == 'High' %}bg-success{% elif results.confidence_score == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %} px-3 py-2 fs-6 shadow-sm">
-                        Overall Confidence: {{ results.confidence_score }}
-                    </span>
+            <div class="card border border-light-subtle rounded-4 shadow-sm mb-5" style="background: #ffffff;">
+                <div class="card-header bg-primary bg-opacity-10 border-0 py-3 rounded-top-4">
+                    <h5 class="mb-0 text-primary fw-bold"><i class="fas fa-network-wired me-2"></i> Multi-Model AI Consensus</h5>
                 </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        
+                        <div class="col-md-6 border-end border-secondary border-opacity-25">
+                            <div class="text-center">
+                                <span class="badge bg-secondary mb-3 px-3 py-2 rounded-pill text-uppercase tracking-wider" style="font-size: 0.75rem;">Clinical Baseline</span>
+                                <h6 class="fw-bold text-muted mb-1">{{ results.model_used }}</h6>
+                                <h2 class="display-5 fw-bolder text-dark my-3">{{ results.predicted_dose_mg_per_week }} 
+                                    <span class="fs-4 text-muted">{% if 'Vancomycin' in results.model_used %}mg / day{% else %}mg / week{% endif %}</span>
+                                </h2>
+                                <p class="small text-muted mb-0"><i class="fas fa-shield-alt text-success me-1"></i> Evaluated via standard tree architecture</p>
+                                
+                                <div class="mt-3">
+                                    <span class="badge {% if results.confidence_score == 'High' %}bg-success{% elif results.confidence_score == 'Medium' %}bg-warning text-dark{% else %}bg-danger{% endif %} px-3 py-2 fs-6 shadow-sm">
+                                        Overall Confidence: {{ results.confidence_score }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
 
-                {% if 'Vancomycin' in results.model_used %}
-                <div class="mt-4 mx-auto text-start" style="max-width: 650px;">
-                    <div class="alert alert-info py-2 px-3 small mb-0 shadow-sm border-info" style="background-color: #e9f7fe;">
-                        <strong><i class="fas fa-info-circle me-1 text-info"></i> Clinical Rounding Protocol:</strong> The AI's raw continuous prediction is mathematically rounded to the nearest <strong>250 mg</strong> increment. This standardizes the output to align with standard pharmacy compounding constraints and commercial vial sizes, ensuring the recommended dose is both therapeutically optimal and practically administrable.
+                        <div class="col-md-6">
+                            <div class="text-center position-relative">
+                                <span class="position-absolute top-0 end-0 badge bg-danger rounded-pill px-2 py-1 shadow-sm" style="font-size: 0.65rem; transform: translate(10px, -10px);">EXPERIMENTAL</span>
+                                
+                                <span class="badge bg-primary mb-3 px-3 py-2 rounded-pill text-uppercase tracking-wider" style="font-size: 0.75rem;">Deep Learning Upgrade</span>
+                                <h6 class="fw-bold text-primary mb-1">{{ results.snncap_model_name }}</h6>
+                                
+                                {% if results.snncap_dose %}
+                                    <h2 class="display-5 fw-bolder text-primary my-3">{{ results.snncap_dose }} <span class="fs-4 opacity-75">mg / day</span></h2>
+                                    <div class="d-flex align-items-center justify-content-center mt-3">
+                                        <i class="fas fa-dna text-success me-2"></i>
+                                        <p class="small text-muted mb-0 fw-bold">
+                                            Cohort Match: <span class="text-success">{{ results.snncap_similarity }}% Biological Twin</span>
+                                        </p>
+                                    </div>
+                                {% else %}
+                                    <h2 class="fw-bolder text-muted my-3">N/A</h2>
+                                    <p class="small text-muted mb-0 mt-3">Model restricted to Vancomycin protocol.</p>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
+
+                    {% if 'Vancomycin' in results.model_used %}
+                    <div class="mt-4 mx-auto text-start border-top pt-4" style="max-width: 750px;">
+                        <div class="alert alert-info py-2 px-3 small mb-0 shadow-sm border-info" style="background-color: #e9f7fe;">
+                            <strong><i class="fas fa-info-circle me-1 text-info"></i> Clinical Rounding Protocol:</strong> The AI's raw continuous prediction is mathematically rounded to the nearest <strong>250 mg</strong> increment. This standardizes the output to align with standard pharmacy compounding constraints and commercial vial sizes, ensuring the recommended dose is both therapeutically optimal and practically administrable.
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
 
             {% set has_hybrid = 'Monte Carlo' in results.confidence_explanation %}
