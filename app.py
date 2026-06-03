@@ -640,14 +640,21 @@ def run_snncap_twin_matching(patient_data_dict):
     }
 
 def process_vancomycin_data(form_data):
-    patient_info_dict = {"patient_name": form_data.get('patient_name'), "patient_dob": form_data.get('patient_dob'), "patient_gender": form_data.get('Gender'), "patient_country": "N/A", "patient_address": "N/A"}
+    # FIX 1: Map the demographics to the new hidden fields exactly
+    patient_info_dict = {
+        "patient_name": form_data.get('patient_name'), 
+        "patient_dob": form_data.get('patient_dob'), 
+        "patient_gender": form_data.get('patient_gender'), 
+        "patient_country": "N/A", 
+        "patient_address": "N/A"
+    }
     safety_data_dict = {"is_pregnant": "Not Applicable", "active_bleeding": "Not Applicable", "platelet_count": "Not Applicable", "baseline_inr": "Not Applicable"}
     
     age = float(form_data.get('Age', 30))
     weight = float(form_data.get('Weight_kg', 70))
     height = float(form_data.get('Height_cm', 170))
     scr = float(form_data.get('Serum_Creatinine', 1.0))
-    gender = form_data.get('Gender', 'Male')
+    gender = form_data.get('patient_gender', 'Male') # Updated to pull from hidden field
     hla = 1.0 if form_data.get('hla_risk') == 'Yes' else 0.0
     agr = 1.0 if form_data.get('agr_mutation') == 'Yes' else 0.0
     gender_male = 1.0 if gender == 'Male' else 0.0

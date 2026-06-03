@@ -5,7 +5,6 @@
 <style>
     .assessment-header {
         background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
-        padding: 40px 0;
         border-radius: 16px;
         margin-bottom: -50px;
         position: relative;
@@ -43,24 +42,29 @@
 
 <div class="container py-4 mb-5" style="max-width: 1000px;">
     
-    <div class="assessment-header text-center text-white shadow-sm">
+    <div class="assessment-header text-center text-white shadow-sm pt-4 pb-5">
         <h2 class="fw-bolder mb-1"><i class="fas fa-vial me-2"></i> Vancomycin Predictive Engine</h2>
-        <p class="opacity-75 mb-0">Patient: <strong>{{ patient.full_name }}</strong> | ID: {{ patient.aadhar[-4:] }}</p>
+        <p class="opacity-75 mb-4 fw-bold">Patient: <strong>{{ patient.full_name }}</strong> | ID: {{ patient.aadhar[-4:] }}</p>
     </div>
 
     <div class="form-container">
-        <form action="{{ url_for('generate_vancomycin_report', patient_id=patient.id) }}" method="POST" id="aiForm">
+        <form action="{{ url_for('generate_vancomycin_report', patient_id=patient.id) }}" method="POST" id="aiForm" onsubmit="triggerAILoading()">
+            
+            <input type="hidden" name="patient_name" value="{{ patient.full_name }}">
+            <input type="hidden" name="patient_dob" value="{{ patient.dob }}">
+            <input type="hidden" name="patient_gender" value="{{ patient.gender }}">
+            
             <div class="card border-0 rounded-4 p-4 p-md-5">
                 
                 <div class="row g-5">
                     <div class="col-md-6">
                         <div class="section-title"><i class="fas fa-heartbeat me-2 text-danger"></i> Pharmacokinetic Drivers</div>
-                        
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Current Age (Years)</label>
-                            <div class="floating-icon-input">
-                                <i class="fas fa-calendar-alt"></i>
-                                <input type="number" class="form-control form-control-lg" name="age" value="{{ patient.age }}" required>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-secondary small">Current Age (Years)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-calendar-alt text-muted"></i></span>
+                                <input type="number" class="form-control border-start-0 ps-0" name="Age" value="{{ calculated_age }}" required>
                             </div>
                         </div>
 
@@ -68,7 +72,7 @@
                             <label class="form-label fw-bold">Actual Body Weight (kg)</label>
                             <div class="floating-icon-input">
                                 <i class="fas fa-weight"></i>
-                                <input type="number" step="0.1" class="form-control form-control-lg" name="weight" placeholder="e.g. 75.5" required>
+                                <input type="number" step="0.1" class="form-control form-control-lg" name="Weight_kg" placeholder="e.g. 75.5" required>
                             </div>
                         </div>
 
@@ -76,7 +80,7 @@
                             <label class="form-label fw-bold">Serum Creatinine (mg/dL)</label>
                             <div class="floating-icon-input">
                                 <i class="fas fa-tint text-info"></i>
-                                <input type="number" step="0.01" class="form-control form-control-lg" name="serum_creatinine" placeholder="e.g. 1.2" required>
+                                <input type="number" step="0.01" class="form-control form-control-lg" name="Serum_Creatinine" placeholder="e.g. 1.2" required>
                             </div>
                         </div>
                     </div>
@@ -89,9 +93,9 @@
                                 HLA-A*32:01 Variant 
                                 <span class="badge bg-danger rounded-pill px-2 py-1" style="font-size: 0.65rem;">Toxicity Risk</span>
                             </label>
-                            <select class="form-select form-select-lg" name="hla_a3201">
-                                <option value="0">Negative / Not Detected</option>
-                                <option value="1">Positive / Detected</option>
+                            <select class="form-select form-select-lg" name="hla_risk">
+                                <option value="No">Negative / Not Detected</option>
+                                <option value="Yes">Positive / Detected</option>
                             </select>
                         </div>
 
@@ -100,9 +104,9 @@
                                 agr Group II Mutation
                                 <span class="badge bg-warning text-dark rounded-pill px-2 py-1" style="font-size: 0.65rem;">Tolerance Risk</span>
                             </label>
-                            <select class="form-select form-select-lg" name="agr_group_ii">
-                                <option value="0">Negative / Not Detected</option>
-                                <option value="1">Positive / Detected</option>
+                            <select class="form-select form-select-lg" name="agr_mutation">
+                                <option value="No">Negative / Not Detected</option>
+                                <option value="Yes">Positive / Detected</option>
                             </select>
                         </div>
                         
@@ -120,7 +124,7 @@
 
                 <div class="border-top border-secondary mt-5 pt-4 text-end">
                     <a href="{{ url_for('view_patient', patient_id=patient.id) }}" class="btn btn-outline-secondary btn-lg rounded-pill fw-bold px-4 shadow-sm me-3">Cancel</a>
-                    <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold px-5 shadow" onclick="document.getElementById('aiLoadingOverlay').style.display='flex';">
+                    <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-bold px-5 shadow">
                         <i class="fas fa-brain me-2"></i> Generate AI Dosage Report
                     </button>
                 </div>
@@ -129,4 +133,26 @@
         </form>
     </div>
 </div>
+
+<div id="aiLoadingOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; flex-direction: column; justify-content: center; align-items: center;">
+    
+    <div class="spinner-border text-primary mb-4" style="width: 4rem; height: 4rem; border-width: 0.35em;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    
+    <h3 class="fw-bolder text-dark mb-2">Synthesizing Pharmacogenomic Data</h3>
+    <p class="text-muted fw-bold mb-4" style="letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem;">
+        <i class="fas fa-network-wired text-primary me-2"></i> Running SNNCap & XGBoost Architectures
+    </p>
+    
+    <div class="progress w-100" style="max-width: 300px; height: 6px; border-radius: 10px;">
+        <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 100%"></div>
+    </div>
+</div>
+
+<script>
+    function triggerAILoading() {
+        document.getElementById('aiLoadingOverlay').style.display = 'flex';
+    }
+</script>
 {% endblock %}
