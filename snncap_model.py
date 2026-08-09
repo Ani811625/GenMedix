@@ -125,3 +125,47 @@ class ContrastiveLoss(nn.Module):
         loss_contrastive = torch.mean(loss_twin + loss_stranger)
         
         return loss_contrastive
+    
+class SNNCapNetwork(nn.Module):
+    """
+    The full Multi-Task Architecture: Combines the Biological Capsules with a 
+    Regression Head to output the exact continuous dosage (mg/day).
+    """
+    def __init__(self, input_dim=5, capsule_dim=8):
+        super(SNNCapNetwork, self).__init__()
+        
+        # 1. Bring in your existing Capsule Layer
+        # Clinical = Age, Weight, CrCl (3) | Genomic = HLA, agr_Mutation (2)
+        self.capsule_layer = BiologicalCapsuleLayer(
+            clinical_input_dim=3, 
+            genomic_input_dim=2, 
+            vector_dim=capsule_dim
+        )
+        
+        # 2. The Dosage Regression Head
+        # Flattens the two 8D capsules (2 * 8 = 16) and calculates the dose
+        self.regression_head = nn.Sequential(
+            nn.Linear(2 * capsule_dim, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1)  # Outputs a single continuous dose value
+        )
+
+    def forward(self, x):
+        """
+        x: The flat 5-dimensional tensor from your X_master matrix
+        """
+        # Automatically split the flat input tensor into the two required biological branches
+        clinical_data = x[:, :3]   # First 3 columns (Age, Weight, CrCl)
+        genomic_data = x[:, 3:]    # Last 2 columns (HLA, agr_Mutation)
+        
+        # Pass through the capsule layer
+        capsules = self.capsule_layer(clinical_data, genomic_data)
+        
+        # Flatten the capsules to feed into the dosage calculator
+        flat_capsules = capsules.view(capsules.size(0), -1)
+        
+        # Calculate the final continuous dosage
+        predicted_dose = self.regression_head(flat_capsules)
+        
+        # Return both the dose prediction and the raw capsules (for metric tracking)
+        return predicted_dose, capsules
